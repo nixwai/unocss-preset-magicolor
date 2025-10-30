@@ -1,0 +1,34 @@
+{
+  "name": "unocss-preset-magicolor",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "Unocss预设",
+  "author": "nxy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nixwai/create-nxy"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./helper": {
+      "types": "./dist/types/helper.d.ts",
+      "import": "./dist/helper.js"
+    }
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@unocss/preset-mini": "^66.5.4"
+  },
+  "devDependencies": {
+    "unocss": "^66.5.4"
+  }
+}

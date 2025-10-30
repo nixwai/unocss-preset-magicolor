@@ -1,0 +1,26 @@
+{
+  "name": "@unocss-preset-magicolor/build-system",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "preset:release": "gulp -f build-presets/gulp-release.ts",
+    "preset:build": "gulp -f build-presets/gulp-build.ts",
+    "preset:publish": "gulp -f build-presets/gulp-publish.ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "vue": ">= 3.4.0 < 3.5.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/gulp": "^4.0.17",
+    "fs-extra": "^11.3.2",
+    "gulp": "^5.0.1",
+    "gulp-cli": "^3.1.0",
+    "sucrase": "^3.35.0",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-node-polyfills": "^0.24.0"
+  }
+}

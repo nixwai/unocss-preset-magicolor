@@ -1,0 +1,2 @@
+/** PresetOptions */
+export interface PresetOptions {}
