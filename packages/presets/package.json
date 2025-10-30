@@ -26,7 +26,7 @@
     "dist"
   ],
   "dependencies": {
-    "@unocss/preset-mini": "^66.5.4"
+    "magic-color": "^2.1.0"
   },
   "devDependencies": {
     "unocss": "^66.5.4"

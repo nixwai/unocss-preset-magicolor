@@ -13,7 +13,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['unocss', '@unocss/preset-mini'],
+      external: ['unocss', 'magic-color'],
       output: [{
         format: 'es',
         entryFileNames: '[name].js',

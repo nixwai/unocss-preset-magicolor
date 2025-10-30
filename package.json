@@ -22,6 +22,9 @@
   "peerDependencies": {
     "vue": "^3.4.0"
   },
+  "dependencies": {
+    "unocss-preset-magicolor": "workspace:*"
+  },
   "devDependencies": {
     "@antfu/eslint-config": "^3.16.0",
     "@types/node": "^24.9.1",
@@ -63,8 +66,5 @@
     "*.{vue,js,ts,tsx,jsx}": [
       "eslint . --fix"
     ]
-  },
-  "dependencies": {
-    "unocss-preset-magicolor": "workspace:*"
   }
 }

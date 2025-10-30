@@ -151,9 +151,9 @@ importers:
 
   packages/presets:
     dependencies:
-      '@unocss/preset-mini':
-        specifier: ^66.5.4
-        version: 66.5.4
+      magic-color:
+        specifier: ^2.1.0
+        version: 2.1.0
     devDependencies:
       unocss:
         specifier: ^66.5.4
@@ -858,6 +858,18 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
+
+  '@magic-color/core@2.1.0':
+    resolution: {integrity: sha512-gR7JGpN8P4ySxr50Oe05pVq3RvdQGlGLTyLV1hO2pAdfW8dC5v9X2DCbbUFJ0eW0Y1NvN4V4DcgSJowohRqqcQ==}
+
+  '@magic-color/shared@2.1.0':
+    resolution: {integrity: sha512-pFVOdIDAdol+/rYZQaHjKsnVZTQZJZFnt6Ng4daIRqSPfFjpRY7FzG5g7rFxPGQ3amZ/i5qyYKhco7k/KsuinA==}
+
+  '@magic-color/theme@2.1.0':
+    resolution: {integrity: sha512-//i8/Yz7edtS9LeOnJgVPlkARE7NNvbPTF2YyH/WAEzb9ttv9HrpPrpsYab/jp5uzX1Jd/DIzFZfLKfC3ADikg==}
+
+  '@magic-color/transformer@2.1.0':
+    resolution: {integrity: sha512-EHK3B5YntCuDHjTuy2T9JW3CJuR5cqgTZPtuenUB5yR/Bhj29JA+IMDgs4zJikkaHgALz5yvHMGCmbN8evVsGQ==}
 
   '@microsoft/api-extractor-model@7.31.3':
     resolution: {integrity: sha512-dv4quQI46p0U03TCEpasUf6JrJL3qjMN7JUAobsPElxBv4xayYYvWW9aPpfYV+Jx6hqUcVaLVOeV7+5hxsyoFQ==}
@@ -3291,6 +3303,9 @@ packages:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
 
+  magic-color@2.1.0:
+    resolution: {integrity: sha512-MpQ4SYF5ag7jcEg8tfEbdB/FZBkjBzUVGB/zXnWQYPdMlmGyAMzjtDusRu3n2fFfcKfd3x/vcpI3gs3w3lLe9A==}
+
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -5457,6 +5472,21 @@ snapshots:
       keyv: 5.5.3
 
   '@keyv/serialize@1.1.1': {}
+
+  '@magic-color/core@2.1.0':
+    dependencies:
+      '@magic-color/shared': 2.1.0
+      '@magic-color/transformer': 2.1.0
+
+  '@magic-color/shared@2.1.0': {}
+
+  '@magic-color/theme@2.1.0':
+    dependencies:
+      '@magic-color/core': 2.1.0
+
+  '@magic-color/transformer@2.1.0':
+    dependencies:
+      '@magic-color/shared': 2.1.0
 
   '@microsoft/api-extractor-model@7.31.3(@types/node@24.9.1)':
     dependencies:
@@ -8223,6 +8253,11 @@ snapshots:
   lru-cache@6.0.0:
     dependencies:
       yallist: 4.0.0
+
+  magic-color@2.1.0:
+    dependencies:
+      '@magic-color/core': 2.1.0
+      '@magic-color/theme': 2.1.0
 
   magic-string@0.30.21:
     dependencies:
