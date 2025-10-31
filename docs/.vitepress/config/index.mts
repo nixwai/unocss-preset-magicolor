@@ -13,7 +13,7 @@ export default defineConfig({
     plugins: [UnoCSS() as any],
     css: { preprocessorOptions: { scss: { api: 'modern-compiler' } } },
   },
-  themeConfig: { socialLinks: [{ icon: 'github', link: 'https://github.com/nixwai/create-nxy' }] },
+  themeConfig: { socialLinks: [{ icon: 'github', link: 'https://github.com/nixwai/unocss-preset-magicolor' }] },
   markdown: {
     config(md) {
       md.use(vitepressDemoPlugin, { demoDir: resolve(__dirname, '../../examples') });

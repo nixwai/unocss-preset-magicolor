@@ -1,6 +1,6 @@
-import type { CustomRule } from '../typing';
+import type { Rule } from 'unocss';
 import { color } from './color';
 
-export const rules: CustomRule[] = [
+export const rules: Rule[] = [
   color,
 ].flat();
