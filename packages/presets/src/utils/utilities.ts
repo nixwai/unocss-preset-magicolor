@@ -13,7 +13,8 @@ export function parseMagicColor(body: string, theme: Theme): ReturnType<typeof p
     return colorData;
   }
 
-  const [bodyColor, bodyOpacity] = body.split(/[:/]/);
+  const [bodyColor, bodyOpacity, bodyModifier] = body.split(/[:/]/);
+
   const bodyNo = bodyColor.match(/.*-(\d+)/)?.[1];
 
   if (!bodyNo) { return; } // invalid color
@@ -74,8 +75,8 @@ export function parseMagicColor(body: string, theme: Theme): ReturnType<typeof p
   // reassemble the colors
   return {
     opacity: bodyOpacity,
-    modifier: undefined,
-    name: bodyColor,
+    modifier: bodyModifier,
+    name: originColor,
     no: bodyNo,
     color: `oklch(${resultColor.join(' ')})`,
     alpha: bodyOpacity && `${bodyOpacity}%`,
