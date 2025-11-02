@@ -7,6 +7,12 @@ export default antfu(
     typescript: true,
     vue: true,
     ignores: ['.husky'],
+    regexp: {
+      overrides: {
+        'regexp/no-empty-capturing-group': 'off',
+        'regexp/no-empty-group': 'off',
+      },
+    },
   },
   {
     files: ['**/*.vue'],
