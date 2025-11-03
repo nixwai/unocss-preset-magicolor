@@ -1,9 +1,16 @@
-import type { Theme } from '@unocss/preset-mini';
+import type { Preset } from 'unocss';
 import type { PresetOptions } from './types';
-import { definePreset } from 'unocss';
+import { rules } from './rules';
 
-export const presetCreateNxy = definePreset<PresetOptions, Theme>((_options) => {
-  return { name: 'unocss-preset-magicolor' };
-});
+export function presetMagicolor(_options?: PresetOptions): Preset {
+  return {
+    name: 'unocss-preset-magicolor',
+    layer: 'unocss-preset-magicolor',
+    layers: { 'unocss-preset-magicolor': -100 },
+    rules,
+  };
+};
 
 export * from './types';
+
+export default presetMagicolor;

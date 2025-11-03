@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nixwai/create-nxy"
+    "url": "https://github.com/nixwai/unocss-preset-magicolor"
   },
   "exports": {
     ".": {
@@ -26,9 +26,12 @@
     "dist"
   ],
   "dependencies": {
-    "@unocss/preset-mini": "^66.5.4"
+    "@unocss/preset-wind4": "66.5.4",
+    "culori": "^4.0.2",
+    "magic-color": "^2.1.0"
   },
   "devDependencies": {
+    "@types/culori": "^4.0.1",
     "unocss": "^66.5.4"
   }
 }
