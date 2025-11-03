@@ -13,7 +13,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['unocss', 'magic-color', '@unocss/preset-wind4', '@unocss/preset-wind4/utils'],
+      external: ['unocss', 'magic-color', 'culori', '@unocss/preset-wind4', '@unocss/preset-wind4/utils', '@unocss/preset-wind4/rules'],
       output: [{
         format: 'es',
         entryFileNames: '[name].js',
