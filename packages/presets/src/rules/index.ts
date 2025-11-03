@@ -1,6 +1,6 @@
 import type { Rule } from 'unocss';
-import { color } from './color';
+import { colorStyle } from './color-style';
 
 export const rules: Rule[] = [
-  color,
+  colorStyle,
 ].flat();
