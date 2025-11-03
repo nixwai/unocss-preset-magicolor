@@ -1,4 +1,9 @@
-import { defineConfig, presetMini } from 'unocss';
+import { defineConfig, presetWind4 } from 'unocss';
 import { presetMagicolor } from '../packages/presets/src';
 
-export default defineConfig({ presets: [presetMini(), presetMagicolor()] });
+export default defineConfig({
+  presets: [
+    presetWind4({ preflights: { reset: true } }),
+    presetMagicolor(),
+  ],
+});
