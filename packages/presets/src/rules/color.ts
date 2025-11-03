@@ -10,16 +10,18 @@ export const color: Rule[] = [
   [/^accent-mc-(.+)$/, mcColorResolver('accent-color', 'accent'), { autocomplete: 'accent-mc-$colors' }],
   [/^caret-mc-(.+)$/, mcColorResolver('caret-color', 'caret'), { autocomplete: 'caret-mc-$colors' }],
   [/^bg-mc-(.+)$/, mcColorResolver('background-color', 'bg'), { autocomplete: 'bg-mc-$colors' }],
+  // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/decoration.ts
   [/^(?:underline|decoration)-mc-(.+)$/, (match, ctx) => {
-    const result = mcColorResolver('text-decoration-color', 'line')(match, ctx);
+    const result = mcColorResolver('text-decoration-color', 'line')(match, ctx); // use mcColorResolver
     if (result) {
       const css = result[0] as CSSObject;
       css['-webkit-text-decoration-color'] = css['text-decoration-color'];
       return result;
     }
   }, { autocomplete: '(underline|decoration)-mc-$colors' }],
+  // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/divide.ts
   [/^divide-mc-(.+)$/, function* (match, ctx) {
-    const result = mcColorResolver('border-color', 'divide')(match, ctx);
+    const result = mcColorResolver('border-color', 'divide')(match, ctx); // use mcColorResolver
     if (result) {
       yield {
         [ctx.symbols.variants]: [notLastChildSelectorVariant(match[0])],

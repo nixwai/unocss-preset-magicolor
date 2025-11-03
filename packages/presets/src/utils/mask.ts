@@ -19,6 +19,7 @@ const linearMap: Record<string, string[]> = {
 
 const maskInitialValue = 'linear-gradient(#fff, #fff)';
 
+// from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/mask.ts
 export function handleImage([_, gradient = '', direction, val]: string[], ctx: RuleContext<Theme>) {
   const css: CSSObject = { ...baseMaskImage };
   const props: (CSSValueInput | string)[] = [];

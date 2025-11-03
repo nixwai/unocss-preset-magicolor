@@ -9,6 +9,7 @@ const SpecialColorKey = {
   inherit: 'inherit',
 };
 
+// from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/background.ts#L41
 export function mcBgGradientColorResolver() {
   return function* ([, position, body]: string[], { theme }: RuleContext<Theme>) {
     const css: CSSObject = {};

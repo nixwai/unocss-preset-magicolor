@@ -85,6 +85,7 @@ export function parseMagicColor(body: string, theme: Theme): ReturnType<typeof p
   };
 };
 
+// from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/utils/utilities.ts#L293
 export function mcColorResolver(property: string, varName: string) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
     const data = parseMagicColor(body ?? '', ctx.theme);

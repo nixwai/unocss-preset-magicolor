@@ -25,6 +25,7 @@ const directionMap: Record<string, string[]> = {
   'inline': ['-inline-start', '-inline-end'],
 };
 
+// from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/border.ts#L78
 export function mcBorderColorResolver([, a = '', b]: string[], ctx: RuleContext<Theme>): CSSEntries | (CSSValueInput | string)[] | undefined {
   if (a in directionMap) {
     const data = parseMagicColor(b ?? '', ctx.theme);

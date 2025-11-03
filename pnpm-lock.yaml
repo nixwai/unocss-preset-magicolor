@@ -152,7 +152,7 @@ importers:
   packages/presets:
     dependencies:
       '@unocss/preset-wind4':
-        specifier: ^66.5.4
+        specifier: 66.5.4
         version: 66.5.4
       culori:
         specifier: ^4.0.2
