@@ -1,5 +1,5 @@
 import type { Theme } from '@unocss/preset-wind4';
-import type { CSSValueInput, RuleContext } from 'unocss';
+import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import type { ThemeKey } from '../typing';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
 import { formatHex } from 'culori';
@@ -24,8 +24,8 @@ export function resolveDepth(no: string) {
   return { originDepth, beforeDepth, afterDepth };
 }
 
-export function parseMagicColor(body: string, theme: Theme): ParseColorReturn {
-  const colorData = parseColor(body, theme);
+function resolveColorData(body: string, theme: Theme): ParseColorReturn {
+  let colorData = parseColor(body, theme);
 
   // already a configured color in the theme
   if (colorData?.color) {
@@ -36,7 +36,7 @@ export function parseMagicColor(body: string, theme: Theme): ParseColorReturn {
   const bodyNo = bodyColor.match(/.*-(\d+)/)?.[1];
   const originColor = bodyColor?.split(/-\d+-?/)[0];
 
-  const parsedColor: ParseColorReturn = {
+  colorData = {
     opacity: bodyOpacity,
     modifier: bodyModifier,
     name: originColor,
@@ -50,11 +50,11 @@ export function parseMagicColor(body: string, theme: Theme): ParseColorReturn {
   // invalid color
   if (!originColor || !Number.isNaN(Number(originColor))) {
     console.error(`[unocss-preset-margicolor][mc-${body}] The color '${originColor}' is invalid.`);
-    return parsedColor;
+    return colorData;
   }
 
   if (!bodyNo) {
-    return parsedColor;
+    return colorData;
   }
 
   const { originDepth, beforeDepth, afterDepth } = resolveDepth(bodyNo);
@@ -87,7 +87,7 @@ export function parseMagicColor(body: string, theme: Theme): ParseColorReturn {
   beforeParsedColor = toOklch(beforeParsedColor);
   afterParsedColor = toOklch(afterParsedColor);
 
-  if (!beforeParsedColor || !afterParsedColor) { return parsedColor; } // invalid color
+  if (!beforeParsedColor || !afterParsedColor) { return colorData; } // invalid color
 
   const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 950) ? 50 : 100);
   const resultColor = Array.from({ length: 3 }).map((_, i) => {
@@ -98,16 +98,58 @@ export function parseMagicColor(body: string, theme: Theme): ParseColorReturn {
   });
 
   // reassemble the color
-  parsedColor.color = `oklch(${resultColor.join(' ')})`;
+  colorData.color = `oklch(${resultColor.join(' ')})`;
 
-  return parsedColor;
+  return colorData;
+}
+
+function resolveColorVariable(colorData: ParseColorReturn) {
+  const cssVariable: CSSObject = {};
+  if (!colorData || colorData.color) {
+    return { colorData, cssVariable };
+  }
+
+  const { name, no } = colorData;
+  if (!no) {
+    colorData.color = `var(--mc-${name}-color)`;
+    return { colorData, cssVariable };
+  }
+
+  const { originDepth, beforeDepth, afterDepth } = resolveDepth(no);
+
+  const colorVarL = `--mc-${name}-${originDepth}-l`;
+  const colorVarC = `--mc-${name}-${originDepth}-c`;
+  const colorVarH = `--mc-${name}-${originDepth}-h`;
+
+  if (!themeMetaList.includes(originDepth as ThemeKey)) {
+    const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 950) ? 50 : 100);
+    const [calcL, calcC, calcH] = ['l', 'c', 'h']
+      .map(key => `calc(var(--mc-${name}-${beforeDepth}-${key}) + ${transitionRatio} * (var(--mc-${name}-${afterDepth}-${key}) - var(--mc-${name}-${beforeDepth}-${key})))`);
+    Object.assign(cssVariable, { [colorVarL]: calcL, [colorVarC]: calcC, [colorVarH]: calcH });
+  }
+
+  colorData.color = `oklch(var(${colorVarL}) var(${colorVarC}) var(${colorVarH}))`;
+
+  return { colorData, cssVariable };
+}
+
+export function parseMagicColor(body: string, theme: Theme) {
+  const colorData = resolveColorData(body, theme);
+  return resolveColorVariable(colorData);
 };
 
 export function mcColorResolver(property: string, varName: string) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
-    const data = parseMagicColor(body ?? '', ctx.theme);
-    if (data?.color) {
-      return colorCSSGenerator(data, property, varName, ctx);
+    const { colorData, cssVariable } = parseMagicColor(body ?? '', ctx.theme);
+    if (colorData?.color) {
+      const result = colorCSSGenerator(colorData, property, varName, ctx);
+      if (result) {
+        result.push({
+          [ctx.symbols.selector]: selector => selector,
+          ...cssVariable,
+        });
+      }
+      return result;
     }
   };
 };
