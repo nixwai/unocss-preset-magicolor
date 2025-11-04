@@ -5,13 +5,11 @@ import type { ThemeKey } from '../typing';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { formatHex } from 'culori';
 import { mc } from 'magic-color';
-import { toNum, toOklch } from '../utils';
+import { resolveDepth, themeMetaList, toNum, toOklch } from '../utils';
 
 export const colorVariable: Rule[] = [
   [/^mc-(.+)$/, resolveMagicColor],
 ];
-
-const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
 function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>) {
   const css: CSSObject = {};
@@ -19,9 +17,25 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>) {
   // Use "_" to separate name、 color
   const [name, hue] = body.split('_');
 
+  if (!hue) {
+    return;
+  }
+
+  // can not use the color name configured by the theme
+  if (parseColor(name, theme)?.color) {
+    console.error(`[unocss-preset-margicolor][mc-${body}] The color name '${name}' has been configured in the theme, please use the another name.`);
+    return;
+  }
+
   const [bodyColor] = hue.split(/[:/]/);
   const bodyNo = bodyColor.match(/.*-(\d+)/)?.[1];
-  const originColor = bodyColor?.split(/-\d+-?/)[0]?.replace(/^\[(.*)\]$/, '$1').replace('_', ' ');
+  const originColor = bodyColor?.split(/-\d+-?/)[0];
+
+  // invalid color
+  if (!originColor || !Number.isNaN(Number(originColor))) {
+    console.error(`[unocss-preset-margicolor][mc-${body}] The color '${originColor}' is invalid.`);
+    return;
+  }
 
   const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
   let hasEmptyColor = false;
@@ -42,7 +56,7 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>) {
     try {
       const parsedOriginColor = parseColor(originColor, theme)?.color;
       // mc can not parse oklch, so need to convert to hex
-      const customColor = parsedOriginColor ? formatHex(parsedOriginColor) : originColor;
+      const customColor = parsedOriginColor ? formatHex(parsedOriginColor) : undefined;
       if (customColor && mc.valid(customColor)) {
         const themeColor = mc.theme(customColor);
         for (const themeMeta of themeMetaList) {
@@ -54,7 +68,7 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>) {
       }
     }
     catch (e) {
-      console.error(`Error parsing ${body}: ${originColor}, please use other color.`);
+      console.error(`[unocss-preset-margicolor] Error parsing ${body}: get ${originColor} theme fail, please use another color.`);
       console.error(e);
     }
   }
@@ -64,20 +78,13 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>) {
     themeMetaColors[themeMeta] = toOklch(themeMetaColors[themeMeta]);
   }
 
-  // count body color
+  // set body color
   const colorData = parseColor(bodyColor, theme);
   if (colorData?.color) {
     css[`--mc-${name}-color`] = colorData.color;
   }
-  else {
-    // origin depth
-    const originDepth = Number(bodyNo);
-    // get before depth, can not be less than 50
-    let beforeDepth = Math.floor(originDepth / 100) * 100;
-    beforeDepth = beforeDepth <= 50 ? 50 : beforeDepth;
-    // get after depth, can not be greater than 950
-    let afterDepth = Math.floor((originDepth + 100) / 100) * 100;
-    afterDepth = afterDepth >= 950 ? 950 : afterDepth;
+  else if (bodyNo) {
+    const { originDepth, beforeDepth, afterDepth } = resolveDepth(bodyNo);
     if (themeMetaColors[beforeDepth as ThemeKey] && themeMetaColors[afterDepth as ThemeKey]) {
       const transitionRatio = (originDepth - beforeDepth) / 100;
       const resultColor = Array.from({ length: 3 }).map((_, i) => {
@@ -90,7 +97,7 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>) {
     }
   }
 
-  // count all depth colors
+  // set all depth colors
   for (const themeMeta of themeMetaList) {
     if (themeMetaColors[themeMeta]) {
       const colorComponents = themeMetaColors[themeMeta].components;
