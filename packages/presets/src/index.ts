@@ -1,8 +1,8 @@
 import type { Preset } from 'unocss';
-import type { PresetOptions } from './types';
+import type { PresetMcOptions } from './types';
 import { rules } from './rules';
 
-export function presetMagicolor(_options?: PresetOptions): Preset {
+export function presetMagicolor(_options?: PresetMcOptions): Preset {
   return {
     name: 'unocss-preset-magicolor',
     layer: 'unocss-preset-magicolor',

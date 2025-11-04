@@ -1,2 +1,3 @@
-/** PresetOptions */
-export interface PresetOptions {}
+/** PresetMcOptions */
+export interface PresetMcOptions {
+}
