@@ -62,6 +62,7 @@ Now, in addition to defining colors in 'theme', you can also directly define col
 
 ## Credits
 
+- [UnoCSS](https://github.com/unocss/unocss)
 - [magic-color](https://github.com/zyyv/magic-color)
 
 ## license
