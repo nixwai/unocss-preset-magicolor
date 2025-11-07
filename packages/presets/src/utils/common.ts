@@ -1,7 +1,7 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from '../typing';
-import { toNum } from './transforms';
+import { roundNum, toNum } from './transforms';
 
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
@@ -40,7 +40,7 @@ export function countDiffColor(params: {
   const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 950) ? 50 : 100);
   const resultColor = Array.from({ length: 3 }).map((_, i) => {
     const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;
-    return `${Math.round(value * 1000) / 1000}`;
+    return roundNum(value);
   });
   return `oklch(${resultColor.join(' ')})`;
 }
@@ -51,9 +51,9 @@ export function parseOklchVariable(name: string, themeMetaColors: Partial<Record
   for (const themeMeta of themeMetaList) {
     if (themeMetaColors[themeMeta]) {
       const colorComponents = themeMetaColors[themeMeta].components;
-      css[`--mc-${name}-${themeMeta}-l`] = Math.round(toNum(colorComponents[0]) * 1000) / 1000;
-      css[`--mc-${name}-${themeMeta}-c`] = Math.round(toNum(colorComponents[1]) * 1000) / 1000;
-      css[`--mc-${name}-${themeMeta}-h`] = Math.round(toNum(colorComponents[2]) * 1000) / 1000;
+      css[`--mc-${name}-${themeMeta}-l`] = roundNum(toNum(colorComponents[0]));
+      css[`--mc-${name}-${themeMeta}-c`] = roundNum(toNum(colorComponents[1]));
+      css[`--mc-${name}-${themeMeta}-h`] = roundNum(toNum(colorComponents[2]));
     }
   }
   return css;

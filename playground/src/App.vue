@@ -19,7 +19,7 @@ function toggleColor() {
       </button>
     </div>
     <div>
-      <button class="px-8 py-4" @click="toggleColor">
+      <button class="px-8 py-4 c-mc-primary-457" @click="toggleColor">
         切换颜色
       </button>
     </div>
