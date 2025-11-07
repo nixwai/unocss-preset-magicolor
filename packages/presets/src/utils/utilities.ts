@@ -89,7 +89,7 @@ function resolveColorData(body: string, theme: Theme): ParseColorReturn {
 
   if (!beforeParsedColor || !afterParsedColor) { return colorData; } // invalid color
 
-  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 950) ? 50 : 100);
+  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
   const resultColor = Array.from({ length: 3 }).map((_, i) => {
     const beforeComponents = beforeParsedColor.components;
     const afterComponents = afterParsedColor.components;
@@ -122,7 +122,7 @@ function resolveColorVariable(colorData: ParseColorReturn) {
   const colorVarH = `--mc-${name}-${originDepth}-h`;
 
   if (!themeMetaList.includes(originDepth as ThemeKey)) {
-    const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 950) ? 50 : 100);
+    const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
     const [calcL, calcC, calcH] = ['l', 'c', 'h']
       .map(key => `calc(var(--mc-${name}-${beforeDepth}-${key}) + ${transitionRatio} * (var(--mc-${name}-${afterDepth}-${key}) - var(--mc-${name}-${beforeDepth}-${key})))`);
     Object.assign(cssVariable, { [colorVarL]: calcL, [colorVarC]: calcC, [colorVarH]: calcH });
