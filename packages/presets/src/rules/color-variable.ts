@@ -1,6 +1,6 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
-import { resolveColorVariable } from '../utils';
+import { resolveColorVariable } from './utils';
 
 export const colorVariable: Rule[] = [
   [/^mc-(.+)$/, resolveMagicColor],

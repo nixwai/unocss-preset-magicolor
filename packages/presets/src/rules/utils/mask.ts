@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import { defineProperty, h, hyphenate, numberResolver, themeTracking } from '@unocss/preset-wind4/utils';
-import { mcColorResolver } from '../utilities';
+import { mcColorResolver } from './utilities';
 
 const baseMaskImage = {
   'mask-image': 'var(--un-mask-linear), var(--un-mask-radial), var(--un-mask-conic)',

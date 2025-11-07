@@ -1,6 +1,6 @@
 import type { CSSObject, Rule } from 'unocss';
 import { notLastChildSelectorVariant } from '@unocss/preset-wind4/rules';
-import { handleImage, handleShadow, mcBgGradientColorResolver, mcBorderColorResolver, mcColorResolver } from '../utils';
+import { handleImage, handleShadow, mcBgGradientColorResolver, mcBorderColorResolver, mcColorResolver } from './utils';
 
 export const colorStyle: Rule[] = [
   // common style colors

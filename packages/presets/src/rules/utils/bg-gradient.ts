@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, RuleContext } from 'unocss';
 import { defineProperty, detectThemeValue, generateThemeVariable, h, themeTracking } from '@unocss/preset-wind4/utils';
-import { parseMagicColor } from '../utilities';
+import { parseMagicColor } from './utilities';
 
 const SpecialColorKey = {
   transparent: 'transparent',
