@@ -1,0 +1,138 @@
+import type { Theme } from '@unocss/preset-wind4';
+import type { CSSColorValue } from '@unocss/preset-wind4/utils';
+import type { CSSObject } from 'unocss';
+import type { ThemeKey } from '../typing';
+import { parseColor } from '@unocss/preset-wind4/utils';
+import { formatHex } from 'culori';
+import { mc } from 'magic-color';
+import { toNum, toOklch } from './transforms';
+import { resolveDepth, themeMetaList } from './utilities';
+
+/**
+ * resolve color variable
+ * @param name color name
+ * @param hue `color-depth`: color can be theme color or css color
+ * @param theme unocss theme
+ * @returns css variables
+ */
+export function resolveColorVariable(name: string, hue: string, theme: Theme) {
+  // can not use the color name configured by the theme
+  if (parseColor(name, theme)?.color) {
+    console.error(`[unocss-preset-margicolor] The color name '${name}' has been configured in the theme, please use the another name.`);
+    return;
+  }
+  const [bodyColor] = hue.split(/[:/]/);
+  const themeMetaColors = getThemeMetaColors(bodyColor, theme);
+  if (themeMetaColors) {
+    return getThemeColorVariables(name, bodyColor, themeMetaColors, theme);
+  }
+}
+
+/**
+ * get themeMetaColors
+ * @param bodyColor `color-depth`: can be theme color or css color
+ * @param theme unocss theme
+ * @returns themeMetaColors
+ */
+function getThemeMetaColors(bodyColor: string, theme: Theme) {
+  const originColor = bodyColor?.split(/-\d+-?/)[0];
+  // invalid color
+  if (!originColor || !Number.isNaN(Number(originColor))) {
+    console.error(`[unocss-preset-margicolor] The color '${originColor}' is invalid.`);
+    return;
+  }
+
+  const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
+  let hasEmptyColor = false;
+
+  // give priority to using the colors configured by the theme
+  for (const themeMeta of themeMetaList) {
+    const cssColor = parseColor(`${originColor}-${themeMeta}`, theme)?.cssColor;
+    if (cssColor) {
+      themeMetaColors[themeMeta] = cssColor;
+    }
+    else {
+      hasEmptyColor = true;
+    }
+  }
+
+  // use 'mc.theme' to supplement the colors
+  if (hasEmptyColor) {
+    try {
+      const parsedOriginColor = parseColor(originColor, theme)?.color || parseColor(`[${originColor}]`, theme)?.color; // It is compatible with or without []
+      // mc can not parse oklch, so need to convert to hex
+      const customColor = parsedOriginColor ? formatHex(parsedOriginColor) : undefined;
+      if (customColor && mc.valid(customColor)) {
+        const themeColor = mc.theme(customColor);
+        for (const themeMeta of themeMetaList) {
+          if (!themeMetaColors[themeMeta]) {
+            const cssColor = toOklch({ type: 'hex', components: [themeColor[themeMeta]], alpha: 1 });
+            themeMetaColors[themeMeta] = cssColor;
+          }
+        }
+      }
+    }
+    catch (e) {
+      console.error(`[unocss-preset-margicolor] get ${originColor} theme fail, please use another color.`);
+      console.error(e);
+    }
+  }
+
+  // uniform use oklch
+  for (const themeMeta of themeMetaList) {
+    themeMetaColors[themeMeta] = toOklch(themeMetaColors[themeMeta]);
+  }
+
+  return themeMetaColors;
+}
+
+/**
+ * get theme color variables
+ * @param name color name
+ * @param bodyColor `color-depth`: can be theme color or css color
+ * @param themeMetaColors themeMetaColors
+ * @param theme unocss theme
+ * @returns css variables
+ */
+function getThemeColorVariables(
+  name: string,
+  bodyColor: string,
+  themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>,
+  theme: Theme,
+) {
+  const bodyNo = bodyColor.match(/.*-(\d+)/)?.[1];
+  const css: CSSObject = {};
+  // set body color
+  let parsedColor = parseColor(bodyColor, theme)?.color;
+  if (!parsedColor && !bodyNo) {
+    parsedColor = parseColor(`[${bodyColor}]`, theme)?.color; // It is compatible with or without []
+  }
+  if (parsedColor) {
+    css[`--mc-${name}-color`] = parsedColor;
+  }
+  else if (bodyNo) {
+    const { originDepth, beforeDepth, afterDepth } = resolveDepth(bodyNo);
+    if (themeMetaColors[beforeDepth as ThemeKey] && themeMetaColors[afterDepth as ThemeKey]) {
+      const transitionRatio = (originDepth - beforeDepth) / 100;
+      const resultColor = Array.from({ length: 3 }).map((_, i) => {
+        const beforeComponents = themeMetaColors[beforeDepth as ThemeKey]!.components;
+        const afterComponents = themeMetaColors[afterDepth as ThemeKey]!.components;
+        const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;
+        return `${Math.round(value * 1000) / 1000}`;
+      });
+      css[`--mc-${name}-color`] = `oklch(${resultColor.join(' ')})`;
+    }
+  }
+
+  // set all depth colors
+  for (const themeMeta of themeMetaList) {
+    if (themeMetaColors[themeMeta]) {
+      const colorComponents = themeMetaColors[themeMeta].components;
+      css[`--mc-${name}-${themeMeta}-l`] = Math.round(toNum(colorComponents[0]) * 1000) / 1000;
+      css[`--mc-${name}-${themeMeta}-c`] = Math.round(toNum(colorComponents[1]) * 1000) / 1000;
+      css[`--mc-${name}-${themeMeta}-h`] = Math.round(toNum(colorComponents[2]) * 1000) / 1000;
+    }
+  }
+
+  return css;
+}

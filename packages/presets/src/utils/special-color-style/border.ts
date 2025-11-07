@@ -3,7 +3,7 @@ import type { parseColor } from '@unocss/preset-wind4/utils';
 import type { CSSEntries, CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import { colorCSSGenerator, SpecialColorKey } from '@unocss/preset-wind4/utils';
 import { notNull } from 'unocss';
-import { parseMagicColor } from './utilities';
+import { parseMagicColor } from '../utilities';
 
 const directionMap: Record<string, string[]> = {
   'l': ['-left'],
