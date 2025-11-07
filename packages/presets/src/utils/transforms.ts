@@ -32,3 +32,8 @@ export function toOklch(cssColor?: CSSColorValue) {
     alpha: cssColor.alpha,
   };
 }
+
+/** Math.round(num * 1000) / 1000 */
+export function roundNum(num: number) {
+  return Math.round(num * 1000) / 1000;
+}

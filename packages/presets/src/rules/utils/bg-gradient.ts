@@ -53,7 +53,6 @@ export function mcBgGradientColorResolver() {
     else {
       css[`--un-gradient-${position}`] = h.bracket.cssvar(body);
     }
-
     if (css[`--un-gradient-${position}`]) {
       switch (position) {
         case 'from':

@@ -1,28 +1,12 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
-import type { ThemeKey } from '../typing';
+import type { ThemeKey } from '../../typing';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
 import { formatHex } from 'culori';
 import { mc } from 'magic-color';
-import { toNum, toOklch } from './transforms';
+import { countDiffColor, isInvalidColor, resolveDepth, themeMetaList, toOklch } from '../../utils';
 
 type ParseColorReturn = ReturnType<typeof parseColor>;
-
-export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
-
-export function resolveDepth(no: string) {
-// origin depth
-  let originDepth = Number(no);
-  originDepth = originDepth <= 50 ? 50 : originDepth;
-  originDepth = originDepth >= 950 ? 950 : originDepth;
-  // get before depth, can not be less than 50
-  let beforeDepth = Math.floor(originDepth / 100) * 100;
-  beforeDepth = beforeDepth <= 50 ? 50 : beforeDepth;
-  // get after depth, can not be greater than 950
-  let afterDepth = Math.floor((originDepth + 100) / 100) * 100;
-  afterDepth = afterDepth >= 950 ? 950 : afterDepth;
-  return { originDepth, beforeDepth, afterDepth };
-}
 
 function resolveColorData(body: string, theme: Theme): ParseColorReturn {
   let colorData = parseColor(body, theme);
@@ -48,8 +32,7 @@ function resolveColorData(body: string, theme: Theme): ParseColorReturn {
   };
 
   // invalid color
-  if (!originColor || !Number.isNaN(Number(originColor))) {
-    console.error(`[unocss-preset-margicolor][mc-${body}] The color '${originColor}' is invalid.`);
+  if (isInvalidColor(originColor)) {
     return colorData;
   }
 
@@ -89,16 +72,12 @@ function resolveColorData(body: string, theme: Theme): ParseColorReturn {
 
   if (!beforeParsedColor || !afterParsedColor) { return colorData; } // invalid color
 
-  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
-  const resultColor = Array.from({ length: 3 }).map((_, i) => {
-    const beforeComponents = beforeParsedColor.components;
-    const afterComponents = afterParsedColor.components;
-    const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;
-    return `${Math.round(value * 1000) / 1000}`;
+  colorData.color = countDiffColor({
+    originDepth,
+    beforeDepth,
+    beforeComponents: beforeParsedColor.components,
+    afterComponents: afterParsedColor.components,
   });
-
-  // reassemble the color
-  colorData.color = `oklch(${resultColor.join(' ')})`;
 
   return colorData;
 }
