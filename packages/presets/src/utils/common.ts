@@ -37,7 +37,7 @@ export function countDiffColor(params: {
   afterComponents: (string | number)[]
 }) {
   const { originDepth, beforeDepth, beforeComponents, afterComponents } = params;
-  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 950) ? 50 : 100);
+  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
   const resultColor = Array.from({ length: 3 }).map((_, i) => {
     const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;
     return roundNum(value);
