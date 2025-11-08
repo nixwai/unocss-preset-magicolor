@@ -77,9 +77,9 @@ export default defineConfig({
 
 ```vue
 <template>
-<button class="px-8 py-4 c-mc-primary-457">
-  Hello World!
-</button>
+  <button class="px-8 py-4 c-mc-primary-457">
+    Hello World!
+  </button>
 </template>
 ```
 
@@ -87,7 +87,7 @@ export default defineConfig({
 
 You can use `updateMagicColor` to change the color.
 
-
+```vue
 <script setup lang="ts">
 import { updateMagicColor } from 'unocss-preset-magicolor/helper';
 
@@ -101,6 +101,7 @@ function toggleColor() {
     change primary color
   </button>
 </template>
+```
 
 ## Credits
 
