@@ -6,7 +6,7 @@ export default antfu(
     unocss: true,
     typescript: true,
     vue: true,
-    ignores: ['.husky'],
+    ignores: ['.husky', '**/*.md'],
     regexp: {
       overrides: {
         'regexp/no-empty-capturing-group': 'off',
@@ -24,10 +24,6 @@ export default antfu(
         math: 'always',
       }],
     },
-  },
-  {
-    files: ['**/*.md'],
-    rules: { 'format/prettier': ['off'] },
   },
   {
     rules: {
