@@ -7,9 +7,9 @@ function toggleColor() {
 </script>
 
 <template>
-  <div class="w-100vw h-100vh flex items-center justify-center flex-col">
+  <div class="flex flex-col h-100vh w-100vw items-center justify-center">
     <div class="mc-btn_oklch(0.1_0.2_122)-100">
-      <button class="px-8 py-4 hover:bg-mc-btn-550 bg-mc-btn-640">
+      <button class="px-8 py-4 bg-mc-btn-640 hover:bg-mc-btn-550">
         <span class="c-mc-btn-200">
           Hello World!
         </span>
