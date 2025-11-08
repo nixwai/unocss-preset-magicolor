@@ -25,7 +25,7 @@ You can use any color of any depth between 50 and 950. If you want to add a new 
 
 ```ts
 import { defineConfig, presetWind4 } from 'unocss';
-import { presetMagicolor } from '../packages/presets/src';
+import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
@@ -46,7 +46,7 @@ export default defineConfig({
 </template>
 ```
 
-### Use class to define colors
+### use class to define colors
 
 Now, in addition to defining colors in 'theme', you can also directly define colors in 'class'.It is very useful for components that need to dynamically modify colors.
 
@@ -59,6 +59,48 @@ Now, in addition to defining colors in 'theme', you can also directly define col
   </button>
 </template>
 ```
+
+### global color
+
+You can also define global colors in the configuration file.
+
+```ts
+import { defineConfig } from 'unocss';
+import { presetMagicolor } from 'unocss-preset-magicolor';
+
+export default defineConfig({
+  presets: [
+    presetMagicolor({ colors: { primary: 'rose' } }),
+  ],
+});
+```
+
+```vue
+<template>
+<button class="px-8 py-4 c-mc-primary-457">
+  Hello World!
+</button>
+</template>
+```
+
+### js change color
+
+You can use `updateMagicColor` to change the color.
+
+
+<script setup lang="ts">
+import { updateMagicColor } from 'unocss-preset-magicolor/helper';
+
+function toggleColor() {
+  updateMagicColor({ name: 'primary', color: 'rgb(79 123 333)', dom: document.documentElement });
+}
+</script>
+
+<template>
+  <button class="px-8 py-4 c-mc-primary-457" @click="toggleColor">
+    change primary color
+  </button>
+</template>
 
 ## Credits
 
