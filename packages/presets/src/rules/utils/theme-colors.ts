@@ -5,7 +5,7 @@ import type { ThemeKey } from '../../typing';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { formatHex } from 'culori';
 import { mc } from 'magic-color';
-import { countDiffColor, isInvalidColor, parseOklchVariable, resolveDepth, themeMetaList, toOklch } from '../../utils';
+import { countDiffColor, generateOklchVariable, isInvalidColor, resolveDepth, themeMetaList, toOklch } from '../../utils';
 
 /**
  * get themeMetaColors
@@ -101,7 +101,7 @@ function getThemeColorVariables(
   }
 
   // set all depth colors
-  const colorVariables = parseOklchVariable(name, themeMetaColors);
+  const colorVariables = generateOklchVariable(name, themeMetaColors);
 
   return Object.assign(css, colorVariables);
 }
