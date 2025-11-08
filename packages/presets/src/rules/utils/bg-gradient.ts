@@ -25,7 +25,7 @@ const properties = {
 export function mcBgGradientColorResolver() {
   return function* ([, position, body]: string[], { theme, symbols }: RuleContext<Theme>) {
     const css: CSSObject = {};
-    const { colorData, cssVariable } = parseMagicColor(body, theme);
+    const { colorData, cssVariables } = parseMagicColor(body, theme);
 
     if (colorData) {
       const { color, keys, alpha } = colorData;
@@ -81,10 +81,12 @@ export function mcBgGradientColorResolver() {
 
       for (const p of Object.values(properties)) { yield p; }
 
-      yield {
-        [symbols.selector]: (selector: symbol) => selector,
-        ...cssVariable,
-      };
+      for (const variableItem of cssVariables) {
+        yield {
+          [symbols.selector]: (selector: symbol) => selector,
+          ...variableItem,
+        };
+      }
     }
   };
 }

@@ -1,8 +1,9 @@
+import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, Rule } from 'unocss';
 import { notLastChildSelectorVariant } from '@unocss/preset-wind4/rules';
 import { handleImage, handleShadow, mcBgGradientColorResolver, mcBorderColorResolver, mcColorResolver } from './utils';
 
-export const colorStyle: Rule[] = [
+export const colorStyle: Rule<Theme>[] = [
   // common style colors
   [/^(?:color|c)-mc-(.+)$/, mcColorResolver('color', 'text'), { autocomplete: '(color|c)-mc-$colors' }],
   [/^text-(?:color-)?mc-(.+)$/, mcColorResolver('color', 'text'), { autocomplete: '(text|text-color)-mc-$colors' }],

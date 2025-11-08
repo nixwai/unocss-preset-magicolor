@@ -3,7 +3,7 @@ import type { CSSObject } from 'unocss';
 import type { ThemeKey } from './typing';
 import { formatHex } from 'culori';
 import { mc } from 'magic-color';
-import { countDiffColor, isInvalidColor, parseOklchVariable, resolveDepth, themeMetaList, toOklch } from './utils';
+import { countDiffColor, generateOklchVariable, isInvalidColor, resolveDepth, themeMetaList, toOklch } from './utils';
 
 /**
  * Modify the value of the color variable
@@ -55,7 +55,7 @@ export function updateMagicColor(params: { name: string, color: string, dom?: HT
   }
 
   // set all depth colors
-  const colorVariables = parseOklchVariable(name, themeMetaColors);
+  const colorVariables = generateOklchVariable(name, themeMetaColors);
   Object.assign(css, colorVariables);
 
   for (const name in css) {
