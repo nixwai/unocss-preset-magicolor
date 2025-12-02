@@ -1,9 +1,8 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from './typing';
-import { formatHex } from 'culori';
 import { mc } from 'magic-color';
-import { countDiffColor, isInvalidColor, parseOklchVariable, resolveDepth, themeMetaList, toOklch } from './utils';
+import { countDiffColor, generateOklchVariable, isInvalidColor, resolveDepth, themeMetaList, toOklch } from './utils';
 
 /**
  * Modify the value of the color variable
@@ -25,11 +24,9 @@ export function updateMagicColor(params: { name: string, color: string, dom?: HT
   const css: CSSObject = {};
   const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
   try {
-    // mc can not parse oklch, so need to convert to hex
-    const customColor = formatHex(originColor) || originColor;
-    if (customColor && mc.valid(customColor)) {
-      css[`--mc-${name}-color`] = customColor;
-      const themeColor = mc.theme(customColor);
+    if (mc.valid(originColor)) {
+      css[`--mc-${name}-color`] = originColor;
+      const themeColor = mc.theme(originColor, { type: 'hex' });
       for (const themeMeta of themeMetaList) {
         const cssColor = toOklch({ type: 'hex', components: [themeColor[themeMeta]], alpha: 1 });
         themeMetaColors[themeMeta] = cssColor;
@@ -55,7 +52,7 @@ export function updateMagicColor(params: { name: string, color: string, dom?: HT
   }
 
   // set all depth colors
-  const colorVariables = parseOklchVariable(name, themeMetaColors);
+  const colorVariables = generateOklchVariable(name, themeMetaColors);
   Object.assign(css, colorVariables);
 
   for (const name in css) {

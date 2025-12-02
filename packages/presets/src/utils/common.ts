@@ -45,7 +45,7 @@ export function countDiffColor(params: {
   return `oklch(${resultColor.join(' ')})`;
 }
 
-export function parseOklchVariable(name: string, themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>) {
+export function generateOklchVariable(name: string, themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>) {
   const css: CSSObject = {};
   // set all depth colors
   for (const themeMeta of themeMetaList) {
