@@ -50,10 +50,10 @@ function resolveColorData(body: string, theme: Theme): ParseColorReturn {
       if (parsedOriginColor?.color && mc.valid(parsedOriginColor.color)) {
         const themeColor = mc.theme(parsedOriginColor.color, { type: 'hex' });
         if (!beforeParsedColor) {
-          beforeParsedColor = toOklch({ type: 'hex', components: [themeColor[beforeDepth as ThemeKey]], alpha: 1 });
+          beforeParsedColor = { type: 'hex', components: [themeColor[beforeDepth as ThemeKey]], alpha: 1 };
         }
         if (!afterParsedColor) {
-          afterParsedColor = toOklch({ type: 'hex', components: [themeColor[afterDepth as ThemeKey]], alpha: 1 });
+          afterParsedColor = { type: 'hex', components: [themeColor[afterDepth as ThemeKey]], alpha: 1 };
         }
       }
     }

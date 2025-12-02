@@ -44,8 +44,7 @@ function getThemeMetaColors(bodyColor: string, theme: Theme) {
         const themeColor = mc.theme(parsedOriginColor.color, { type: 'hex' });
         for (const themeMeta of themeMetaList) {
           if (!themeMetaColors[themeMeta]) {
-            const cssColor = toOklch({ type: 'hex', components: [themeColor[themeMeta]], alpha: 1 });
-            themeMetaColors[themeMeta] = cssColor;
+            themeMetaColors[themeMeta] = { type: 'hex', components: [themeColor[themeMeta]], alpha: 1 };
           }
         }
       }
@@ -113,7 +112,7 @@ function getThemeColorVariables(
  * @param theme unocss theme
  * @returns css variables
  */
-export function resolveColorVariable(name: string, hue: string, theme: Theme = {}) {
+export function resolveThemeColorVariable(name: string, hue: string, theme: Theme = {}) {
   // can not use the color name configured by the theme
   if (parseColor(name, theme)?.color) {
     console.error(`[unocss-preset-margicolor] The color name '${name}' has been configured in the theme, please use the another name.`);
