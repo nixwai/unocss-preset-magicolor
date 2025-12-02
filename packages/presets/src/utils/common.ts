@@ -51,10 +51,19 @@ export function generateOklchVariable(name: string, themeMetaColors: Partial<Rec
   for (const themeMeta of themeMetaList) {
     if (themeMetaColors[themeMeta]) {
       const colorComponents = themeMetaColors[themeMeta].components;
-      css[`--mc-${name}-${themeMeta}-l`] = roundNum(toNum(colorComponents[0]));
-      css[`--mc-${name}-${themeMeta}-c`] = roundNum(toNum(colorComponents[1]));
-      css[`--mc-${name}-${themeMeta}-h`] = roundNum(toNum(colorComponents[2]));
+      const colorL = roundNum(toNum(colorComponents[0]));
+      const colorC = roundNum(toNum(colorComponents[1])) + 1000;
+      const colorH = roundNum(toNum(colorComponents[2])) + 10000;
+      css[`--mc-${name}-${themeMeta}`] = `${colorL},${colorC},${colorH}`;
     }
   }
   return css;
+}
+
+export function resolveOklchVariable(name: string, themeMeta: number) {
+  return {
+    [`--mc-${name}-${themeMeta}-l`]: `min(var(--mc-${name}-${themeMeta}))`,
+    [`--mc-${name}-${themeMeta}-c`]: `calc(clamp(var(--mc-${name}-${themeMeta})) - 1000)`,
+    [`--mc-${name}-${themeMeta}-h`]: `calc(max(var(--mc-${name}-${themeMeta})) - 10000)`,
+  };
 }

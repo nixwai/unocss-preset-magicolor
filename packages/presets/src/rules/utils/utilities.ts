@@ -3,7 +3,7 @@ import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import type { ThemeKey } from '../../typing';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
 import { mc } from 'magic-color';
-import { countDiffColor, isInvalidColor, resolveDepth, themeMetaList, toOklch } from '../../utils';
+import { countDiffColor, isInvalidColor, resolveDepth, resolveOklchVariable, themeMetaList, toOklch } from '../../utils';
 
 type ParseColorReturn = ReturnType<typeof parseColor>;
 
@@ -105,7 +105,12 @@ function resolveColorVariable(colorData: ParseColorReturn) {
         const afterVar = `var(--mc-${name}-${afterDepth}-${key})`;
         return `calc(${beforeVar} + ${transitionRatio} * (${afterVar} - ${beforeVar}))`;
       });
+    cssVariables.push(resolveOklchVariable(name, beforeDepth));
+    cssVariables.push(resolveOklchVariable(name, afterDepth));
     cssVariables.push({ [colorVarL]: calcL, [colorVarC]: calcC, [colorVarH]: calcH });
+  }
+  else {
+    cssVariables.push(resolveOklchVariable(name, originDepth));
   }
 
   colorData.color = `oklch(var(${colorVarL}) var(${colorVarC}) var(${colorVarH}))`;
