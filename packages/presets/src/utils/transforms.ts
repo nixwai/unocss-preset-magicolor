@@ -1,7 +1,6 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
-import { converter } from 'culori';
-
-const oklch = converter('oklch');
+import type { Colors, RgbColor } from 'magic-color';
+import { mc } from 'magic-color';
 
 /** to number */
 export function toNum(value?: string | number) {
@@ -22,13 +21,18 @@ export function toOklch(cssColor?: CSSColorValue) {
     return cssColor;
   }
 
-  const colorStr = cssColor.components.join(' ');
-  const oklchColor = oklch(cssColor.type === 'hex' ? colorStr : `${cssColor.type}(${colorStr})`);
+  const oklchColor = mc(
+    cssColor.type === 'hex'
+      ? cssColor.components[0].toString()
+      : cssColor.components as RgbColor,
+    cssColor.type as keyof Colors,
+  ).toOklch().values;
+
   if (!oklchColor) { return; } // fail
 
   return {
     type: 'oklch',
-    components: [oklchColor.l, oklchColor.c, oklchColor.h ?? 0],
+    components: [oklchColor[0] / 100, oklchColor[1], oklchColor[2]],
     alpha: cssColor.alpha,
   };
 }

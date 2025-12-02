@@ -2,7 +2,6 @@ import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import type { ThemeKey } from '../../typing';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
-import { formatHex } from 'culori';
 import { mc } from 'magic-color';
 import { countDiffColor, isInvalidColor, resolveDepth, themeMetaList, toOklch } from '../../utils';
 
@@ -47,11 +46,9 @@ function resolveColorData(body: string, theme: Theme): ParseColorReturn {
   // parse depth colors fail, obtain it through mc.theme
   if (!beforeParsedColor || !afterParsedColor) {
     try {
-      const parsedOriginColor = parseColor(originColor, theme)?.color;
-      // mc can not parse oklch, so need to convert to hex
-      const customColor = parsedOriginColor ? formatHex(parsedOriginColor) : undefined;
-      if (customColor && mc.valid(customColor)) {
-        const themeColor = mc.theme(customColor);
+      const parsedOriginColor = parseColor(originColor, theme);
+      if (parsedOriginColor?.color && mc.valid(parsedOriginColor.color)) {
+        const themeColor = mc.theme(parsedOriginColor.color, { type: 'hex' });
         if (!beforeParsedColor) {
           beforeParsedColor = toOklch({ type: 'hex', components: [themeColor[beforeDepth as ThemeKey]], alpha: 1 });
         }

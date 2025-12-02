@@ -3,7 +3,6 @@ import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from '../../typing';
 import { parseColor } from '@unocss/preset-wind4/utils';
-import { formatHex } from 'culori';
 import { mc } from 'magic-color';
 import { countDiffColor, generateOklchVariable, isInvalidColor, resolveDepth, themeMetaList, toOklch } from '../../utils';
 
@@ -37,11 +36,12 @@ function getThemeMetaColors(bodyColor: string, theme: Theme) {
   // use 'mc.theme' to supplement the colors
   if (hasEmptyColor) {
     try {
-      const parsedOriginColor = parseColor(originColor, theme)?.color || parseColor(`[${originColor}]`, theme)?.color; // It is compatible with or without []
-      // mc can not parse oklch, so need to convert to hex
-      const customColor = parsedOriginColor ? formatHex(parsedOriginColor) : undefined;
-      if (customColor && mc.valid(customColor)) {
-        const themeColor = mc.theme(customColor);
+      let parsedOriginColor = parseColor(originColor, theme);
+      if (!parsedOriginColor?.color) {
+        parsedOriginColor = parseColor(`[${originColor}]`, theme); // It is compatible with or without []
+      }
+      if (parsedOriginColor?.color && mc.valid(parsedOriginColor.color)) {
+        const themeColor = mc.theme(parsedOriginColor.color, { type: 'hex' });
         for (const themeMeta of themeMetaList) {
           if (!themeMetaColors[themeMeta]) {
             const cssColor = toOklch({ type: 'hex', components: [themeColor[themeMeta]], alpha: 1 });
