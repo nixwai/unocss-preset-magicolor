@@ -3,24 +3,15 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "preset:release": "gulp -f build-presets/gulp-release.ts",
-    "preset:build": "gulp -f build-presets/gulp-build.ts",
-    "preset:publish": "gulp -f build-presets/gulp-publish.ts"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "peerDependencies": {
-    "vue": ">= 3.4.0 < 3.5.0"
+    "preset:release": "gulp release -f build-presets/index.ts",
+    "preset:build": "gulp build -f build-presets/index.ts",
+    "preset:publish": "gulp publish -f build-presets/index.ts"
   },
   "devDependencies": {
-    "@types/fs-extra": "^11.0.4",
     "@types/gulp": "^4.0.18",
-    "fs-extra": "^11.3.2",
     "gulp": "^5.0.1",
     "gulp-cli": "^3.1.0",
-    "sucrase": "^3.35.0",
-    "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-node-polyfills": "^0.24.0"
+    "sucrase": "^3.35.1",
+    "vite-plugin-dts": "^4.5.4"
   }
 }

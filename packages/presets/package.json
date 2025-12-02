@@ -1,7 +1,7 @@
 {
   "name": "unocss-preset-magicolor",
   "type": "module",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Unocss预设",
   "author": "nxy",
   "license": "MIT",
@@ -26,12 +26,10 @@
     "dist"
   ],
   "dependencies": {
-    "@unocss/preset-wind4": "~66.5.5",
-    "culori": "^4.0.2",
-    "magic-color": "^2.1.0"
+    "@unocss/preset-wind4": "~66.5.9",
+    "magic-color": "^2.2.3"
   },
   "devDependencies": {
-    "@types/culori": "^4.0.1",
-    "unocss": "^66.5.5"
+    "unocss": "^66.5.9"
   }
 }

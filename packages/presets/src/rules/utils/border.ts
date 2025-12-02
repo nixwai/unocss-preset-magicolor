@@ -26,7 +26,7 @@ const directionMap: Record<string, string[]> = {
 };
 
 // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/border.ts#L78
-export function mcBorderColorResolver([, a = '', b]: string[], ctx: RuleContext<Theme>): CSSEntries | (CSSValueInput | string)[] | undefined {
+export function handlerBorderColor([, a = '', b]: string[], ctx: RuleContext<Theme>): CSSEntries | (CSSValueInput | string)[] | undefined {
   if (a in directionMap) {
     const { colorData, cssVariables } = parseMagicColor(b ?? '', ctx.theme);
     if (colorData) {

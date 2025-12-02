@@ -2,7 +2,7 @@
 import { updateMagicColor } from '../../packages/presets/src/helper';
 
 function toggleColor() {
-  updateMagicColor({ name: 'primary', color: 'rgb(79 123 333)', dom: document.documentElement });
+  updateMagicColor({ name: 'primary', color: 'rgb(79 123 255)', dom: document.documentElement });
 }
 </script>
 
@@ -16,7 +16,7 @@ function toggleColor() {
       </button>
     </div>
     <div>
-      <button class="px-8 py-4 c-mc-primary-457" @click="toggleColor">
+      <button class="px-8 py-4 c-mc-grape-160 bg-mc-primary-457" @click="toggleColor">
         切换颜色
       </button>
     </div>
