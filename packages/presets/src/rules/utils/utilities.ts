@@ -83,15 +83,15 @@ function resolveColorData(body: string, theme: Theme): ParseColorReturn {
 }
 
 function resolveColorVariable(colorData: ParseColorReturn) {
-  const cssVariable: CSSObject = {};
+  const cssVariables: CSSObject[] = [];
   if (!colorData || colorData.color) {
-    return { colorData, cssVariable };
+    return { colorData, cssVariables };
   }
 
   const { name, no } = colorData;
   if (!no) {
     colorData.color = `var(--mc-${name}-color)`;
-    return { colorData, cssVariable };
+    return { colorData, cssVariables };
   }
 
   const { originDepth, beforeDepth, afterDepth } = resolveDepth(no);
@@ -103,30 +103,35 @@ function resolveColorVariable(colorData: ParseColorReturn) {
   if (!themeMetaList.includes(originDepth as ThemeKey)) {
     const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
     const [calcL, calcC, calcH] = ['l', 'c', 'h']
-      .map(key => `calc(var(--mc-${name}-${beforeDepth}-${key}) + ${transitionRatio} * (var(--mc-${name}-${afterDepth}-${key}) - var(--mc-${name}-${beforeDepth}-${key})))`);
-    Object.assign(cssVariable, { [colorVarL]: calcL, [colorVarC]: calcC, [colorVarH]: calcH });
+      .map((key) => {
+        const beforeVar = `var(--mc-${name}-${beforeDepth}-${key})`;
+        const afterVar = `var(--mc-${name}-${afterDepth}-${key})`;
+        return `calc(${beforeVar} + ${transitionRatio} * (${afterVar} - ${beforeVar}))`;
+      });
+    cssVariables.push({ [colorVarL]: calcL, [colorVarC]: calcC, [colorVarH]: calcH });
   }
 
   colorData.color = `oklch(var(${colorVarL}) var(${colorVarC}) var(${colorVarH}))`;
 
-  return { colorData, cssVariable };
+  return { colorData, cssVariables };
 }
 
 export function parseMagicColor(body: string, theme: Theme) {
-  const colorData = resolveColorData(body, theme);
-  return resolveColorVariable(colorData);
+  return resolveColorVariable(
+    resolveColorData(body, theme),
+  );
 };
 
 export function mcColorResolver(property: string, varName: string) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
-    const { colorData, cssVariable } = parseMagicColor(body ?? '', ctx.theme);
+    const { colorData, cssVariables } = parseMagicColor(body ?? '', ctx.theme);
     if (colorData?.color) {
       const result = colorCSSGenerator(colorData, property, varName, ctx);
-      if (result) {
-        result.push({
-          [ctx.symbols.selector]: selector => selector,
-          ...cssVariable,
-        });
+      if (result && cssVariables.length) {
+        result.push(...cssVariables.map(item => ({
+          [ctx.symbols.selector]: (selector: symbol) => selector,
+          ...item,
+        })));
       }
       return result;
     }

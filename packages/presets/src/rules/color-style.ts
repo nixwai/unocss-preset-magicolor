@@ -1,8 +1,9 @@
+import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, Rule } from 'unocss';
 import { notLastChildSelectorVariant } from '@unocss/preset-wind4/rules';
-import { handleImage, handleShadow, mcBgGradientColorResolver, mcBorderColorResolver, mcColorResolver } from './utils';
+import { handleImage, handlerBorderColor, handleShadow, mcBgGradientColorResolver, mcColorResolver } from './utils';
 
-export const colorStyle: Rule[] = [
+export const colorStyle: Rule<Theme>[] = [
   // common style colors
   [/^(?:color|c)-mc-(.+)$/, mcColorResolver('color', 'text'), { autocomplete: '(color|c)-mc-$colors' }],
   [/^text-(?:color-)?mc-(.+)$/, mcColorResolver('color', 'text'), { autocomplete: '(text|text-color)-mc-$colors' }],
@@ -44,11 +45,11 @@ export const colorStyle: Rule[] = [
   [/^mask-(linear|radial|conic)-(from|to)-mc-(.+)$/, handleImage, { autocomplete: ['mask-(linear|radial|conic)-(from|to)-mc-$colors'] }],
   [/^mask-([trblxy])-(from|to)-mc-(.+)$/, handleImage, { autocomplete: ['mask-(x|y|t|b|l|r)-(from|to)-mc-$colors'] }],
   // border style colors
-  [/^(?:border|b)-()(?:color-)?mc-(.+)$/, mcBorderColorResolver, { autocomplete: ['(border|b)-mc-$colors', '(border|b)-<directions>-mc-$colors'] }],
-  [/^(?:border|b)-([xy])-(?:color-)?mc-(.+)$/, mcBorderColorResolver],
-  [/^(?:border|b)-([rltbse])-(?:color-)?mc-(.+)$/, mcBorderColorResolver],
-  [/^(?:border|b)-(block|inline)-(?:color-)?mc-(.+)$/, mcBorderColorResolver],
-  [/^(?:border|b)-([bi][se])-(?:color-)?mc-(.+)$/, mcBorderColorResolver],
+  [/^(?:border|b)-()(?:color-)?mc-(.+)$/, handlerBorderColor, { autocomplete: ['(border|b)-mc-$colors', '(border|b)-<directions>-mc-$colors'] }],
+  [/^(?:border|b)-([xy])-(?:color-)?mc-(.+)$/, handlerBorderColor],
+  [/^(?:border|b)-([rltbse])-(?:color-)?mc-(.+)$/, handlerBorderColor],
+  [/^(?:border|b)-(block|inline)-(?:color-)?mc-(.+)$/, handlerBorderColor],
+  [/^(?:border|b)-([bi][se])-(?:color-)?mc-(.+)$/, handlerBorderColor],
   // bg gradient color
   [/^(from|via|to|stops)-mc-(.+)$/, mcBgGradientColorResolver()],
 ];
