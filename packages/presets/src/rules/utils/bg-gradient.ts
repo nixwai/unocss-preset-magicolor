@@ -51,7 +51,7 @@ export function mcBgGradientColorResolver() {
       }
     }
     else {
-      css[`--un-gradient-${position}`] = h.bracket.cssvar(body);
+      css[`--un-gradient-${position}`] = h.bracket.cssvar(body, theme);
     }
     if (css[`--un-gradient-${position}`]) {
       switch (position) {

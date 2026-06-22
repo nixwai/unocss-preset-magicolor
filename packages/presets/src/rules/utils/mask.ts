@@ -34,10 +34,10 @@ export function handleImage([_, gradient = '', direction, val]: string[], ctx: R
 
       if (numberResolver(val) != null) {
         themeTracking('spacing');
-        css[`--un-mask-${dir}-${direction}-position`] = `calc(var(--spacing) * ${h.bracket.cssvar.fraction.number(val)})`;
+        css[`--un-mask-${dir}-${direction}-position`] = `calc(var(--spacing) * ${h.bracket.cssvar.fraction.number(val, ctx.theme)})`;
       }
       else {
-        css[`--un-mask-${dir}-${direction}-position`] = h.bracket.cssvar.fraction.rem(val);
+        css[`--un-mask-${dir}-${direction}-position`] = h.bracket.cssvar.fraction.rem(val, ctx.theme);
       }
 
       const result = mcColorResolver(`--un-mask-${dir}-${direction}-color`, hyphenate('colors'))([_, val], ctx);
@@ -59,11 +59,11 @@ export function handleImage([_, gradient = '', direction, val]: string[], ctx: R
     if (direction == null) {
       if (gradient === 'radial') {
         css['--un-mask-radial'] = 'radial-gradient(var(--un-mask-radial-stops, var(--un-mask-radial-size)))';
-        css['--un-mask-radial-size'] = h.bracket.cssvar.rem(val);
+        css['--un-mask-radial-size'] = h.bracket.cssvar.rem(val, ctx.theme);
       }
       else {
         css[`--un-mask-${gradient}`] = `${gradient}-gradient(var(--un-mask-${gradient}-stops, var(--un-mask-${gradient}-position)))`;
-        css[`--un-mask-${gradient}-position`] = numberResolver(val) ? `calc(1deg * ${h.bracket.cssvar.number(val)})` : h.bracket.cssvar.fraction(val);
+        css[`--un-mask-${gradient}-position`] = numberResolver(val) ? `calc(1deg * ${h.bracket.cssvar.number(val, ctx.theme)})` : h.bracket.cssvar.fraction(val, ctx.theme);
       }
     }
     else {
