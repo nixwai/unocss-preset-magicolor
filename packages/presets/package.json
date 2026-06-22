@@ -25,11 +25,14 @@
   "files": [
     "dist"
   ],
+  "peerDependencies": {
+    "unocss": "^66.7.0"
+  },
   "dependencies": {
-    "@unocss/preset-wind4": "~66.5.9",
-    "magic-color": "^2.2.3"
+    "@unocss/preset-wind4": "~66.7.2",
+    "magic-color": "^2.2.5"
   },
   "devDependencies": {
-    "unocss": "^66.5.9"
+    "unocss": "^66.7.2"
   }
 }
