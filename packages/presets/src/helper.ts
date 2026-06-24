@@ -2,7 +2,7 @@ import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from './typing';
 import { mc } from 'magic-color';
-import { countDiffColor, generateOklchVariable, isInvalidColor, resolveDepth, themeMetaList, toOklch } from './utils';
+import { generateOklchColorVariables, getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from './utils';
 
 /**
  * Modify the value of the color variable
@@ -40,19 +40,14 @@ export function updateMagicColor(params: { name: string, color: string, dom?: HT
 
   const bodyNo = color.match(/.*-(\d+)/)?.[1];
   if (bodyNo) {
-    const { originDepth, beforeDepth, afterDepth } = resolveDepth(bodyNo);
-    if (themeMetaColors[beforeDepth] && themeMetaColors[afterDepth]) {
-      css[`--mc-${name}-color`] = countDiffColor({
-        originDepth,
-        beforeDepth,
-        beforeComponents: themeMetaColors[beforeDepth].components,
-        afterComponents: themeMetaColors[afterDepth].components,
-      });
+    const bodyColor = getThemeDepthColor(themeMetaColors, bodyNo);
+    if (bodyColor) {
+      css[`--mc-${name}-color`] = bodyColor;
     }
   }
 
   // set all depth colors
-  const colorVariables = generateOklchVariable(name, themeMetaColors);
+  const colorVariables = generateOklchColorVariables(name, themeMetaColors);
   Object.assign(css, colorVariables);
 
   for (const name in css) {

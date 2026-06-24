@@ -17,6 +17,6 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>, co
   if (!hue) {
     return;
   }
-  const css = resolveThemeColorVariable(name, hue, theme, context?.getUsage(name));
+  const css = resolveThemeColorVariable(name, hue, theme, context?.getDefinedUsage(name));
   return css;
 };

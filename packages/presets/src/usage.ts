@@ -2,11 +2,12 @@ import type { Extractor } from 'unocss';
 import type { ThemeKey } from './typing';
 import { resolveDepth } from './utils';
 
+export const BASE_COLOR_DEPTH = 'none';
+export type MagicColorDepth = ThemeKey | typeof BASE_COLOR_DEPTH;
+
 export interface MagicColorUsage {
-  /** Whether the base color token was used, for example `c-mc-btn`. */
-  hasBase: boolean
-  /** Explicit depth tokens used by the scanned content, for example `bg-mc-btn-640`. */
-  depths: Set<ThemeKey>
+  /** Color depths used by scanned content. `none` means base color, for example `c-mc-btn`. */
+  depths: Set<MagicColorDepth>
 }
 
 /** Usage collected from one UnoCSS extractor input. */
@@ -20,9 +21,21 @@ interface FileUsage {
 /** Reads aggregated usage for a magic color name from the current preset instance. */
 export type MagicColorUsageGetter = (name: string) => MagicColorUsage | undefined;
 
+/** Reads usage from inputs that define a magic color name. */
+export type MagicColorDefinedUsageGetter = (name: string) => MagicColorUsage | undefined;
+
+/** Reads all scanned magic color usage names from the current preset instance. */
+export type MagicColorUsageNameGetter = () => string[];
+
+/** Reads whether a magic color name was defined by an `mc-*` token. */
+export type MagicColorDefinitionChecker = (name: string) => boolean;
+
 /** Shared per-preset context used by rules and preflights. */
 export interface MagicColorContext {
   getUsage: MagicColorUsageGetter
+  getDefinedUsage: MagicColorDefinedUsageGetter
+  getUsageNames: MagicColorUsageNameGetter
+  isDefined: MagicColorDefinitionChecker
 }
 
 // UnoCSS may omit an id for inline input; keep those scans under a stable bucket.
@@ -36,10 +49,7 @@ const colorUsageTokenRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-([A-Za-z][A-
 
 /** Creates a mutable usage accumulator for one color name. */
 function createEmptyUsage(): MagicColorUsage {
-  return {
-    hasBase: false,
-    depths: new Set(),
-  };
+  return { depths: new Set() };
 }
 
 /** Stores the normalized theme depth so nearby arbitrary depths share the same variable set. */
@@ -84,7 +94,7 @@ function scanUsage(tokens: Iterable<string>): FileUsage {
       addDepth(usage, no);
     }
     else {
-      usage.hasBase = true;
+      usage.depths.add(BASE_COLOR_DEPTH);
     }
     colors.set(name, usage);
   }
@@ -114,14 +124,12 @@ export function createMagicColorUsage() {
         continue;
       }
 
-      usage.hasBase ||= colorUsage.hasBase;
       for (const depth of colorUsage.depths) {
         usage.depths.add(depth);
       }
     }
 
-    // Before the extractor runs, return undefined so callers can generate full variables.
-    return hasScanned() ? usage : undefined;
+    return hasScanned() && usage.depths.size > 0 ? usage : undefined;
   }
 
   /** Aggregates usage only from files that define the requested magic color name. */
@@ -140,13 +148,36 @@ export function createMagicColorUsage() {
         continue;
       }
 
-      usage.hasBase ||= colorUsage.hasBase;
       for (const depth of colorUsage.depths) {
         usage.depths.add(depth);
       }
     }
 
     return foundDefinition ? usage : undefined;
+  }
+
+  /** Lists all color names seen in selector usages across scanned inputs. */
+  function getUsageNames() {
+    const names = new Set<string>();
+
+    for (const fileUsage of files.values()) {
+      for (const name of fileUsage.colors.keys()) {
+        names.add(name);
+      }
+    }
+
+    return Array.from(names);
+  }
+
+  /** Checks whether any scanned input defines this magic color with an `mc-*` token. */
+  function isDefined(name: string) {
+    for (const fileUsage of files.values()) {
+      if (fileUsage.definitions.has(name)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   const extractor: Extractor = {
@@ -162,5 +193,7 @@ export function createMagicColorUsage() {
     extractor,
     getUsage,
     getDefinedUsage,
+    getUsageNames,
+    isDefined,
   };
 }

@@ -1,7 +1,7 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from '../typing';
-import { roundNum, toNum } from './transforms';
+import { roundNum, toNum, toOklch } from './transforms';
 
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
@@ -45,15 +45,48 @@ export function countDiffColor(params: {
   return `oklch(${resultColor.join(' ')})`;
 }
 
-export function generateOklchVariable(name: string, themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>) {
+export function stringifyOklchColor(cssColor?: CSSColorValue) {
+  const color = toOklch(cssColor);
+  if (!color) {
+    return;
+  }
+
+  const components = color.components.map(value => roundNum(toNum(value)));
+  const alpha = color.alpha != null && color.alpha !== 1 ? ` / ${color.alpha}` : '';
+
+  return `oklch(${components.join(' ')}${alpha})`;
+}
+
+export function getThemeDepthColor(themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>, no: string | number) {
+  const { originDepth, beforeDepth, afterDepth } = resolveDepth(no.toString());
+  const originColor = themeMetaColors[originDepth];
+
+  if (originDepth === beforeDepth || originDepth === afterDepth) {
+    return stringifyOklchColor(originColor);
+  }
+
+  const beforeColor = themeMetaColors[beforeDepth];
+  const afterColor = themeMetaColors[afterDepth];
+
+  if (!beforeColor || !afterColor) {
+    return;
+  }
+
+  return countDiffColor({
+    originDepth,
+    beforeDepth,
+    beforeComponents: beforeColor.components,
+    afterComponents: afterColor.components,
+  });
+}
+
+export function generateOklchColorVariables(name: string, themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>) {
   const css: CSSObject = {};
   // set all depth colors
   for (const themeMeta of themeMetaList) {
-    if (themeMetaColors[themeMeta]) {
-      const colorComponents = themeMetaColors[themeMeta].components;
-      css[`--mc-${name}-${themeMeta}-l`] = roundNum(toNum(colorComponents[0]));
-      css[`--mc-${name}-${themeMeta}-c`] = roundNum(toNum(colorComponents[1]));
-      css[`--mc-${name}-${themeMeta}-h`] = roundNum(toNum(colorComponents[2]));
+    const color = stringifyOklchColor(themeMetaColors[themeMeta]);
+    if (color) {
+      css[`--mc-${name}-${themeMeta}-color`] = color;
     }
   }
   return css;
