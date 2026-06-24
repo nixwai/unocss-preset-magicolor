@@ -1,8 +1,11 @@
 import type { Rule } from 'unocss';
-import { colorStyle } from './color-style';
-import { colorVariable } from './color-variable';
+import type { MagicColorContext } from '../usage';
+import { createColorStyle } from './color-style';
+import { createColorVariable } from './color-variable';
 
-export const rules: Rule[] = [
-  colorStyle,
-  colorVariable,
-].flat();
+export function createRules(context?: MagicColorContext): Rule[] {
+  return [
+    createColorStyle(context),
+    createColorVariable(context),
+  ].flat();
+}

@@ -1,6 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import type { ThemeKey } from '../../typing';
+import type { MagicColorContext } from '../../usage';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
 import { mc } from 'magic-color';
 import { countDiffColor, isInvalidColor, resolveDepth, themeMetaList, toOklch } from '../../utils';
@@ -79,7 +80,7 @@ function resolveColorData(body: string, theme: Theme): ParseColorReturn {
   return colorData;
 }
 
-function resolveColorVariable(colorData: ParseColorReturn) {
+function resolveColorVariable(colorData: ParseColorReturn, context?: MagicColorContext) {
   const cssVariables: CSSObject[] = [];
   if (!colorData || colorData.color) {
     return { colorData, cssVariables };
@@ -92,6 +93,11 @@ function resolveColorVariable(colorData: ParseColorReturn) {
   }
 
   const { originDepth, beforeDepth, afterDepth } = resolveDepth(no);
+
+  if (context?.getUsage(name)?.depths.has(originDepth)) {
+    colorData.color = `var(--mc-${name}-${originDepth}-color)`;
+    return { colorData, cssVariables };
+  }
 
   const colorVarL = `--mc-${name}-${originDepth}-l`;
   const colorVarC = `--mc-${name}-${originDepth}-c`;
@@ -113,15 +119,16 @@ function resolveColorVariable(colorData: ParseColorReturn) {
   return { colorData, cssVariables };
 }
 
-export function parseMagicColor(body: string, theme: Theme) {
+export function parseMagicColor(body: string, theme: Theme, context?: MagicColorContext) {
   return resolveColorVariable(
     resolveColorData(body, theme),
+    context,
   );
 };
 
-export function mcColorResolver(property: string, varName: string) {
+export function mcColorResolver(property: string, varName: string, context?: MagicColorContext) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
-    const { colorData, cssVariables } = parseMagicColor(body ?? '', ctx.theme);
+    const { colorData, cssVariables } = parseMagicColor(body ?? '', ctx.theme, context);
     if (colorData?.color) {
       const result = colorCSSGenerator(colorData, property, varName, ctx);
       if (result && cssVariables.length) {

@@ -1,6 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { parseColor } from '@unocss/preset-wind4/utils';
 import type { CSSEntries, CSSObject, CSSValueInput, RuleContext } from 'unocss';
+import type { MagicColorContext } from '../../usage';
 import { colorCSSGenerator, h, SpecialColorKey } from '@unocss/preset-wind4/utils';
 import { notNull } from 'unocss';
 import { parseMagicColor } from './utilities';
@@ -26,33 +27,35 @@ const directionMap: Record<string, string[]> = {
 };
 
 // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/border.ts#L78
-export function handlerBorderColor([, a = '', b]: string[], ctx: RuleContext<Theme>): CSSEntries | (CSSValueInput | string)[] | undefined {
-  if (a in directionMap) {
-    const bracketColor = h.bracketOfColor(b, ctx.theme);
-    b = bracketColor ?? b;
-    const { colorData, cssVariables } = parseMagicColor(b ?? '', ctx.theme);
-    if (bracketColor != null || colorData) {
-      const directions = directionMap[a].map(i =>
-        borderColorResolver(i)(colorData, ctx)
-        ?? colorCSSGenerator({ color: b, name: '_' } as unknown as ReturnType<typeof parseColor>, `border${i}-color`, `border${i}`, ctx))
-        .filter(notNull);
+export function handlerBorderColor(context?: MagicColorContext) {
+  return ([, a = '', b]: string[], ctx: RuleContext<Theme>): CSSEntries | (CSSValueInput | string)[] | undefined => {
+    if (a in directionMap) {
+      const bracketColor = h.bracketOfColor(b, ctx.theme);
+      b = bracketColor ?? b;
+      const { colorData, cssVariables } = parseMagicColor(b ?? '', ctx.theme, context);
+      if (bracketColor != null || colorData) {
+        const directions = directionMap[a].map(i =>
+          borderColorResolver(i)(colorData, ctx)
+          ?? colorCSSGenerator({ color: b, name: '_' } as unknown as ReturnType<typeof parseColor>, `border${i}-color`, `border${i}`, ctx))
+          .filter(notNull);
 
-      return [
-        directions
-          .map(d => d[0])
-          .reduce((acc, item) => {
+        return [
+          directions
+            .map(d => d[0])
+            .reduce((acc, item) => {
             // Merge multiple direction CSSObject into one
-            Object.assign(acc, item);
-            return acc;
-          }, {}),
-        ...directions.flatMap(d => d.slice(1)),
-        ...cssVariables.map(variableItem => ({
-          [ctx.symbols.selector]: (selector: symbol) => selector,
-          ...variableItem,
-        })),
-      ];
+              Object.assign(acc, item);
+              return acc;
+            }, {}),
+          ...directions.flatMap(d => d.slice(1)),
+          ...cssVariables.map(variableItem => ({
+            [ctx.symbols.selector]: (selector: symbol) => selector,
+            ...variableItem,
+          })),
+        ];
+      }
     }
-  }
+  };
 }
 
 function borderColorResolver(direction: string) {
