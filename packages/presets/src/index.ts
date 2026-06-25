@@ -9,9 +9,7 @@ export function presetMagicolor(options: PresetMcOptions = {}): Preset {
   const usage = createMagicColorUsage();
   const context: MagicColorContext = {
     getUsage: usage.getUsage,
-    getDefinedUsage: usage.getDefinedUsage,
     getUsageNames: usage.getUsageNames,
-    isDefined: usage.isDefined,
   };
 
   return {

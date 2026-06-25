@@ -32,7 +32,7 @@ export function handlerBorderColor(context?: MagicColorContext) {
     if (a in directionMap) {
       const bracketColor = h.bracketOfColor(b, ctx.theme);
       b = bracketColor ?? b;
-      const { colorData, cssVariables } = parseMagicColor(b ?? '', ctx.theme, context);
+      const colorData = parseMagicColor(b ?? '', ctx.theme, context);
       if (bracketColor != null || colorData) {
         const directions = directionMap[a].map(i =>
           borderColorResolver(i)(colorData, ctx)
@@ -48,10 +48,6 @@ export function handlerBorderColor(context?: MagicColorContext) {
               return acc;
             }, {}),
           ...directions.flatMap(d => d.slice(1)),
-          ...cssVariables.map(variableItem => ({
-            [ctx.symbols.selector]: (selector: symbol) => selector,
-            ...variableItem,
-          })),
         ];
       }
     }

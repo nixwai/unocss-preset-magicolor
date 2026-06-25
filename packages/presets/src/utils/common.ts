@@ -30,21 +30,6 @@ export function isInvalidColor(color?: string) {
   return false;
 }
 
-export function countDiffColor(params: {
-  originDepth: number
-  beforeDepth: number
-  beforeComponents: (string | number)[]
-  afterComponents: (string | number)[]
-}) {
-  const { originDepth, beforeDepth, beforeComponents, afterComponents } = params;
-  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
-  const resultColor = Array.from({ length: 3 }).map((_, i) => {
-    const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;
-    return roundNum(value);
-  });
-  return `oklch(${resultColor.join(' ')})`;
-}
-
 export function stringifyOklchColor(cssColor?: CSSColorValue) {
   const color = toOklch(cssColor);
   if (!color) {
@@ -72,12 +57,14 @@ export function getThemeDepthColor(themeMetaColors: Partial<Record<ThemeKey, CSS
     return;
   }
 
-  return countDiffColor({
-    originDepth,
-    beforeDepth,
-    beforeComponents: beforeColor.components,
-    afterComponents: afterColor.components,
+  const beforeComponents = beforeColor.components;
+  const afterComponents = afterColor.components;
+  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
+  const resultColor = Array.from({ length: 3 }).map((_, i) => {
+    const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;
+    return roundNum(value);
   });
+  return `oklch(${resultColor.join(' ')})`;
 }
 
 export function generateOklchColorVariables(name: string, themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>) {

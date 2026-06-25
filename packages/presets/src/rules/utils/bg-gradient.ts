@@ -24,9 +24,9 @@ const properties = {
 
 // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/background.ts#L41
 export function mcBgGradientColorResolver(context?: MagicColorContext) {
-  return function* ([, position, body]: string[], { theme, symbols }: RuleContext<Theme>) {
+  return function* ([, position, body]: string[], { theme }: RuleContext<Theme>) {
     const css: CSSObject = {};
-    const { colorData, cssVariables } = parseMagicColor(body, theme, context);
+    const colorData = parseMagicColor(body, theme, context);
 
     if (colorData) {
       const { color, keys, alpha } = colorData;
@@ -81,13 +81,6 @@ export function mcBgGradientColorResolver(context?: MagicColorContext) {
       }
 
       for (const p of Object.values(properties)) { yield p; }
-
-      for (const variableItem of cssVariables) {
-        yield {
-          [symbols.selector]: (selector: symbol) => selector,
-          ...variableItem,
-        };
-      }
     }
   };
 }
