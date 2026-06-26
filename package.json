@@ -21,6 +21,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@unocss-preset-magicolor/utils": "workspace:*",
     "unocss-preset-magicolor": "workspace:*"
   },
   "devDependencies": {

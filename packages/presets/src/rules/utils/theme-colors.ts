@@ -2,10 +2,19 @@ import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { MagicColorContext, ThemeKey } from '../../typing';
+import {
+  getThemeDepthColor,
+  isInvalidColor,
+  normalizeColorDepth,
+  resolveColorDepth,
+  resolveColorOrigin,
+  splitColorParts,
+  themeMetaList,
+  toOklch,
+} from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { mc } from 'magic-color';
 import { BASE_COLOR_DEPTH } from '../../usages';
-import { getThemeDepthColor, isInvalidColor, resolveColorDepth, resolveColorOrigin, splitColorParts, themeMetaList, toOklch } from '../../utils';
 
 /**
  * get themeMetaColors
@@ -14,6 +23,7 @@ import { getThemeDepthColor, isInvalidColor, resolveColorDepth, resolveColorOrig
  * @returns themeMetaColors
  */
 function getThemeMetaColors(bodyColor: string, theme: Theme) {
+  bodyColor = normalizeColorDepth(bodyColor);
   const originColor = resolveColorOrigin(bodyColor);
 
   if (isInvalidColor(originColor)) {
@@ -69,6 +79,7 @@ function getBaseColor(
   theme: Theme,
   themeMetaColors?: Partial<Record<ThemeKey, CSSColorValue>>,
 ) {
+  bodyColor = normalizeColorDepth(bodyColor);
   let parsedColor = parseColor(bodyColor, theme)?.color;
   const bodyNo = resolveColorDepth(bodyColor);
   if (!parsedColor && !bodyNo) {

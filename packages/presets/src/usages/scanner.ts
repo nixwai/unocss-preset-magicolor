@@ -1,9 +1,8 @@
-import type { ThemeKey } from '../typing';
-import { resolveDepth } from '../utils';
+import { resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
 
 export const BASE_COLOR_DEPTH = 'none';
 
-export type MagicColorDepth = ThemeKey | typeof BASE_COLOR_DEPTH;
+export type MagicColorDepth = number | typeof BASE_COLOR_DEPTH;
 
 /** Usage collected from one UnoCSS extractor input. */
 export interface FileUsage {
@@ -15,13 +14,12 @@ export interface FileUsage {
 
 const colorUsagePrefixRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-/;
 
-// Matches magic color usages such as `c-mc-my-btn-630`, `c-mc-gg-560:20`, or `c-mc-qq/34:20`.
-const colorUsageTokenRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*?)(?:-(\d{1,3}))?(?:[:/].*)?$/;
+// Matches magic color usages such as `c-mc-my-btn-630`, `c-mc-grape120:20`, or `c-mc-qq/34:20`.
+const colorUsageTokenRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)(?:[:/].*)?$/;
 
-/** Stores the normalized theme depth so nearby arbitrary depths share the same variable set. */
+/** Stores the requested numeric color depth. */
 function addDepth(depths: Set<MagicColorDepth>, no: string) {
-  const { originDepth } = resolveDepth(no);
-  depths.add(originDepth);
+  depths.add(Number(no));
 }
 
 /** Removes UnoCSS variants while preserving magic color opacity/modifier suffixes. */
@@ -44,7 +42,13 @@ export function scanUsage(tokens: Iterable<string>): FileUsage {
       continue;
     }
 
-    const [, name, no] = colorUsageMatch;
+    const [, body] = colorUsageMatch;
+    if (!body) {
+      continue;
+    }
+
+    const [bodyColor] = splitColorParts(body);
+    const { originColor: name, bodyNo: no } = resolveColorParts(bodyColor);
     if (!name) {
       continue;
     }

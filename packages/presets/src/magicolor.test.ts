@@ -156,6 +156,26 @@ describe('magicolor usage extraction', () => {
     expect(css).not.toContain('calc(');
   });
 
+  it('matches compact magic color depths without a hyphen separator', async () => {
+    const { css } = await generate(
+      '<div class="mc-btn_red bg-mc-grape120:20 bg-mc-grape123 bg-mc-grape-120 c-mc-btn230 c-mc-btn-230 c-mc-brand20"></div>',
+      { colors: { brand: 'blue', grape: 'rose' } },
+    );
+
+    expect(css).toMatch(/--mc-brand-20-color:\s*oklch\(/);
+    expect(css).toMatch(/--mc-grape-120-color:\s*oklch\(/);
+    expect(css).toMatch(/--mc-grape-123-color:\s*oklch\(/);
+    expect(css).toMatch(/--mc-btn-230-color:\s*oklch\(/);
+    expect(css).toContain('var(--mc-brand-20-color)');
+    expect(css).toContain('var(--mc-grape-120-color)');
+    expect(css).toContain('var(--mc-grape-123-color)');
+    expect(css).toContain('var(--mc-btn-230-color)');
+    expect(css).not.toContain('--mc-brand20-color:');
+    expect(css).not.toContain('--mc-grape120-color:');
+    expect(css).not.toContain('--mc-grape123-color:');
+    expect(css).not.toContain('--mc-btn230-color:');
+  });
+
   it('matches hyphenated magic color names with depth and modifiers', async () => {
     const { css } = await generate(
       '<div class="c-mc-red-123 c-mc-btn-230 c-mc-my-btn-630 c-mc-gg-560:20 c-mc-aa-99/20 c-mc-ss:30 c-mc-qq/34:20"></div>',

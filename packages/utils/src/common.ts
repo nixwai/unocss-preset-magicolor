@@ -1,22 +1,59 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
-import type { ThemeKey } from '../typing';
+import type { ThemeMetas } from 'magic-color';
 import { roundNum, toNum, toOklch } from './transforms';
 
+type ThemeKey = keyof ThemeMetas;
+
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+
+const hyphenColorDepthRE = /^(.*)-(\d+)$/;
+const compactColorNameRE = /^[a-z][a-z0-9-]*$/i;
+const trailingDigitsRE = /\d+$/;
 
 export function splitColorParts(color: string): [string, string?, string?] {
   const [bodyColor, bodyOpacity, bodyModifier] = color.split(/[:/]/);
   return [bodyColor, bodyOpacity, bodyModifier];
 }
 
+function normalizeDepthNo(no: string) {
+  return Number(no).toString();
+}
+
+export function resolveColorParts(color: string): { originColor: string, bodyNo?: string };
+export function resolveColorParts(color?: string): { originColor?: string, bodyNo?: string };
+export function resolveColorParts(color?: string) {
+  if (!color) {
+    return { originColor: color, bodyNo: undefined };
+  }
+
+  const hyphenMatch = color.match(hyphenColorDepthRE);
+  if (hyphenMatch?.[1]) {
+    return { originColor: hyphenMatch[1], bodyNo: normalizeDepthNo(hyphenMatch[2]) };
+  }
+
+  if (compactColorNameRE.test(color)) {
+    const bodyNo = color.match(trailingDigitsRE)?.[0];
+    if (bodyNo) {
+      return { originColor: color.slice(0, -bodyNo.length), bodyNo: normalizeDepthNo(bodyNo) };
+    }
+  }
+
+  return { originColor: color, bodyNo: undefined };
+}
+
 export function resolveColorOrigin(color: string): string;
 export function resolveColorOrigin(color?: string): string | undefined;
 export function resolveColorOrigin(color?: string) {
-  return color?.split(/-\d+-?/)[0];
+  return resolveColorParts(color).originColor;
 }
 
 export function resolveColorDepth(color?: string) {
-  return color?.match(/.*-(\d+)/)?.[1];
+  return resolveColorParts(color).bodyNo;
+}
+
+export function normalizeColorDepth(color: string) {
+  const { originColor, bodyNo } = resolveColorParts(color);
+  return bodyNo ? `${originColor}-${bodyNo}` : originColor ?? color;
 }
 
 export function resolveDepth(no: string) {
@@ -79,11 +116,4 @@ export function getThemeDepthColor(themeMetaColors: Partial<Record<ThemeKey, CSS
     return roundNum(value);
   });
   return `oklch(${resultColor.join(' ')})`;
-}
-
-export type ColorVariableDepth = string | number;
-
-export function generateColorVariable(name: string, color: string, depth?: ColorVariableDepth) {
-  const suffix = depth == null ? '' : `-${depth}`;
-  return { [`--mc-${name}${suffix}-color`]: color };
 }

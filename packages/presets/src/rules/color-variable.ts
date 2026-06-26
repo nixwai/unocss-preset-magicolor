@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
-import { resolveColorDepth, resolveColorOrigin, splitColorParts } from '../utils';
+import { normalizeColorDepth, resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
 import { resolveThemeColorVariable } from './utils';
 
 export function createColorVariable(context?: MagicColorContext): Rule[] {
@@ -12,9 +12,7 @@ export function createColorVariable(context?: MagicColorContext): Rule[] {
 
 function resolveHubColor(hue = '') {
   const [bodyColor] = splitColorParts(hue);
-  const originColor = resolveColorOrigin(bodyColor);
-  const bodyNo = resolveColorDepth(bodyColor);
-  return { originColor, bodyNo };
+  return resolveColorParts(bodyColor);
 }
 
 function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>, context?: MagicColorContext) {
@@ -32,6 +30,7 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>, co
   if (optionColorObj.bodyNo || mcColorObj.bodyNo) {
     bodyColor += `-${mcColorObj.bodyNo || optionColorObj.bodyNo}`;
   }
+  bodyColor = normalizeColorDepth(bodyColor);
   const css = resolveThemeColorVariable(name, bodyColor, theme, context);
   return css;
 };

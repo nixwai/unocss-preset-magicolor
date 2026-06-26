@@ -1,16 +1,15 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from './typing';
-import { mc } from 'magic-color';
 import {
-  generateColorVariable,
   getThemeDepthColor,
   isInvalidColor,
   resolveColorDepth,
   resolveColorOrigin,
   themeMetaList,
   toOklch,
-} from './utils';
+} from '@unocss-preset-magicolor/utils';
+import { mc } from 'magic-color';
 
 interface ColorVariableUsage {
   hasBase: boolean
@@ -60,6 +59,11 @@ function collectDefinedColorVariables(name: string, dom: HTMLElement): ColorVari
   }
 
   return usage;
+}
+
+function generateColorVariable(name: string, color: string, depth?: string | number) {
+  const suffix = depth == null ? '' : `-${depth}`;
+  return { [`--mc-${name}${suffix}-color`]: color };
 }
 
 /**

@@ -12,6 +12,9 @@ importers:
 
   .:
     dependencies:
+      '@unocss-preset-magicolor/utils':
+        specifier: workspace:*
+        version: link:packages/utils
       unocss-preset-magicolor:
         specifier: workspace:*
         version: link:packages/presets
@@ -110,6 +113,15 @@ importers:
       unocss:
         specifier: ^66.7.2
         version: 66.7.2(vite@8.0.16(@types/node@26.0.0)(jiti@2.7.0)(sass@1.101.0)(yaml@2.9.0))
+
+  packages/utils:
+    dependencies:
+      '@unocss/preset-wind4':
+        specifier: ~66.7.2
+        version: 66.7.2
+      magic-color:
+        specifier: ^2.2.5
+        version: 2.2.5
 
   playground:
     dependencies:
