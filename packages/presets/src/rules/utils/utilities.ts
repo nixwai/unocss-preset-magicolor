@@ -1,16 +1,16 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSValueInput, RuleContext } from 'unocss';
-import type { MagicColorContext } from '../../usage';
-import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
-import { isInvalidColor, resolveDepth } from '../../utils';
+import type { MagicColorContext } from '../../typing';
+import { colorCSSGenerator, parseColor, parseCssColor } from '@unocss/preset-wind4/utils';
+import { isInvalidColor, resolveColorDepth, resolveColorOrigin, resolveDepth, splitColorParts } from '../../utils';
 import { resolveThemeColorValue } from './theme-colors';
 
 type ParseColorReturn = ReturnType<typeof parseColor>;
 
-export function parseMagicColor(body: string, theme: Theme, context?: MagicColorContext): ParseColorReturn {
-  const [bodyColor, bodyOpacity, bodyModifier] = body.split(/[:/]/);
-  const bodyNo = bodyColor.match(/.*-(\d+)/)?.[1];
-  const originColor = bodyColor?.split(/-\d+-?/)[0];
+export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?: MagicColorContext): ParseColorReturn {
+  const [bodyColor, bodyOpacity, bodyModifier] = splitColorParts(body);
+  const bodyNo = resolveColorDepth(bodyColor);
+  const originColor = resolveColorOrigin(bodyColor);
 
   const resolvedColorData: NonNullable<ParseColorReturn> = {
     opacity: bodyOpacity,
@@ -20,7 +20,9 @@ export function parseMagicColor(body: string, theme: Theme, context?: MagicColor
     color: '',
     alpha: bodyOpacity && `${bodyOpacity}%`,
     keys: undefined,
-    cssColor: undefined,
+    get cssColor() {
+      return parseCssColor(this.color);
+    },
   };
 
   // invalid color
@@ -28,29 +30,31 @@ export function parseMagicColor(body: string, theme: Theme, context?: MagicColor
     return resolvedColorData;
   }
 
+  context?.usage.recordUsage(`mc-${body}`, ctx.rawSelector);
+
   // Names used by `mc-*` definitions, global options, and theme colors are
   // resolved through variables emitted by the definition class or preflight.
-  const usage = context?.getUsage(originColor);
+  const usage = context?.usage.getUsage(originColor);
   if (usage) {
     resolvedColorData.color = bodyNo ? `var(--mc-${originColor}-${resolveDepth(bodyNo).originDepth}-color)` : `var(--mc-${originColor}-color)`;
     return resolvedColorData;
   }
 
   // use unocss parseColor
-  const colorData = parseColor(body, theme);
+  const colorData = parseColor(body, ctx.theme);
   if (colorData?.color) {
     return colorData;
   }
 
   // resolve color
-  resolvedColorData.color = resolveThemeColorValue(bodyColor, theme) ?? '';
+  resolvedColorData.color = resolveThemeColorValue(bodyColor, ctx.theme) ?? '';
 
   return resolvedColorData;
 }
 
 export function mcColorResolver(property: string, varName: string, context?: MagicColorContext) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
-    const colorData = parseMagicColor(body ?? '', ctx.theme, context);
+    const colorData = parseMagicColor(body ?? '', ctx, context);
     if (colorData?.color) {
       return colorCSSGenerator(colorData, property, varName, ctx);
     }

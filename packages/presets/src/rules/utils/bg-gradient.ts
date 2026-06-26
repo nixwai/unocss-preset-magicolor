@@ -1,6 +1,6 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, RuleContext } from 'unocss';
-import type { MagicColorContext } from '../../usage';
+import type { MagicColorContext } from '../../typing';
 import { defineProperty, detectThemeValue, generateThemeVariable, h, themeTracking } from '@unocss/preset-wind4/utils';
 import { parseMagicColor } from './utilities';
 
@@ -24,9 +24,10 @@ const properties = {
 
 // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/background.ts#L41
 export function mcBgGradientColorResolver(context?: MagicColorContext) {
-  return function* ([, position, body]: string[], { theme }: RuleContext<Theme>) {
+  return function* ([, position, body]: string[], ctx: RuleContext<Theme>) {
+    const { theme } = ctx;
     const css: CSSObject = {};
-    const colorData = parseMagicColor(body, theme, context);
+    const colorData = parseMagicColor(body, ctx, context);
 
     if (colorData) {
       const { color, keys, alpha } = colorData;

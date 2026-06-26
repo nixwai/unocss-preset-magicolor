@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { parseColor } from '@unocss/preset-wind4/utils';
 import type { CSSEntries, CSSObject, CSSValueInput, RuleContext } from 'unocss';
-import type { MagicColorContext } from '../../usage';
+import type { MagicColorContext } from '../../typing';
 import { colorCSSGenerator, h, SpecialColorKey } from '@unocss/preset-wind4/utils';
 import { notNull } from 'unocss';
 import { parseMagicColor } from './utilities';
@@ -32,7 +32,7 @@ export function handlerBorderColor(context?: MagicColorContext) {
     if (a in directionMap) {
       const bracketColor = h.bracketOfColor(b, ctx.theme);
       b = bracketColor ?? b;
-      const colorData = parseMagicColor(b ?? '', ctx.theme, context);
+      const colorData = parseMagicColor(b ?? '', ctx, context);
       if (bracketColor != null || colorData) {
         const directions = directionMap[a].map(i =>
           borderColorResolver(i)(colorData, ctx)

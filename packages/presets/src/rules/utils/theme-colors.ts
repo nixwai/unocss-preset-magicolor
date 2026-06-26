@@ -1,12 +1,11 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
-import type { ThemeKey } from '../../typing';
-import type { MagicColorContext } from '../../usage';
+import type { MagicColorContext, ThemeKey } from '../../typing';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { mc } from 'magic-color';
-import { BASE_COLOR_DEPTH } from '../../usage';
-import { getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from '../../utils';
+import { BASE_COLOR_DEPTH } from '../../usages';
+import { getThemeDepthColor, isInvalidColor, resolveColorDepth, resolveColorOrigin, splitColorParts, themeMetaList, toOklch } from '../../utils';
 
 /**
  * get themeMetaColors
@@ -15,7 +14,7 @@ import { getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from '../.
  * @returns themeMetaColors
  */
 function getThemeMetaColors(bodyColor: string, theme: Theme) {
-  const originColor = bodyColor?.split(/-\d+-?/)[0];
+  const originColor = resolveColorOrigin(bodyColor);
 
   if (isInvalidColor(originColor)) {
     return;
@@ -71,7 +70,7 @@ function getBaseColor(
   themeMetaColors?: Partial<Record<ThemeKey, CSSColorValue>>,
 ) {
   let parsedColor = parseColor(bodyColor, theme)?.color;
-  const bodyNo = bodyColor.match(/.*-(\d+)/)?.[1];
+  const bodyNo = resolveColorDepth(bodyColor);
   if (!parsedColor && !bodyNo) {
     parsedColor = parseColor(`[${bodyColor}]`, theme)?.color; // It is compatible with or without []
   }
@@ -99,18 +98,18 @@ function getBaseColor(
 export function resolveThemeColorVariable(name: string, hue: string, theme: Theme = {}, context?: MagicColorContext) {
   const css: CSSObject = {};
 
-  const usage = context?.getUsage(name);
+  const usage = context?.usage.getUsage(name);
   if (!usage) {
     return css;
   }
 
-  const [bodyColor] = hue.split(/[:/]/);
+  const [bodyColor] = splitColorParts(hue);
   const themeMetaColors = getThemeMetaColors(bodyColor, theme);
   if (!themeMetaColors) {
     return css;
   }
 
-  for (const depth of usage.depths) {
+  for (const depth of usage) {
     if (depth === BASE_COLOR_DEPTH) {
       const color = getBaseColor(bodyColor, theme, themeMetaColors);
       if (color) {

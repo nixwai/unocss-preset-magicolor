@@ -1,5 +1,5 @@
 import type { Rule } from 'unocss';
-import type { MagicColorContext } from '../usage';
+import type { MagicColorContext } from '../typing';
 import { createColorStyle } from './color-style';
 import { createColorVariable } from './color-variable';
 

@@ -1,6 +1,6 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
-import type { MagicColorContext } from '../../usage';
+import type { MagicColorContext } from '../../typing';
 import { hyphenate } from '@unocss/preset-wind4/utils';
 import { mcColorResolver } from './utilities';
 

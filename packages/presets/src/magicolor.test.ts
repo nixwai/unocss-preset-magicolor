@@ -92,6 +92,47 @@ describe('magicolor usage extraction', () => {
     expect(css).not.toContain('--mc-secondary-color:');
   });
 
+  it('tracks magic color utilities expanded from user shortcuts', async () => {
+    const uno = await createGenerator({
+      presets: [
+        presetWind4(),
+        presetMagicolor({ colors: { primary: 'rose' } }),
+      ],
+      shortcuts: [
+        ['btn', 'bg-mc-primary hover:bg-mc-primary-630 text-white'],
+      ],
+    });
+
+    const { css } = await uno.generate('<button class="btn"></button>', { preflights: true, id: 'shortcut.vue' });
+
+    expect(css).toContain('--mc-primary-color:');
+    expect(css).toMatch(/--mc-primary-630-color:\s*oklch\(/);
+    expect(css).toContain('var(--mc-primary-color)');
+    expect(css).toContain('var(--mc-primary-630-color)');
+  });
+
+  it('drops shortcut-expanded usage when the same input id no longer uses the shortcut', async () => {
+    const uno = await createGenerator({
+      presets: [
+        presetWind4(),
+        presetMagicolor({ colors: { primary: 'rose' } }),
+      ],
+      shortcuts: [
+        ['btn', 'bg-mc-primary hover:bg-mc-primary-630 text-white'],
+      ],
+    });
+
+    const first = await uno.generate('<button class="btn"></button>', { preflights: true, id: 'shortcut.vue' });
+    expect(first.css).toContain('--mc-primary-color:');
+    expect(first.css).toMatch(/--mc-primary-630-color:\s*oklch\(/);
+
+    const second = await uno.generate('<button class="text-white"></button>', { preflights: true, id: 'shortcut.vue' });
+    expect(second.css).not.toContain('--mc-primary-color:');
+    expect(second.css).not.toContain('--mc-primary-630-color:');
+    expect(second.css).not.toContain('var(--mc-primary-color)');
+    expect(second.css).not.toContain('var(--mc-primary-630-color)');
+  });
+
   it('does not generate arbitrary-depth variables without extractor scan', async () => {
     const { css } = await generate(['mc-btn_red', 'bg-mc-btn-640']);
 
@@ -113,6 +154,32 @@ describe('magicolor usage extraction', () => {
     expect(css).not.toContain('--mc-rose-400-l:');
     expect(css).not.toContain('--mc-rose-500-l:');
     expect(css).not.toContain('calc(');
+  });
+
+  it('matches hyphenated magic color names with depth and modifiers', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-red-123 c-mc-btn-230 c-mc-my-btn-630 c-mc-gg-560:20 c-mc-aa-99/20 c-mc-ss:30 c-mc-qq/34:20"></div>',
+      {
+        colors: {
+          'btn': 'blue',
+          'my-btn': 'green',
+          'gg': 'yellow',
+          'aa': 'pink',
+          'ss': 'rose',
+          'qq': 'cyan',
+        },
+      },
+    );
+
+    expect(css).toContain('--mc-red-123-color:');
+    expect(css).toContain('--mc-btn-230-color:');
+    expect(css).toContain('--mc-my-btn-630-color:');
+    expect(css).toContain('--mc-gg-560-color:');
+    expect(css).toContain('--mc-aa-99-color:');
+    expect(css).toContain('--mc-ss-color:');
+    expect(css).toContain('--mc-qq-color:');
+    expect(css).not.toContain('--mc-gg-color:');
+    expect(css).not.toContain('--mc-aa-color:');
   });
 
   it('generates configured base variables only when base color is used', async () => {

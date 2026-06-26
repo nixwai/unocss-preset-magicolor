@@ -5,6 +5,21 @@ import { roundNum, toNum, toOklch } from './transforms';
 
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
+export function splitColorParts(color: string): [string, string?, string?] {
+  const [bodyColor, bodyOpacity, bodyModifier] = color.split(/[:/]/);
+  return [bodyColor, bodyOpacity, bodyModifier];
+}
+
+export function resolveColorOrigin(color: string): string;
+export function resolveColorOrigin(color?: string): string | undefined;
+export function resolveColorOrigin(color?: string) {
+  return color?.split(/-\d+-?/)[0];
+}
+
+export function resolveColorDepth(color?: string) {
+  return color?.match(/.*-(\d+)/)?.[1];
+}
+
 export function resolveDepth(no: string) {
   // origin depth
   let originDepth = Number(no) as ThemeKey;

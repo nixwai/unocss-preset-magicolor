@@ -1,15 +1,15 @@
 import type { Preset } from 'unocss';
 import type { PresetMcOptions } from './types';
-import type { MagicColorContext } from './usage';
+import type { MagicColorContext } from './typing';
 import { preflights } from './preflights';
 import { createRules } from './rules';
-import { createMagicColorUsage } from './usage';
+import { MagicColorUsage } from './usages';
 
 export function presetMagicolor(options: PresetMcOptions = {}): Preset {
-  const usage = createMagicColorUsage();
+  const usage = new MagicColorUsage();
   const context: MagicColorContext = {
-    getUsage: usage.getUsage,
-    getUsageNames: usage.getUsageNames,
+    options,
+    usage,
   };
 
   return {
@@ -18,7 +18,7 @@ export function presetMagicolor(options: PresetMcOptions = {}): Preset {
     layers: { 'unocss-preset-magicolor': -100 },
     extractors: [usage.extractor],
     rules: createRules(context),
-    preflights: preflights(options, context),
+    preflights: preflights(context),
   };
 };
 

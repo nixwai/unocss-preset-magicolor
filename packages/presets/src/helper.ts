@@ -2,7 +2,7 @@ import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from './typing';
 import { mc } from 'magic-color';
-import { generateOklchColorVariables, getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from './utils';
+import { generateOklchColorVariables, getThemeDepthColor, isInvalidColor, resolveColorDepth, resolveColorOrigin, themeMetaList, toOklch } from './utils';
 
 /**
  * Modify the value of the color variable
@@ -16,7 +16,7 @@ export function updateMagicColor(params: { name: string, color: string, dom?: HT
   if (!dom) {
     return;
   }
-  const originColor = color?.split(/-\d+-?/)[0];
+  const originColor = resolveColorOrigin(color);
   if (isInvalidColor(originColor)) {
     return;
   }
@@ -38,7 +38,7 @@ export function updateMagicColor(params: { name: string, color: string, dom?: HT
     console.error(e);
   }
 
-  const bodyNo = color.match(/.*-(\d+)/)?.[1];
+  const bodyNo = resolveColorDepth(color);
   if (bodyNo) {
     const bodyColor = getThemeDepthColor(themeMetaColors, bodyNo);
     if (bodyColor) {
