@@ -203,18 +203,84 @@ describe('magicolor usage extraction', () => {
 });
 
 describe('updateMagicColor', () => {
-  it('writes direct color variables without oklch channel variables', () => {
+  it('writes only defined direct color variables without oklch channel variables', () => {
     const dom = document.createElement('div');
+    dom.style.setProperty('--mc-primary-color', 'red');
+    dom.style.setProperty('--mc-primary-457-color', 'red');
 
     updateMagicColor({ name: 'primary', color: '#9c1d1e-457', dom });
 
     expect(dom.style.getPropertyValue('--mc-primary-color')).toContain('oklch(');
-    expect(dom.style.getPropertyValue('--mc-primary-50-color')).toContain('oklch(');
-    expect(dom.style.getPropertyValue('--mc-primary-950-color')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-primary-50-color')).toBe('');
+    expect(dom.style.getPropertyValue('--mc-primary-950-color')).toBe('');
     expect(dom.style.getPropertyValue('--mc-primary-500-l')).toBe('');
     expect(dom.style.cssText).not.toContain('-l:');
     expect(dom.style.cssText).not.toContain('-c:');
     expect(dom.style.cssText).not.toContain('-h:');
     expect(dom.style.cssText).not.toContain('calc(');
+  });
+
+  it('writes arbitrary depth variables defined on the target dom', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-primary-457-color', 'red');
+
+    updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
+
+    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-primary-color')).toBe('');
+    expect(dom.style.getPropertyValue('--mc-primary-50-color')).toBe('');
+    expect(dom.style.getPropertyValue('--mc-primary-950-color')).toBe('');
+  });
+
+  it('reads defined color variables from computed styles', () => {
+    const style = document.createElement('style');
+    const dom = document.createElement('div');
+    style.textContent = '.magic-color-scope { --mc-primary-color: red; --mc-primary-457-color: red; }';
+    dom.className = 'magic-color-scope';
+    document.head.append(style);
+    document.body.append(dom);
+
+    try {
+      updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
+
+      expect(dom.style.getPropertyValue('--mc-primary-color')).toContain('oklch(');
+      expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
+    }
+    finally {
+      dom.remove();
+      style.remove();
+    }
+  });
+
+  it('writes multiple arbitrary depth variables defined on the target dom', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-primary-630-color', 'red');
+    dom.style.setProperty('--mc-primary-230-color', 'red');
+
+    updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
+
+    expect(dom.style.getPropertyValue('--mc-primary-630-color')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-primary-230-color')).toContain('oklch(');
+  });
+
+  it('only writes arbitrary depth variables for the target color name', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-primary-457-color', 'red');
+    dom.style.setProperty('--mc-secondary-630-color', 'red');
+
+    updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
+
+    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-secondary-630-color')).toBe('red');
+  });
+
+  it('does not infer depth variables from classes when css variables are absent', () => {
+    const dom = document.createElement('div');
+    dom.innerHTML = '<button class="bg-mc-primary-457"></button>';
+
+    updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
+
+    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toBe('');
   });
 });

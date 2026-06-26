@@ -1,5 +1,4 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
-import type { CSSObject } from 'unocss';
 import type { ThemeKey } from '../typing';
 import { roundNum, toNum, toOklch } from './transforms';
 
@@ -82,14 +81,9 @@ export function getThemeDepthColor(themeMetaColors: Partial<Record<ThemeKey, CSS
   return `oklch(${resultColor.join(' ')})`;
 }
 
-export function generateOklchColorVariables(name: string, themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>) {
-  const css: CSSObject = {};
-  // set all depth colors
-  for (const themeMeta of themeMetaList) {
-    const color = stringifyOklchColor(themeMetaColors[themeMeta]);
-    if (color) {
-      css[`--mc-${name}-${themeMeta}-color`] = color;
-    }
-  }
-  return css;
+export type ColorVariableDepth = string | number;
+
+export function generateColorVariable(name: string, color: string, depth?: ColorVariableDepth) {
+  const suffix = depth == null ? '' : `-${depth}`;
+  return { [`--mc-${name}${suffix}-color`]: color };
 }
