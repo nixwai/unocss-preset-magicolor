@@ -1,14 +1,7 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from './typing';
-import {
-  getThemeDepthColor,
-  isInvalidColor,
-  resolveColorDepth,
-  resolveColorOrigin,
-  themeMetaList,
-  toOklch,
-} from '@unocss-preset-magicolor/utils';
+import { getThemeDepthColor, isInvalidColor, resolveColorParts, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { mc } from 'magic-color';
 
 interface ColorVariableUsage {
@@ -77,7 +70,7 @@ function generateColorVariable(name: string, color: string, depth?: string | num
  */
 export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
   const { name, color, hasBase, depths } = params;
-  const originColor = resolveColorOrigin(color);
+  const { originColor, bodyNo } = resolveColorParts(color);
   if (isInvalidColor(originColor)) {
     return {};
   }
@@ -100,7 +93,6 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
   const css: CSSObject = {};
 
   if (hasBase) {
-    const bodyNo = resolveColorDepth(color);
     if (bodyNo) {
       const baseColor = getThemeDepthColor(themeMetaColors, bodyNo);
       baseColor && Object.assign(css, generateColorVariable(name, baseColor));

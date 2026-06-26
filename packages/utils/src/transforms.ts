@@ -13,6 +13,14 @@ export function toOklch(cssColor?: CSSColorValue) {
   if (!cssColor) { return undefined; }
 
   if (cssColor.type === 'oklch') {
+    if (cssColor.components.length === 1 && typeof cssColor.components[0] === 'string') {
+      cssColor.components = cssColor.components[0].split(/\s*,\s*|\s+/).filter(Boolean);
+    }
+
+    if (cssColor.components.length < 3) {
+      return;
+    }
+
     // uniform use number
     if (cssColor.components[0].toString().includes('%')) {
       cssColor.components[0] = toNum(cssColor.components[0]) / 100;

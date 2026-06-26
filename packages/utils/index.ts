@@ -1,2 +1,2 @@
-export * from './src/common';
+export * from './src/color';
 export * from './src/transforms';

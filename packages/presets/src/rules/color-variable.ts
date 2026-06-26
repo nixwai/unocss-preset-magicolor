@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
-import { normalizeColorDepth, resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
+import { resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
 import { resolveThemeColorVariable } from './utils';
 
 export function createColorVariable(context?: MagicColorContext): Rule[] {
@@ -26,11 +26,10 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>, co
   // Be compatible with the colors defined in the usage options
   const mcColorObj = resolveHubColor(hue);
   const optionColorObj = resolveHubColor(context?.options.colors?.[mcColorObj.originColor]);
-  let bodyColor = `${optionColorObj.originColor || mcColorObj.originColor}`;
-  if (optionColorObj.bodyNo || mcColorObj.bodyNo) {
-    bodyColor += `-${mcColorObj.bodyNo || optionColorObj.bodyNo}`;
-  }
-  bodyColor = normalizeColorDepth(bodyColor);
-  const css = resolveThemeColorVariable(name, bodyColor, theme, context);
+  const colorParts = {
+    originColor: optionColorObj.originColor || mcColorObj.originColor,
+    bodyNo: mcColorObj.bodyNo || optionColorObj.bodyNo,
+  };
+  const css = resolveThemeColorVariable(name, colorParts, theme, context);
   return css;
 };

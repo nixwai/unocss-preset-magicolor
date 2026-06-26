@@ -1,5 +1,6 @@
 import type { Preflight } from 'unocss';
 import type { MagicColorContext } from '../typing';
+import { resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
 import { resolveThemeColorVariable } from '../rules/utils';
 
@@ -15,7 +16,8 @@ export function preflights(context?: MagicColorContext): Preflight[] {
           continue;
         }
 
-        Object.assign(css, resolveThemeColorVariable(name, optionColor ?? name, theme, context));
+        const [bodyColor] = splitColorParts(optionColor ?? name);
+        Object.assign(css, resolveThemeColorVariable(name, resolveColorParts(bodyColor), theme, context));
       }
 
       if (Object.keys(css).length) {

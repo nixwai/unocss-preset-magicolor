@@ -1,3 +1,4 @@
+import { resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
 import { createGenerator, presetWind4 } from 'unocss';
 import { describe, expect, it } from 'vitest';
 import { updateMagicColor } from './helper';
@@ -213,12 +214,46 @@ describe('magicolor usage extraction', () => {
     expect(css).not.toContain('--mc-rose-500-color:');
   });
 
-  it('keeps bracket arbitrary colors as direct computed values', async () => {
-    const { css } = await generate('<div class="c-mc-[#789411]-430"></div>');
+  it('supports bracket arbitrary colors with legal CSS color syntaxes', async () => {
+    const { css } = await generate([
+      'c-mc-[#789411]-430',
+      'bg-mc-[#1313aa]1200',
+      'bg-mc-[rgb(12,22,33)]',
+      'bg-mc-[rgb(12_22_33)]-220',
+      'bg-mc-[hsl(210_60%_40%)]-300',
+      'bg-mc-[lab(60_20_10)]-350',
+      'bg-mc-[lch(40_20_21.57)]-400',
+      'bg-mc-[oklch(40.1%_0.123_21.57)]-200',
+      'bg-mc-[oklab(40.1%_0.1_0.2)]-500',
+    ]);
 
     expect(css).toMatch(/color:color-mix\(in oklab, oklch\(/);
+    expect(css).toContain('.bg-mc-\\[\\#1313aa\\]1200{background-color:color-mix(in oklab, oklch(');
+    expect(css).toContain('.bg-mc-\\[rgb\\(12\\,22\\,33\\)\\]{background-color:color-mix(in oklab, rgb(12,22,33)');
+    expect(css).toContain('.bg-mc-\\[rgb\\(12_22_33\\)\\]-220{background-color:color-mix(in oklab, oklch(');
+    expect(css).toContain('.bg-mc-\\[hsl\\(210_60\\%_40\\%\\)\\]-300{background-color:color-mix(in oklab, oklch(');
+    expect(css).toContain('.bg-mc-\\[lab\\(60_20_10\\)\\]-350{background-color:color-mix(in oklab, oklch(');
+    expect(css).toContain('.bg-mc-\\[lch\\(40_20_21\\.57\\)\\]-400{background-color:color-mix(in oklab, oklch(');
+    expect(css).toContain('.bg-mc-\\[oklch\\(40\\.1\\%_0\\.123_21\\.57\\)\\]-200{background-color:color-mix(in oklab, oklch(');
+    expect(css).toContain('.bg-mc-\\[oklab\\(40\\.1\\%_0\\.1_0\\.2\\)\\]-500{background-color:color-mix(in oklab, oklch(');
     expect(css).not.toContain('--mc-[#789411]-430-color');
+    expect(css).not.toContain('--mc-[#1313aa]-1200-color');
     expect(css).not.toContain('calc(');
+  });
+});
+
+describe('color parsing utilities', () => {
+  it('parses bracket arbitrary colors with optional depth suffixes', () => {
+    expect(resolveColorParts('[#1313aa]1200')).toEqual({ originColor: '[#1313aa]', bodyNo: '1200' });
+    expect(resolveColorParts('[rgb(12,22,33)]')).toEqual({ originColor: '[rgb(12,22,33)]', bodyNo: undefined });
+    expect(resolveColorParts('[hsl(210_60%_40%)]-300')).toEqual({ originColor: '[hsl(210_60%_40%)]', bodyNo: '300' });
+    expect(resolveColorParts('[lab(60_20_10)]-350')).toEqual({ originColor: '[lab(60_20_10)]', bodyNo: '350' });
+    expect(resolveColorParts('[lch(40_20_21.57)]-400')).toEqual({ originColor: '[lch(40_20_21.57)]', bodyNo: '400' });
+    expect(resolveColorParts('[oklch(40.1%_0.123_21.57)]-200')).toEqual({ originColor: '[oklch(40.1%_0.123_21.57)]', bodyNo: '200' });
+  });
+
+  it('keeps opacity and modifiers outside bracket arbitrary colors', () => {
+    expect(splitColorParts('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual(['[oklch(20.1%_0.1_20/50)]-200', '40', 'dark']);
   });
 });
 

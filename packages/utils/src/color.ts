@@ -4,14 +4,43 @@ import { roundNum, toNum, toOklch } from './transforms';
 
 type ThemeKey = keyof ThemeMetas;
 
+export interface ResolvedColorParts {
+  originColor?: string
+  bodyNo?: string
+}
+
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
 const hyphenColorDepthRE = /^(.*)-(\d+)$/;
 const compactColorNameRE = /^[a-z][a-z0-9-]*$/i;
 const trailingDigitsRE = /\d+$/;
+const bracketColorDepthRE = /^-?(\d+)$/;
 
 export function splitColorParts(color: string): [string, string?, string?] {
-  const [bodyColor, bodyOpacity, bodyModifier] = color.split(/[:/]/);
+  const parts: string[] = [];
+  let current = '';
+  let bracketDepth = 0;
+
+  for (const char of color) {
+    if (char === '[') {
+      bracketDepth++;
+    }
+    else if (char === ']') {
+      bracketDepth = Math.max(bracketDepth - 1, 0);
+    }
+
+    if ((char === ':' || char === '/') && bracketDepth === 0) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+
+    current += char;
+  }
+
+  parts.push(current);
+
+  const [bodyColor, bodyOpacity, bodyModifier] = parts;
   return [bodyColor, bodyOpacity, bodyModifier];
 }
 
@@ -19,11 +48,46 @@ function normalizeDepthNo(no: string) {
   return Number(no).toString();
 }
 
-export function resolveColorParts(color: string): { originColor: string, bodyNo?: string };
-export function resolveColorParts(color?: string): { originColor?: string, bodyNo?: string };
-export function resolveColorParts(color?: string) {
+function getBracketColorEnd(color: string) {
+  if (!color.startsWith('[')) {
+    return -1;
+  }
+
+  let escaped = false;
+  for (let i = 1; i < color.length; i++) {
+    const char = color[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (char === ']') {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+export function resolveColorParts(color: string): ResolvedColorParts & { originColor: string };
+export function resolveColorParts(color?: string): ResolvedColorParts;
+export function resolveColorParts(color?: string): ResolvedColorParts {
   if (!color) {
     return { originColor: color, bodyNo: undefined };
+  }
+
+  const bracketColorEnd = getBracketColorEnd(color);
+  if (bracketColorEnd >= 0) {
+    const originColor = color.slice(0, bracketColorEnd + 1);
+    const suffix = color.slice(bracketColorEnd + 1);
+    const depthMatch = suffix.match(bracketColorDepthRE);
+    return {
+      originColor,
+      bodyNo: depthMatch ? normalizeDepthNo(depthMatch[1]) : undefined,
+    };
   }
 
   const hyphenMatch = color.match(hyphenColorDepthRE);
@@ -39,21 +103,6 @@ export function resolveColorParts(color?: string) {
   }
 
   return { originColor: color, bodyNo: undefined };
-}
-
-export function resolveColorOrigin(color: string): string;
-export function resolveColorOrigin(color?: string): string | undefined;
-export function resolveColorOrigin(color?: string) {
-  return resolveColorParts(color).originColor;
-}
-
-export function resolveColorDepth(color?: string) {
-  return resolveColorParts(color).bodyNo;
-}
-
-export function normalizeColorDepth(color: string) {
-  const { originColor, bodyNo } = resolveColorParts(color);
-  return bodyNo ? `${originColor}-${bodyNo}` : originColor ?? color;
 }
 
 export function resolveDepth(no: string) {

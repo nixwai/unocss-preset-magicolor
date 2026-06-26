@@ -9,7 +9,8 @@ type ParseColorReturn = ReturnType<typeof parseColor>;
 
 export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?: MagicColorContext): ParseColorReturn {
   const [bodyColor, bodyOpacity, bodyModifier] = splitColorParts(body);
-  const { originColor, bodyNo } = resolveColorParts(bodyColor);
+  const colorParts = resolveColorParts(bodyColor);
+  const { originColor, bodyNo } = colorParts;
 
   const resolvedColorData: NonNullable<ParseColorReturn> = {
     opacity: bodyOpacity,
@@ -46,7 +47,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   }
 
   // resolve color
-  resolvedColorData.color = resolveThemeColorValue(bodyColor, ctx.theme) ?? '';
+  resolvedColorData.color = resolveThemeColorValue(colorParts, ctx.theme) ?? '';
 
   return resolvedColorData;
 }
