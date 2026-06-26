@@ -39,7 +39,7 @@ export function createColorStyle(context?: MagicColorContext): Rule<Theme>[] {
     [/^inset-ring-mc-(.+)$/, mcColorResolver(`--un-inset-ring-color`, 'inset-ring', context), { autocomplete: 'inset-ring-mc-$colors' }],
     [/^ring-offset-mc-(.+)$/, mcColorResolver('--un-ring-offset-color', 'ring-offset', context), { autocomplete: 'ring-offset-mc-$colors' }],
     [/^shadow-mc-(.+)$/, handleShadow('shadow', context), { autocomplete: ['shadow-$colors', 'shadow-mc-$shadow'] }],
-    [/^inset-shadow-mc(.+)$/, handleShadow('insetShadow', context), { autocomplete: ['inset-shadow-mc-$colors', 'inset-shadow-mc-$insetShadow'] }],
+    [/^inset-shadow-mc-(.+)$/, handleShadow('insetShadow', context), { autocomplete: ['inset-shadow-mc-$colors', 'inset-shadow-mc-$insetShadow'] }],
     [/^fill-mc-(.+)$/, mcColorResolver('fill', 'fill', context), { autocomplete: 'fill-mc-$colors' }],
     [/^stroke-mc-(.+)$/, mcColorResolver('stroke', 'stroke', context), { autocomplete: 'stroke-mc-$colors' }],
     [/^text-stroke-mc-(.+)$/, mcColorResolver('-webkit-text-stroke-color', 'text-stroke', context), { autocomplete: 'text-stroke-mc-$colors' }],
