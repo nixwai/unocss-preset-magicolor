@@ -45,8 +45,9 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
       if (parsedOriginColor?.color && mc.valid(parsedOriginColor.color)) {
         const themeColor = mc.theme(parsedOriginColor.color, { type: 'hex' });
         for (const themeMeta of themeMetaList) {
-          if (!themeMetaColors[themeMeta]) {
-            themeMetaColors[themeMeta] = { type: 'hex', components: [themeColor[themeMeta]], alpha: 1 };
+          const hex = themeColor[themeMeta];
+          if (!themeMetaColors[themeMeta] && hex) {
+            themeMetaColors[themeMeta] = { type: 'hex', components: [hex], alpha: 1 };
           }
         }
       }

@@ -112,14 +112,10 @@ export function resolveBodyColor(body = ''): ResolvedColorParts & { originColor:
 }
 
 /**
- * is invalid color
+ * Pure predicate: a color is invalid when it is empty/undefined or a bare number.
  */
 export function isInvalidColor(color?: string) {
-  if (!color || !Number.isNaN(Number(color))) {
-    console.error(`[unocss-preset-magicolor] The color '${color}' is invalid.`);
-    return true;
-  }
-  return false;
+  return !color || !Number.isNaN(Number(color));
 }
 
 function stringifyOklchColor(cssColor?: CSSColorValue) {

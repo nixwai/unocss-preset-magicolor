@@ -80,8 +80,14 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
     if (mc.valid(originColor)) {
       const themeColor = mc.theme(originColor, { type: 'hex' });
       for (const themeMeta of themeMetaList) {
-        const cssColor = toOklch({ type: 'hex', components: [themeColor[themeMeta]], alpha: 1 });
-        themeMetaColors[themeMeta] = cssColor;
+        const hex = themeColor[themeMeta];
+        if (!hex) {
+          continue;
+        }
+        const cssColor = toOklch({ type: 'hex', components: [hex], alpha: 1 });
+        if (cssColor) {
+          themeMetaColors[themeMeta] = cssColor;
+        }
       }
     }
   }

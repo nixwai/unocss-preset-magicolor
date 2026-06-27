@@ -1,8 +1,8 @@
 import type { PresetMcOptions } from './types';
-import { extractBodyColor, resolveBodyColor, resolveColorParts } from '@unocss-preset-magicolor/utils';
+import { extractBodyColor, isInvalidColor, resolveBodyColor, resolveColorParts } from '@unocss-preset-magicolor/utils';
 import { createGenerator, presetWind4 } from 'unocss';
-import { describe, expect, it } from 'vitest';
-import { updateMagicColor } from './helper';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getMagicColorStyle, updateMagicColor } from './helper';
 import { presetMagicolor } from './index';
 
 async function createUno(options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
@@ -528,5 +528,65 @@ describe('updateMagicColor', () => {
 
     // Invalid color short-circuits to an empty css object; existing value is left untouched.
     expect(dom.style.getPropertyValue('--mc-primary-color')).toBe('red');
+  });
+
+  it('does not emit oklch(undefined) when a theme depth is missing (M3)', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-primary-457-color', 'red');
+
+    expect(() => updateMagicColor({ name: 'primary', color: '#9c1d1e', dom })).not.toThrow();
+
+    const value = dom.style.getPropertyValue('--mc-primary-457-color');
+    expect(value).not.toContain('undefined');
+    expect(value).not.toContain('NaN');
+  });
+});
+
+describe('isInvalidColor predicate (M1)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('returns true for empty or numeric colors and false for real colors', () => {
+    expect(isInvalidColor('')).toBe(true);
+    expect(isInvalidColor(undefined)).toBe(true);
+    expect(isInvalidColor('123')).toBe(true);
+    expect(isInvalidColor('rose')).toBe(false);
+    expect(isInvalidColor('#9c1d1e')).toBe(false);
+  });
+
+  it('does not log to the console as a pure predicate', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    isInvalidColor('123');
+    isInvalidColor(undefined);
+    isInvalidColor('rose');
+
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not spam the console while generating CSS for invalid usages', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await generate('<div class="c-mc-123 c-mc-456 c-mc-789"></div>');
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+});
+
+describe('getMagicColorStyle missing depth handling (M3)', () => {
+  it('skips depths that resolve to undefined instead of emitting oklch(undefined)', () => {
+    const css = getMagicColorStyle({
+      name: 'primary',
+      color: '#9c1d1e',
+      hasBase: true,
+      depths: new Set(['457']),
+    });
+
+    for (const value of Object.values(css)) {
+      expect(value).not.toContain('undefined');
+      expect(value).not.toContain('NaN');
+    }
   });
 });
