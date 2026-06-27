@@ -52,7 +52,7 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
       }
     }
     catch (e) {
-      console.error(`[unocss-preset-margicolor] get ${originColor} theme fail, please use another color.`);
+      console.error(`[unocss-preset-magicolor] get ${originColor} theme fail, please use another color.`);
       console.error(e);
     }
   }

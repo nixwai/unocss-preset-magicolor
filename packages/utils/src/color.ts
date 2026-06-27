@@ -116,7 +116,7 @@ export function resolveBodyColor(body = ''): ResolvedColorParts & { originColor:
  */
 export function isInvalidColor(color?: string) {
   if (!color || !Number.isNaN(Number(color))) {
-    console.error(`[unocss-preset-margicolor] The color '${color}' is invalid.`);
+    console.error(`[unocss-preset-magicolor] The color '${color}' is invalid.`);
     return true;
   }
   return false;
