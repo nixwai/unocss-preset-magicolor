@@ -105,20 +105,6 @@ export function resolveColorParts(color?: string): ResolvedColorParts {
   return { originColor: color, bodyNo: undefined };
 }
 
-export function resolveDepth(no: string) {
-  // origin depth
-  let originDepth = Number(no) as ThemeKey;
-  originDepth = originDepth <= 50 ? 50 : originDepth;
-  originDepth = originDepth >= 950 ? 950 : originDepth;
-  // get before depth, can not be less than 50
-  let beforeDepth = Math.floor(originDepth / 100) * 100 as ThemeKey;
-  beforeDepth = beforeDepth <= 50 ? 50 : beforeDepth;
-  // get after depth, can not be greater than 950
-  let afterDepth = Math.floor((originDepth + 100) / 100) * 100 as ThemeKey;
-  afterDepth = afterDepth >= 950 ? 950 : afterDepth;
-  return { originDepth, beforeDepth, afterDepth };
-}
-
 /**
  * is invalid color
  */
@@ -130,7 +116,7 @@ export function isInvalidColor(color?: string) {
   return false;
 }
 
-export function stringifyOklchColor(cssColor?: CSSColorValue) {
+function stringifyOklchColor(cssColor?: CSSColorValue) {
   const color = toOklch(cssColor);
   if (!color) {
     return;
@@ -140,6 +126,20 @@ export function stringifyOklchColor(cssColor?: CSSColorValue) {
   const alpha = color.alpha != null && color.alpha !== 1 ? ` / ${color.alpha}` : '';
 
   return `oklch(${components.join(' ')}${alpha})`;
+}
+
+function resolveDepth(no: string) {
+  // origin depth
+  let originDepth = Number(no) as ThemeKey;
+  originDepth = originDepth <= 50 ? 50 : originDepth;
+  originDepth = originDepth >= 950 ? 950 : originDepth;
+  // get before depth, can not be less than 50
+  let beforeDepth = Math.floor(originDepth / 100) * 100 as ThemeKey;
+  beforeDepth = beforeDepth <= 50 ? 50 : beforeDepth;
+  // get after depth, can not be greater than 950
+  let afterDepth = Math.floor((originDepth + 100) / 100) * 100 as ThemeKey;
+  afterDepth = afterDepth >= 950 ? 950 : afterDepth;
+  return { originDepth, beforeDepth, afterDepth };
 }
 
 export function getThemeDepthColor(themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>, no: string | number) {
@@ -159,6 +159,12 @@ export function getThemeDepthColor(themeMetaColors: Partial<Record<ThemeKey, CSS
 
   const beforeComponents = beforeColor.components;
   const afterComponents = afterColor.components;
+  // Both endpoints need at least 3 channels to interpolate; otherwise the
+  // missing channels would silently coerce to 0 and produce oklch(0 0 0).
+  if (beforeComponents.length < 3 || afterComponents.length < 3) {
+    return;
+  }
+  // The progressive process of depth is：50、100、200、300、400、500、600、700、800、900、950
   const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
   const resultColor = Array.from({ length: 3 }).map((_, i) => {
     const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;

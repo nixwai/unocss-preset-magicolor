@@ -13,20 +13,21 @@ export function toOklch(cssColor?: CSSColorValue) {
   if (!cssColor) { return undefined; }
 
   if (cssColor.type === 'oklch') {
-    if (cssColor.components.length === 1 && typeof cssColor.components[0] === 'string') {
-      cssColor.components = cssColor.components[0].split(/\s*,\s*|\s+/).filter(Boolean);
+    let components = cssColor.components;
+    if (components.length === 1 && typeof components[0] === 'string') {
+      components = components[0].split(/\s*,\s*|\s+/).filter(Boolean);
     }
 
-    if (cssColor.components.length < 3) {
+    if (components.length < 3) {
       return;
     }
 
-    // uniform use number
-    if (cssColor.components[0].toString().includes('%')) {
-      cssColor.components[0] = toNum(cssColor.components[0]) / 100;
-    }
-    cssColor.components = cssColor.components.map(toNum);
-    return cssColor;
+    // uniform use number, lightness percentage normalized to 0-1
+    const numericComponents = components.map((value, index) =>
+      index === 0 && value.toString().includes('%') ? toNum(value) / 100 : toNum(value),
+    );
+
+    return { ...cssColor, components: numericComponents };
   }
 
   const oklchColor = mc(

@@ -16,24 +16,27 @@ export function createColorStyle(context?: MagicColorContext): Rule<Theme>[] {
     // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/decoration.ts
     [/^(?:underline|decoration)-mc-(.+)$/, (match, ctx) => {
       const result = mcColorResolver('text-decoration-color', 'line', context)(match, ctx); // use mcColorResolver
-      if (result) {
-        const css = result[0] as CSSObject;
-        css['-webkit-text-decoration-color'] = css['text-decoration-color'];
-        return result;
+      if (!result) {
+        return undefined;
       }
+      const css = result[0] as CSSObject;
+      css['-webkit-text-decoration-color'] = css['text-decoration-color'];
+      return result;
     }, { autocomplete: '(underline|decoration)-mc-$colors' }],
     // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/divide.ts
     [/^divide-mc-(.+)$/, function* (match, ctx) {
       const result = mcColorResolver('border-color', 'divide', context)(match, ctx); // use mcColorResolver
-      if (result) {
-        yield {
-          [ctx.symbols.variants]: [notLastChildSelectorVariant(match[0])],
-          ...result[0] as CSSObject,
-        };
-        yield result[1];
+      if (!result) {
+        return;
       }
+      yield {
+        [ctx.symbols.variants]: [notLastChildSelectorVariant(match[0])],
+        ...result[0] as CSSObject,
+      };
+      yield result[1];
     }, { autocomplete: 'divide-mc-$colors' }],
-    [/^(?:filter-)?drop-shadow-color-mc-(.+)$/, mcColorResolver('--un-drop-shadow-color', 'drop-shadow', context), { autocomplete: 'divide-mc-$colors' }],
+    [/^(?:filter-)?drop-shadow-color-mc-(.+)$/, mcColorResolver('--un-drop-shadow-color', 'drop-shadow', context)],
+    // The prefix `$ ` is intentional. This rule is not to be matched directly from user-generated token.
     [/^\$ placeholder-mc-(.+)$/, mcColorResolver('color', 'placeholder', context), { autocomplete: 'placeholder-mc-$colors' }],
     [/^ring-mc-(.+)$/, mcColorResolver('--un-ring-color', 'ring', context), { autocomplete: 'ring-mc-$colors' }],
     [/^inset-ring-mc-(.+)$/, mcColorResolver(`--un-inset-ring-color`, 'inset-ring', context), { autocomplete: 'inset-ring-mc-$colors' }],
