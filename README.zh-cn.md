@@ -7,7 +7,7 @@
   <a href="./README.zh-cn.md">简体中文</a>
 </p>
 
-## Usage
+## 使用
 
 ```bash
 pnpm add unocss-preset-magicolor -D
@@ -34,7 +34,7 @@ export default defineConfig({
 - 生成的 CSS 变量会按实际扫描到的 class 裁剪，未使用的颜色名和色阶不会进入最终 CSS。
 - 大多数 UnoCSS 颜色相关工具类都可以使用 `mc-` 版本，例如 `c-mc-*`、`text-mc-*`、`bg-mc-*`、`border-mc-*`、`ring-mc-*`、`shadow-mc-*`、`fill-mc-*`、`stroke-mc-*`、`from-mc-*`、`via-mc-*`、`to-mc-*` 和 `mask-*-mc-*`。
 
-### basic
+### 基础用法
 
 你可以直接把 UnoCSS 已有颜色、`theme.colors` 中的自定义颜色，以及任意合法 CSS 颜色用于 `mc-` 颜色工具类。和 UnoCSS 原生写法相比，差异主要是颜色名前多了 `mc-`，并且色阶不再局限于默认的 50/100/200...950。
 
@@ -76,7 +76,7 @@ export default defineConfig({
 </template>
 ```
 
-### use class to define colors
+### 使用 class 定义颜色
 
 除了在 `theme.colors` 中配置颜色，也可以直接在 class 中定义局部颜色变量。语法是 `mc-<name>_<color>`，之后在同一作用域内通过 `*-mc-<name>` 或 `*-mc-<name>-<depth>` 使用。
 
@@ -96,7 +96,7 @@ export default defineConfig({
 
 `mc-btn_[#9c1d1e]` 只是定义颜色来源，真正需要输出哪些 CSS 变量由 `bg-mc-btn-450`、`shadow-mc-btn-620`、`c-mc-btn-610` 这些使用类决定。你也可以把定义类写成 `mc-btn_blue`、`mc-btn_primary`，其中 `blue` 可以来自 UnoCSS 默认色板，`primary` 可以来自下面的全局颜色配置。
 
-### global color
+### 全局颜色
 
 如果项目里有稳定的语义色，可以通过 `presetMagicolor({ colors })` 定义全局别名。别名会在 `:root` 中输出为 `--mc-<name>-color` 或 `--mc-<name>-<depth>-color`，但同样只会为实际用到的色阶生成变量。
 
@@ -145,7 +145,7 @@ export default defineConfig({
 </template>
 ```
 
-### js change color
+### JS 运行时换色
 
 可以使用 `updateMagicColor` 在运行时更新已经生成的 magic color CSS 变量。传入 `document.documentElement` 时通常用于切换整站主题色；传入组件根节点时可以只更新局部作用域。
 
@@ -171,11 +171,11 @@ function toggleColor() {
 
 `updateMagicColor` 会读取目标元素上已经存在的 `--mc-primary-color`、`--mc-primary-457-color` 等变量，并只更新这些已定义变量。它不会单纯根据 DOM 里的 class 反推新变量，因此需要先通过 `c-mc-primary`、`bg-mc-primary-457` 等 class 让 UnoCSS 生成对应变量。
 
-## Credits
+## 鸣谢
 
 - [UnoCSS](https://github.com/unocss/unocss)
 - [magic-color](https://github.com/zyyv/magic-color)
 
-## license
+## 许可证
 
 [MIT](./LICENSE)
