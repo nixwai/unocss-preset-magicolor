@@ -1,32 +1,83 @@
-import type { Preflight } from 'unocss';
+import type { PresetWind4Options } from '@unocss/preset-wind4';
+import type { CSSObject, Preflight, Preset } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
 import { resolveThemeColorVariable } from '../rules/utils';
 
+const PRESET_NAME_LIST = ['@unocss/preset-mini', '@unocss/preset-wind3', '@unocss/preset-wind4'];
+const DEFAULT_DARK_SELECTOR = '.dark';
+
+function stringifyCssVariables(css: CSSObject) {
+  return Object.entries(css)
+    .filter(([, value]) => value != null)
+    .map(([key, value]) => `${key}: ${value};`)
+    .join('\n');
+}
+
+function hasCssVariables(css: CSSObject) {
+  return Object.values(css).some(value => value != null);
+}
+
+function createRootCss(css: CSSObject) {
+  if (!hasCssVariables(css)) {
+    return '';
+  }
+
+  return `
+        :root {
+          ${stringifyCssVariables(css)}
+        }`;
+}
+
+function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
+  if (!hasCssVariables(css)) {
+    return '';
+  }
+  const presetOptions = presets.find(preset => PRESET_NAME_LIST.includes(preset.name))?.options as PresetWind4Options | undefined;
+  const darkMode = presetOptions?.dark === 'media' ? 'media' : 'class';
+
+  const cssVariables = stringifyCssVariables(css);
+  if (darkMode === 'media') {
+    return `
+        @media (prefers-color-scheme: dark) {
+          :root {
+            ${cssVariables}
+          }
+        }`;
+  }
+  const selector = typeof presetOptions?.dark === 'string'
+    ? DEFAULT_DARK_SELECTOR
+    : (presetOptions?.dark?.dark || DEFAULT_DARK_SELECTOR);
+  return `
+        ${selector} {
+          ${cssVariables}
+        }`;
+}
+
 export function preflights(context?: MagicColorContext): Preflight[] {
   return [{
-    getCSS: ({ theme }) => {
-      const css = {};
+    getCSS: ({ theme, generator }) => {
+      const css: CSSObject = {};
+      const darkCss: CSSObject = {};
       for (const name of context?.usage.getUsageNames() ?? []) {
         const isUnocssThemeColor = hasParseableColor(name, theme);
         const optionColor = context?.options.colors?.[name];
-        // skip if not defined by option or theme
-        if (!optionColor && !isUnocssThemeColor) {
-          continue;
+        const darkColor = context?.options.dark?.[name];
+
+        if (optionColor || isUnocssThemeColor) {
+          Object.assign(css, resolveThemeColorVariable(name, resolveBodyColor(optionColor ?? name), theme, context));
         }
 
-        Object.assign(css, resolveThemeColorVariable(name, resolveBodyColor(optionColor ?? name), theme, context));
+        if (darkColor) {
+          Object.assign(darkCss, resolveThemeColorVariable(name, resolveBodyColor(darkColor), theme, context));
+        }
       }
 
-      if (Object.keys(css).length) {
-        return `
-        :root {
-          ${Object.entries(css).map(([key, value]) => `${key}: ${value};`).join('\n')}
-        }`;
-      }
+      const rootCss = createRootCss(css);
+      const darkVariablesCss = createDarkCss(darkCss, generator.config.presets);
 
-      return '';
+      return `${rootCss}${darkVariablesCss}`;
     },
   }];
 };

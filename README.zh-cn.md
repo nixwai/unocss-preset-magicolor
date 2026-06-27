@@ -106,11 +106,15 @@ import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    presetWind4({ dark: 'class' }),
     presetMagicolor({
       colors: {
         primary: 'rose',
         brand: '#4f7bff',
+      },
+      dark: {
+        primary: 'blue',
+        brand: '#8ab4ff',
       },
     }),
   ],
@@ -127,7 +131,9 @@ export default defineConfig({
 
 这相当于在 UnoCSS 原有 `theme.colors` 之外增加一层语义映射：`primary`、`brand` 这样的业务色名可以继续享受任意色阶、透明度修饰和变体能力，例如 `bg-mc-primary-457/80`、`hover:bg-mc-primary-620`。
 
-同一个语义色也可以通过变体重新定义，因此很适合做主题色切换。例如使用 `mc-primary_<color>` 定义亮色主题，再用 `dark:mc-primary_<color>` 在暗黑模式下覆盖颜色；所有读取 `primary` 的工具类都会跟随当前主题变化。
+`dark` 选项可以为同一组语义色定义全局暗色模式颜色。存在 `presetWind4` 时，暗色颜色表会跟随它的 `dark` 配置（`'class'`、`'media'` 或自定义选择器）。如果 Magicolor 无法读取到 `presetWind4` 的 dark 配置，则默认使用 `.dark`。生成的暗色块会覆盖同名 `--mc-*` 变量，不依赖 `dark:mc-*` 工具类是否成功生成。
+
+同一个语义色仍然可以通过变体在局部组件中重新定义。例如使用 `mc-primary_<color>` 定义亮色主题，再用 `dark:mc-primary_<color>` 在暗黑模式下覆盖颜色；所有读取 `primary` 的工具类都会跟随当前主题变化。
 
 ```vue
 <template>

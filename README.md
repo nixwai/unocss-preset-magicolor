@@ -106,11 +106,15 @@ import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    presetWind4({ dark: 'class' }),
     presetMagicolor({
       colors: {
         primary: 'rose',
         brand: '#4f7bff',
+      },
+      dark: {
+        primary: 'blue',
+        brand: '#8ab4ff',
       },
     }),
   ],
@@ -127,7 +131,9 @@ export default defineConfig({
 
 This adds a semantic layer on top of the original UnoCSS `theme.colors`: business color names such as `primary` and `brand` can use arbitrary depths, opacity modifiers, and variants, for example `bg-mc-primary-457/80` and `hover:bg-mc-primary-620`.
 
-The same semantic color can also be redefined by variants, which makes theme color switching straightforward. For example, define the light theme with `mc-primary_<color>` and override it in dark mode with `dark:mc-primary_<color>`; all utilities that read `primary` will follow the active theme.
+The `dark` option defines global dark-mode aliases for the same semantic names. When `presetWind4` is present, the dark color map follows its `dark` mode (`'class'`, `'media'`, or custom selectors). If Magicolor cannot read a `presetWind4` dark mode, it falls back to `.dark`. The generated dark block overrides the same `--mc-*` variables without relying on `dark:mc-*` utilities being generated.
+
+The same semantic color can still be redefined by variants for local component overrides. For example, define the light theme with `mc-primary_<color>` and override it in dark mode with `dark:mc-primary_<color>`; all utilities that read `primary` will follow the active theme.
 
 ```vue
 <template>
