@@ -20,9 +20,6 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   }
   colorData.name = originColor;
   colorData.no = bodyNo;
-
-  console.warn(body, originColor, colorData);
-
   context?.usage.recordUsage(`mc-${body}`, ctx.rawSelector);
 
   // Names used by `mc-*` definitions, global options, and theme colors are
