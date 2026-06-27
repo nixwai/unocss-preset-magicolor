@@ -27,6 +27,29 @@ export default defineConfig({
 });
 ```
 
+### layer order
+
+By default, this preset emits its utilities in the internal UnoCSS layer named `unocss-preset-magicolor` with order `-100`. UnoCSS outputs higher layer orders later, so this keeps `mc-*` utilities before the normal `default` layer. When an `mc-*` utility and a native UnoCSS utility set the same CSS property on the same element, the native utility can override the `mc-*` utility by default.
+
+You can override only the order from your UnoCSS config if you want Magicolor utilities to have higher priority:
+
+```ts
+import { defineConfig, presetWind4 } from 'unocss';
+import { presetMagicolor } from 'unocss-preset-magicolor';
+
+export default defineConfig({
+  presets: [
+    presetWind4(),
+    presetMagicolor(),
+  ],
+  layers: {
+    'unocss-preset-magicolor': 1,
+  },
+});
+```
+
+The layer name is fixed by the preset; the numeric order is the part users are expected to customize.
+
 `unocss-preset-magicolor` does not replace the original UnoCSS color system. It extends the existing `theme.colors`, default palettes, and color utility rules with an `mc-` magic color layer:
 
 - Instead of being limited to fixed steps such as `rose-500` and `blue-600`, you can write arbitrary numeric depths such as `rose-445`, `primary-457`, and `brand-630`.
