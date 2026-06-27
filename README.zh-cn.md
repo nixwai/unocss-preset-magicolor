@@ -127,6 +127,18 @@ export default defineConfig({
 
 这相当于在 UnoCSS 原有 `theme.colors` 之外增加一层语义映射：`primary`、`brand` 这样的业务色名可以继续享受任意色阶、透明度修饰和变体能力，例如 `bg-mc-primary-457/80`、`hover:bg-mc-primary-620`。
 
+同一个语义色也可以通过变体重新定义，因此很适合做主题色切换。例如使用 `mc-primary_<color>` 定义亮色主题，再用 `dark:mc-primary_<color>` 在暗黑模式下覆盖颜色；所有读取 `primary` 的工具类都会跟随当前主题变化。
+
+```vue
+<template>
+  <main class="mc-primary_[#409eff] dark:mc-primary_[#8ab4ff]">
+    <button class="bg-mc-primary-500 px-8 py-4 c-white dark:bg-mc-primary-400">
+      Theme primary
+    </button>
+  </main>
+</template>
+```
+
 ### js change color
 
 可以使用 `updateMagicColor` 在运行时更新已经生成的 magic color CSS 变量。传入 `document.documentElement` 时通常用于切换整站主题色；传入组件根节点时可以只更新局部作用域。

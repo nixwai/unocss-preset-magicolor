@@ -127,6 +127,18 @@ export default defineConfig({
 
 This adds a semantic layer on top of the original UnoCSS `theme.colors`: business color names such as `primary` and `brand` can use arbitrary depths, opacity modifiers, and variants, for example `bg-mc-primary-457/80` and `hover:bg-mc-primary-620`.
 
+The same semantic color can also be redefined by variants, which makes theme color switching straightforward. For example, define the light theme with `mc-primary_<color>` and override it in dark mode with `dark:mc-primary_<color>`; all utilities that read `primary` will follow the active theme.
+
+```vue
+<template>
+  <main class="mc-primary_[#409eff] dark:mc-primary_[#8ab4ff]">
+    <button class="bg-mc-primary-500 px-8 py-4 c-white dark:bg-mc-primary-400">
+      Theme primary
+    </button>
+  </main>
+</template>
+```
+
 ### js change color
 
 Use `updateMagicColor` to update generated magic color CSS variables at runtime. Passing `document.documentElement` usually updates the whole page theme; passing a component root element updates only that local scope.
