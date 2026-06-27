@@ -590,3 +590,43 @@ describe('getMagicColorStyle missing depth handling (M3)', () => {
     }
   });
 });
+
+describe('boundary depth interpolation (L3)', () => {
+  it('interpolates the 50-100 segment without collapsing to oklch(0 0 0)', () => {
+    const css = getMagicColorStyle({
+      name: 'primary',
+      color: '#9c1d1e',
+      hasBase: false,
+      depths: new Set(['75']),
+    });
+
+    const value = String(css['--mc-primary-75-color'] ?? '');
+    expect(value).toMatch(/^oklch\(/);
+    expect(value).not.toBe('oklch(0 0 0)');
+    expect(value).not.toContain('NaN');
+  });
+
+  it('interpolates the 900-950 segment without collapsing to oklch(0 0 0)', () => {
+    const css = getMagicColorStyle({
+      name: 'primary',
+      color: '#9c1d1e',
+      hasBase: false,
+      depths: new Set(['925']),
+    });
+
+    const value = String(css['--mc-primary-925-color'] ?? '');
+    expect(value).toMatch(/^oklch\(/);
+    expect(value).not.toBe('oklch(0 0 0)');
+    expect(value).not.toContain('NaN');
+  });
+});
+
+describe('mc definition guard (M3 underscore separator)', () => {
+  it('does not emit a truncated color name when the definition lacks an underscore', async () => {
+    // `mc-btnred` has no `_`; the rule must bail out rather than truncate the name to `mc-btnre`.
+    const { css } = await generate('<div class="mc-btnred c-mc-btnred"></div>', { colors: { btnred: 'rose' } });
+
+    expect(css).not.toContain('--mc-btnre-color:');
+    expect(css).not.toContain('oklch(undefined');
+  });
+});

@@ -13,6 +13,9 @@ export function createColorVariable(context?: MagicColorContext): Rule[] {
 function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>, context?: MagicColorContext) {
   // Use "_" to separate name and color
   const firstUnderscoreIndex = body.indexOf('_');
+  if (firstUnderscoreIndex < 0) {
+    return;
+  }
   const name = body.substring(0, firstUnderscoreIndex);
   const hue = body.substring(firstUnderscoreIndex + 1);
   if (!hue) {

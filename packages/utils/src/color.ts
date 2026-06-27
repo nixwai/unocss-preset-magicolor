@@ -1,5 +1,6 @@
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { ThemeMetas } from 'magic-color';
+import { mc } from 'magic-color';
 import { roundNum, toNum, toOklch } from './transforms';
 
 type ThemeKey = keyof ThemeMetas;
@@ -116,6 +117,41 @@ export function resolveBodyColor(body = ''): ResolvedColorParts & { originColor:
  */
 export function isInvalidColor(color?: string) {
   return !color || !Number.isNaN(Number(color));
+}
+
+/**
+ * Build the hex-based themeMeta color map for a valid color string using
+ * `magic-color`'s theme generator. Returns whatever metas could be resolved;
+ * an invalid color or a `mc.theme` failure yields an empty map (no logging).
+ * @param originColor a color string (e.g. `#9c1d1e`, `red`)
+ * @returns themeMeta → oklch CSSColorValue map (partial)
+ */
+export function getMcThemeMetaColors(originColor?: string): Partial<Record<ThemeKey, CSSColorValue>> {
+  const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
+
+  if (!originColor || isInvalidColor(originColor) || !mc.valid(originColor)) {
+    return themeMetaColors;
+  }
+
+  try {
+    const themeColor = mc.theme(originColor, { type: 'hex' });
+    for (const themeMeta of themeMetaList) {
+      const hex = themeColor[themeMeta];
+      if (!hex) {
+        continue;
+      }
+      const cssColor = toOklch({ type: 'hex', components: [hex], alpha: 1 });
+      if (cssColor) {
+        themeMetaColors[themeMeta] = cssColor;
+      }
+    }
+  }
+  catch {
+    // Swallow: a single unparseable color must not break generation; the
+    // caller falls back to whatever metas were resolved (possibly none).
+  }
+
+  return themeMetaColors;
 }
 
 function stringifyOklchColor(cssColor?: CSSColorValue) {

@@ -3,9 +3,8 @@ import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { MagicColorContext, ThemeKey } from '../../typing';
-import { getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
+import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
-import { mc } from 'magic-color';
 import { BASE_COLOR_DEPTH } from '../../usages';
 
 /**
@@ -37,24 +36,17 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
 
   // use 'mc.theme' to supplement the colors
   if (hasEmptyColor) {
-    try {
-      let parsedOriginColor = parseColor(originColor, theme);
-      if (!parsedOriginColor?.color) {
-        parsedOriginColor = parseColor(`[${originColor}]`, theme); // It is compatible with or without []
-      }
-      if (parsedOriginColor?.color && mc.valid(parsedOriginColor.color)) {
-        const themeColor = mc.theme(parsedOriginColor.color, { type: 'hex' });
-        for (const themeMeta of themeMetaList) {
-          const hex = themeColor[themeMeta];
-          if (!themeMetaColors[themeMeta] && hex) {
-            themeMetaColors[themeMeta] = { type: 'hex', components: [hex], alpha: 1 };
-          }
+    let parsedOriginColor = parseColor(originColor, theme);
+    if (!parsedOriginColor?.color) {
+      parsedOriginColor = parseColor(`[${originColor}]`, theme); // It is compatible with or without []
+    }
+    if (parsedOriginColor?.color) {
+      const mcThemeMetaColors = getMcThemeMetaColors(parsedOriginColor.color);
+      for (const themeMeta of themeMetaList) {
+        if (!themeMetaColors[themeMeta] && mcThemeMetaColors[themeMeta]) {
+          themeMetaColors[themeMeta] = mcThemeMetaColors[themeMeta];
         }
       }
-    }
-    catch (e) {
-      console.error(`[unocss-preset-magicolor] get ${originColor} theme fail, please use another color.`);
-      console.error(e);
     }
   }
 

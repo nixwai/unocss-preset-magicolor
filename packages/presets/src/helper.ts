@@ -1,7 +1,5 @@
-import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
-import type { ThemeKey } from './typing';
-import { getThemeDepthColor, isInvalidColor, resolveColorParts, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
+import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveColorParts } from '@unocss-preset-magicolor/utils';
 import { mc } from 'magic-color';
 
 interface ColorVariableUsage {
@@ -75,26 +73,7 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
     return {};
   }
 
-  const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
-  try {
-    if (mc.valid(originColor)) {
-      const themeColor = mc.theme(originColor, { type: 'hex' });
-      for (const themeMeta of themeMetaList) {
-        const hex = themeColor[themeMeta];
-        if (!hex) {
-          continue;
-        }
-        const cssColor = toOklch({ type: 'hex', components: [hex], alpha: 1 });
-        if (cssColor) {
-          themeMetaColors[themeMeta] = cssColor;
-        }
-      }
-    }
-  }
-  catch (e) {
-    console.error(`[updateMagicColor] get ${originColor} theme fail, please use another color.`);
-    console.error(e);
-  }
+  const themeMetaColors = getMcThemeMetaColors(originColor);
 
   const css: CSSObject = {};
 
@@ -135,7 +114,9 @@ export function updateMagicColor(params: { name: string, color: string, dom?: HT
   const { hasBase, depths } = collectDefinedColorVariables(name, dom);
   const css = getMagicColorStyle({ name, color, hasBase, depths });
 
-  for (const variable in css) {
-    css[variable] && dom.style.setProperty(variable, css[variable].toString());
+  for (const [variable, value] of Object.entries(css)) {
+    if (value) {
+      dom.style.setProperty(variable, value.toString());
+    }
   }
 }
