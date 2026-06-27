@@ -16,9 +16,12 @@ const compactColorNameRE = /^[a-z][a-z0-9-]*$/i;
 const trailingDigitsRE = /\d+$/;
 const bracketColorDepthRE = /^-?(\d+)$/;
 
-export function splitColorParts(color: string): [string, string?, string?] {
-  const parts: string[] = [];
-  let current = '';
+/**
+ * Extracts the body color from a token, dropping any opacity (`/`) or
+ * modifier (`:`) suffixes that appear outside bracketed arbitrary colors.
+ */
+export function extractBodyColor(color: string): string {
+  let bodyColor = '';
   let bracketDepth = 0;
 
   for (const char of color) {
@@ -30,18 +33,13 @@ export function splitColorParts(color: string): [string, string?, string?] {
     }
 
     if ((char === ':' || char === '/') && bracketDepth === 0) {
-      parts.push(current);
-      current = '';
-      continue;
+      break;
     }
 
-    current += char;
+    bodyColor += char;
   }
 
-  parts.push(current);
-
-  const [bodyColor, bodyOpacity, bodyModifier] = parts;
-  return [bodyColor, bodyOpacity, bodyModifier];
+  return bodyColor;
 }
 
 function normalizeDepthNo(no: string) {
@@ -103,6 +101,14 @@ export function resolveColorParts(color?: string): ResolvedColorParts {
   }
 
   return { originColor: color, bodyNo: undefined };
+}
+
+/**
+ * Resolves a token body into its color parts, stripping any opacity (`/`) or
+ * modifier (`:`) suffixes before parsing the depth.
+ */
+export function resolveBodyColor(body = ''): ResolvedColorParts & { originColor: string } {
+  return resolveColorParts(extractBodyColor(body));
 }
 
 /**

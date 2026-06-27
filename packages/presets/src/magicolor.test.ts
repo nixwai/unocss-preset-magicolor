@@ -1,5 +1,5 @@
 import type { PresetMcOptions } from './types';
-import { resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
+import { extractBodyColor, resolveBodyColor, resolveColorParts } from '@unocss-preset-magicolor/utils';
 import { createGenerator, presetWind4 } from 'unocss';
 import { describe, expect, it } from 'vitest';
 import { updateMagicColor } from './helper';
@@ -424,7 +424,19 @@ describe('color parsing utilities', () => {
   });
 
   it('keeps opacity and modifiers outside bracket arbitrary colors', () => {
-    expect(splitColorParts('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual(['[oklch(20.1%_0.1_20/50)]-200', '40', 'dark']);
+    expect(extractBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toBe('[oklch(20.1%_0.1_20/50)]-200');
+  });
+
+  it('resolves a token body into color parts in one step', () => {
+    // Strips opacity/modifier suffixes, then resolves the depth.
+    expect(resolveBodyColor('rose-445/40:dark')).toEqual({ originColor: 'rose', bodyNo: '445' });
+    expect(resolveBodyColor('grape120')).toEqual({ originColor: 'grape', bodyNo: '120' });
+    expect(resolveBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual({ originColor: '[oklch(20.1%_0.1_20/50)]', bodyNo: '200' });
+  });
+
+  it('handles empty and missing token bodies', () => {
+    expect(resolveBodyColor()).toEqual({ originColor: '', bodyNo: undefined });
+    expect(resolveBodyColor('')).toEqual({ originColor: '', bodyNo: undefined });
   });
 });
 

@@ -1,4 +1,4 @@
-import { resolveColorParts, splitColorParts } from '@unocss-preset-magicolor/utils';
+import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
 
 export const BASE_COLOR_DEPTH = 'none';
 
@@ -47,8 +47,7 @@ export function scanUsage(tokens: Iterable<string>): FileUsage {
       continue;
     }
 
-    const [bodyColor] = splitColorParts(body);
-    const { originColor: name, bodyNo: no } = resolveColorParts(bodyColor);
+    const { originColor: name, bodyNo: no } = resolveBodyColor(body);
     if (!name) {
       continue;
     }
