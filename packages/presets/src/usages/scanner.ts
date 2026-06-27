@@ -54,7 +54,7 @@ export function scanUsage(tokens: Iterable<string>): FileUsage {
 
     // Merge repeated tokens for the same color name within this input.
     const depths = colors.get(name) ?? new Set<MagicColorDepth>();
-    if (no) {
+    if (no !== undefined) {
       addDepth(depths, no);
     }
     else {

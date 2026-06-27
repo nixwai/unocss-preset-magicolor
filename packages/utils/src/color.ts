@@ -95,7 +95,7 @@ export function resolveColorParts(color?: string): ResolvedColorParts {
 
   if (compactColorNameRE.test(color)) {
     const bodyNo = color.match(trailingDigitsRE)?.[0];
-    if (bodyNo) {
+    if (bodyNo !== undefined) {
       return { originColor: color.slice(0, -bodyNo.length), bodyNo: normalizeDepthNo(bodyNo) };
     }
   }

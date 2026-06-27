@@ -22,8 +22,8 @@ function resolveMagicColor([, body]: string[], { theme }: RuleContext<Theme>, co
   const mcColorObj = resolveBodyColor(hue);
   const optionColorObj = resolveBodyColor(context?.options.colors?.[mcColorObj.originColor]);
   const colorParts = {
-    originColor: optionColorObj.originColor || mcColorObj.originColor,
-    bodyNo: mcColorObj.bodyNo || optionColorObj.bodyNo,
+    originColor: optionColorObj.originColor || mcColorObj.originColor, // The color of the options configuration
+    bodyNo: mcColorObj.bodyNo || optionColorObj.bodyNo, // Retain the original depth
   };
   const css = resolveThemeColorVariable(name, colorParts, theme, context);
   return css;
