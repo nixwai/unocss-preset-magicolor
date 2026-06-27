@@ -1,9 +1,19 @@
 import type { PresetMcOptions } from './types';
-import { extractBodyColor, isInvalidColor, resolveBodyColor, resolveColorParts } from '@unocss-preset-magicolor/utils';
+import {
+  extractBodyColor,
+  getMcThemeMetaColors,
+  isInvalidColor,
+  resolveBodyColor,
+  resolveColorParts,
+  roundNum,
+  toNum,
+  toOklch,
+} from '@unocss-preset-magicolor/utils';
 import { createGenerator, presetWind4 } from 'unocss';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getMagicColorStyle, updateMagicColor } from './helper';
 import { presetMagicolor } from './index';
+import { TokenUsage } from './usages/token';
 
 async function createUno(options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   return createGenerator({
@@ -727,5 +737,172 @@ describe('mc definition guard (M3 underscore separator)', () => {
 
     expect(css).not.toContain('--mc-btnre-color:');
     expect(css).not.toContain('oklch(undefined');
+  });
+});
+
+// === Additional test coverage for uncovered code paths ===
+
+describe('helper function edge cases', () => {
+  describe('collectDefinedColorVariables and updateMagicColor edge cases', () => {
+    it('does not set variable when value is falsy', () => {
+      const dom = document.createElement('div');
+      // using invalid color
+      updateMagicColor({ name: 'primary', color: '', dom });
+
+      expect(dom.style.length).toBe(0);
+    });
+  });
+
+  describe('getMagicColorStyle edge cases', () => {
+    it('handles hasBase true, bodyNo exists but mc.valid returns false', () => {
+      const result = getMagicColorStyle({
+        name: 'test',
+        color: 'invalid-color-with-no-123',
+        hasBase: true,
+        depths: new Set(),
+      });
+
+      expect(result).toEqual({});
+    });
+
+    it('skips depth if getThemeDepthColor returns undefined', () => {
+      const result = getMagicColorStyle({
+        name: 'test',
+        color: '#9c1d1e',
+        hasBase: false,
+        depths: new Set(['non-existent-depth']),
+      });
+
+      expect(result).toEqual({});
+    });
+  });
+});
+
+describe('preflights edge cases', () => {
+  it('handles empty context gracefully', async () => {
+    const uno = await createUno();
+    // empty usage case
+    const { css } = await uno.generate('<div class="text-white"></div>', { preflights: true });
+
+    expect(css).not.toContain('--mc-');
+  });
+});
+
+describe('color variable resolve edge cases', () => {
+  it('handles case when option color is not found', async () => {
+    const { css } = await generate('<div class="mc-test_notfound c-mc-test"></div>', { colors: {} });
+
+    expect(css).not.toContain('oklch(undefined');
+  });
+});
+
+describe('bg-gradient special color keys', () => {
+  it('handles special gradient color keys', async () => {
+    const { css } = await generate('<div class="from-mc-transparent to-mc-current"></div>', { colors: { transparent: 'transparent', current: 'currentColor' } });
+
+    expect(css).toContain('--un-gradient-from');
+    expect(css).toContain('--un-gradient-to');
+  });
+
+  it('handles non-magic-color gradient case', async () => {
+    const { css } = await generate('<div class="from-[#fff] to-[#000]"></div>');
+    // should work even if not mc-* colors
+    expect(css).toBeTruthy();
+  });
+});
+
+describe('mask edge cases', () => {
+  it('handles mask-radial case with direction and value', async () => {
+    const { css } = await generate('<div class="mask-radial-from-mc-red-500"></div>');
+    expect(css).toContain('--un-mask-radial');
+  });
+
+  it('handles mask-conic case', async () => {
+    const { css } = await generate('<div class="mask-conic-to-mc-blue-500"></div>');
+    expect(css).toContain('--un-mask-conic');
+  });
+});
+
+describe('color transform utilities', () => {
+  it('toOklch returns undefined for invalid input', () => {
+    expect(toOklch(undefined)).toBeUndefined();
+  });
+
+  it('toOklch handles oklch type with single component string', () => {
+    const result = toOklch({
+      type: 'oklch',
+      components: ['0.5 0.2 200'],
+      alpha: 1,
+    });
+
+    expect(result).toBeTruthy();
+    expect(result?.components.length).toBe(3);
+  });
+
+  it('toOklch returns undefined for incomplete oklch components', () => {
+    const result = toOklch({
+      type: 'oklch',
+      components: ['0.5'],
+      alpha: 1,
+    });
+
+    expect(result).toBeUndefined();
+  });
+
+  it('toNum handles various input types', () => {
+    expect(toNum(undefined)).toBe(0);
+    expect(toNum('123')).toBe(123);
+    expect(toNum(456)).toBe(456);
+  });
+
+  it('roundNum works correctly', () => {
+    expect(roundNum(0.1234)).toBe(0.123);
+    expect(roundNum(0.1235)).toBe(0.124);
+  });
+});
+
+describe('color utilities edge cases', () => {
+  it('extractBodyColor handles nested brackets', () => {
+    expect(extractBodyColor('[rgb(12,22,33)]:dark')).toBe('[rgb(12,22,33)]');
+  });
+
+  it('getMcThemeMetaColors handles invalid colors gracefully', () => {
+    expect(getMcThemeMetaColors('')).toEqual({});
+    expect(getMcThemeMetaColors('invalid-color')).toEqual({});
+    expect(getMcThemeMetaColors(undefined)).toEqual({});
+  });
+});
+
+describe('token usage tracking', () => {
+  it('handles non-existent token in getIds', () => {
+    const tokenUsage = new TokenUsage();
+
+    expect(tokenUsage.getIds('non-existent-token')).toBeUndefined();
+  });
+
+  it('handles removing token from non-existent id', () => {
+    const tokenUsage = new TokenUsage();
+
+    expect(() => tokenUsage.remove('non-existent-id', ['token'])).not.toThrow();
+  });
+});
+
+describe('placeholder color rule', () => {
+  it('placeholder color rule works', async () => {
+    // placeholder rule uses special prefix `$ `, need to test generation directly
+    const { css } = await generate('<div class="placeholder-mc-red-500"></div>');
+    expect(css).toBeTruthy();
+  });
+});
+
+describe('border color direction variants', () => {
+  it('handles all border direction variants', async () => {
+    const { css } = await generate(
+      '<div class="border-mc-red border-l-mc-red border-r-mc-red border-t-mc-red border-b-mc-red border-x-mc-red border-y-mc-red border-s-mc-red border-e-mc-red border-block-mc-red border-inline-mc-red border-bs-mc-red border-be-mc-red border-is-mc-red border-ie-mc-red"></div>',
+    );
+
+    expect(css).toContain('border-color');
+    expect(css).toContain('border-left-color');
+    expect(css).toContain('border-right-color');
   });
 });
