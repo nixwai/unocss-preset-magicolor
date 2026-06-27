@@ -1,21 +1,22 @@
+import type { ResolvedColorParts } from '@unocss-preset-magicolor/utils';
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
-import type { ThemeKey } from '../../typing';
+import type { MagicColorContext, ThemeKey } from '../../typing';
+import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
-import { mc } from 'magic-color';
-import { countDiffColor, generateOklchVariable, isInvalidColor, resolveDepth, themeMetaList, toOklch } from '../../utils';
+import { BASE_COLOR_DEPTH } from '../../usages';
 
 /**
  * get themeMetaColors
- * @param bodyColor `color-depth`: can be theme color or css color
+ * @param colorParts parsed color origin and depth
  * @param theme unocss theme
  * @returns themeMetaColors
  */
-function getThemeMetaColors(bodyColor: string, theme: Theme) {
-  const originColor = bodyColor?.split(/-\d+-?/)[0];
+function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
+  const { originColor } = colorParts;
 
-  if (isInvalidColor(originColor)) {
+  if (!originColor || isInvalidColor(originColor)) {
     return;
   }
 
@@ -35,23 +36,17 @@ function getThemeMetaColors(bodyColor: string, theme: Theme) {
 
   // use 'mc.theme' to supplement the colors
   if (hasEmptyColor) {
-    try {
-      let parsedOriginColor = parseColor(originColor, theme);
-      if (!parsedOriginColor?.color) {
-        parsedOriginColor = parseColor(`[${originColor}]`, theme); // It is compatible with or without []
-      }
-      if (parsedOriginColor?.color && mc.valid(parsedOriginColor.color)) {
-        const themeColor = mc.theme(parsedOriginColor.color, { type: 'hex' });
-        for (const themeMeta of themeMetaList) {
-          if (!themeMetaColors[themeMeta]) {
-            themeMetaColors[themeMeta] = { type: 'hex', components: [themeColor[themeMeta]], alpha: 1 };
-          }
+    let parsedOriginColor = parseColor(originColor, theme);
+    if (!parsedOriginColor?.color) {
+      parsedOriginColor = parseColor(`[${originColor}]`, theme); // It is compatible with or without []
+    }
+    if (parsedOriginColor?.color) {
+      const mcThemeMetaColors = getMcThemeMetaColors(parsedOriginColor.color);
+      for (const themeMeta of themeMetaList) {
+        if (!themeMetaColors[themeMeta] && mcThemeMetaColors[themeMeta]) {
+          themeMetaColors[themeMeta] = mcThemeMetaColors[themeMeta];
         }
       }
-    }
-    catch (e) {
-      console.error(`[unocss-preset-margicolor] get ${originColor} theme fail, please use another color.`);
-      console.error(e);
     }
   }
 
@@ -63,64 +58,70 @@ function getThemeMetaColors(bodyColor: string, theme: Theme) {
   return themeMetaColors;
 }
 
-/**
- * get theme color variables
- * @param name color name
- * @param bodyColor `color-depth`: can be theme color or css color
- * @param themeMetaColors themeMetaColors
- * @param theme unocss theme
- * @returns css variables
- */
-function getThemeColorVariables(
-  name: string,
-  bodyColor: string,
-  themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>,
+function getBaseColor(
+  colorParts: ResolvedColorParts,
   theme: Theme,
+  themeMetaColors?: Partial<Record<ThemeKey, CSSColorValue>>,
 ) {
-  const bodyNo = bodyColor.match(/.*-(\d+)/)?.[1];
-  const css: CSSObject = {};
-  // set body color
-  let parsedColor = parseColor(bodyColor, theme)?.color;
-  if (!parsedColor && !bodyNo) {
-    parsedColor = parseColor(`[${bodyColor}]`, theme)?.color; // It is compatible with or without []
+  const { originColor, bodyNo } = colorParts;
+  if (!originColor || isInvalidColor(originColor)) {
+    return;
   }
-  if (parsedColor) {
-    css[`--mc-${name}-color`] = parsedColor;
-  }
-  else if (bodyNo) {
-    const { originDepth, beforeDepth, afterDepth } = resolveDepth(bodyNo);
-    if (themeMetaColors[beforeDepth] && themeMetaColors[afterDepth]) {
-      css[`--mc-${name}-color`] = countDiffColor({
-        originDepth,
-        beforeDepth,
-        beforeComponents: themeMetaColors[beforeDepth].components,
-        afterComponents: themeMetaColors[afterDepth].components,
-      });
+
+  if (!bodyNo) {
+    let parsedColor = parseColor(originColor, theme)?.color;
+    if (!parsedColor) {
+      parsedColor = parseColor(`[${originColor}]`, theme)?.color; // It is compatible with or without []
     }
+    return parsedColor;
   }
 
-  // set all depth colors
-  const colorVariables = generateOklchVariable(name, themeMetaColors);
-
-  return Object.assign(css, colorVariables);
+  themeMetaColors = themeMetaColors ?? getThemeMetaColors(colorParts, theme);
+  if (!themeMetaColors) {
+    return;
+  }
+  return getThemeDepthColor(themeMetaColors, bodyNo);
 }
 
 /**
  * resolve color variable
  * @param name color name
- * @param hue `color-depth`: color can be theme color or css color
+ * @param colorParts parsed color origin and depth
  * @param theme unocss theme
+ * @param context magic color context
  * @returns css variables
  */
-export function resolveThemeColorVariable(name: string, hue: string, theme: Theme = {}) {
-  // can not use the color name configured by the theme
-  if (parseColor(name, theme)?.color) {
-    console.error(`[unocss-preset-margicolor] The color name '${name}' has been configured in the theme, please use the another name.`);
-    return;
+export function resolveThemeColorVariable(name: string, colorParts: ResolvedColorParts, theme: Theme = {}, context?: MagicColorContext) {
+  const css: CSSObject = {};
+
+  const usage = context?.usage.getUsage(name);
+  if (!usage) {
+    return css;
   }
-  const [bodyColor] = hue.split(/[:/]/);
-  const themeMetaColors = getThemeMetaColors(bodyColor, theme);
-  if (themeMetaColors) {
-    return getThemeColorVariables(name, bodyColor, themeMetaColors, theme);
+
+  const themeMetaColors = getThemeMetaColors(colorParts, theme);
+  if (!themeMetaColors) {
+    return css;
   }
+
+  for (const depth of usage) {
+    if (depth === BASE_COLOR_DEPTH) {
+      const color = getBaseColor(colorParts, theme, themeMetaColors);
+      if (color) {
+        css[`--mc-${name}-color`] = color;
+      }
+      continue;
+    }
+
+    const color = getThemeDepthColor(themeMetaColors, depth);
+    if (color) {
+      css[`--mc-${name}-${depth}-color`] = color;
+    }
+  }
+
+  return css;
+}
+
+export function resolveThemeColorValue(colorParts: ResolvedColorParts, theme: Theme = {}) {
+  return getBaseColor(colorParts, theme);
 }

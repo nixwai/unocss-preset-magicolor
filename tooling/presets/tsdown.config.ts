@@ -32,6 +32,7 @@ export default defineConfig([
     dts: {
       emitDtsOnly: true,
       tsconfig: resolve(projRoot, 'tsconfig.json'),
+      eager: true,
     },
   },
 ]);
