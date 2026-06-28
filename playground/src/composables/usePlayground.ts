@@ -5,15 +5,10 @@ import { useStorage } from '@vueuse/core';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 import { computed, ref, watch } from 'vue';
 import defaultConfigSource from '../../uno.config.ts?raw';
+import defaultHtml from '../template/default.html?raw';
 
 type PlaygroundModule = Record<string, unknown>;
 type PlaygroundImport = (name: string) => Promise<PlaygroundModule>;
-
-const defaultHtml = `<div class="min-h-screen flex items-center justify-center bg-mc-primary-80">
-  <div class="mc-card_rose bg-mc-card-120 c-mc-card-760 rounded-3 px-8 py-5 text-6 font-600 shadow-mc-card-160">
-    hello world
-  </div>
-</div>`;
 
 const defaultCustomCss = `/* Write custom CSS here. */
 .custom {
