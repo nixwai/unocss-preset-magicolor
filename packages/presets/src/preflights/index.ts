@@ -12,7 +12,7 @@ function stringifyCssVariables(css: CSSObject) {
   return Object.entries(css)
     .filter(([, value]) => value != null)
     .map(([key, value]) => `${key}: ${value};`)
-    .join('\n');
+    .join('\n\t');
 }
 
 function hasCssVariables(css: CSSObject) {
@@ -24,10 +24,7 @@ function createRootCss(css: CSSObject) {
     return '';
   }
 
-  return `
-        :root {
-          ${stringifyCssVariables(css)}
-        }`;
+  return `:root {\n\t${stringifyCssVariables(css)}\n}\n`;
 }
 
 function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
@@ -39,20 +36,15 @@ function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
 
   const cssVariables = stringifyCssVariables(css);
   if (darkMode === 'media') {
-    return `
-        @media (prefers-color-scheme: dark) {
-          :root {
-            ${cssVariables}
-          }
-        }`;
+    return `@media (prefers-color-scheme: dark) {
+  :root {
+    ${cssVariables}
+  }\n}\n`;
   }
   const selector = typeof presetOptions?.dark === 'string'
     ? DEFAULT_DARK_SELECTOR
     : (presetOptions?.dark?.dark || DEFAULT_DARK_SELECTOR);
-  return `
-        ${selector} {
-          ${cssVariables}
-        }`;
+  return `${selector} {\n\t${cssVariables}\n}\n`;
 }
 
 export function preflights(context?: MagicColorContext): Preflight[] {

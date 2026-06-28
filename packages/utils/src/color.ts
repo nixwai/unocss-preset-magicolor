@@ -147,6 +147,7 @@ export function getMcThemeMetaColors(originColor?: string): Partial<Record<Theme
     }
   }
   catch {
+    console.error('[magic-color] Failed to generate themeMeta colors for', originColor);
     // Swallow: a single unparseable color must not break generation; the
     // caller falls back to whatever metas were resolved (possibly none).
   }

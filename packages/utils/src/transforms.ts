@@ -50,3 +50,7 @@ export function toOklch(cssColor?: CSSColorValue) {
 export function roundNum(num: number) {
   return Math.round(num * 1000) / 1000;
 }
+
+export function notNull<T>(value: T | null | undefined): value is T {
+  return value != null;
+}
