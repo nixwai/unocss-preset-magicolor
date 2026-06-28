@@ -10,7 +10,6 @@ packages:
   - packages/*
   - packages/*/*
   - playground
-  - docs
 
 allowBuilds:
   '@parcel/watcher': false

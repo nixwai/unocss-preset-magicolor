@@ -7,8 +7,6 @@
   "scripts": {
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "docs:dev": "pnpm run -C docs docs:dev",
-    "docs:build": "pnpm run -C docs docs:build",
     "play:dev": "pnpm run -C playground dev",
     "play:build": "pnpm run -C playground build",
     "build": "pnpm run -C tooling build",
