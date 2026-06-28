@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "dependencies": {
-    "@unocss/preset-wind4": "~66.7.2",
+    "@unocss/preset-wind4": "~66.7.3",
     "magic-color": "^2.2.5"
   }
 }
