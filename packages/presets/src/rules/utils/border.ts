@@ -2,8 +2,8 @@ import type { Theme } from '@unocss/preset-wind4';
 import type { parseColor } from '@unocss/preset-wind4/utils';
 import type { CSSEntries, CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../../typing';
+import { notNull } from '@unocss-preset-magicolor/utils';
 import { colorCSSGenerator, h, SpecialColorKey } from '@unocss/preset-wind4/utils';
-import { notNull } from 'unocss';
 import { parseMagicColor } from './utilities';
 
 const directionMap: Record<string, string[]> = {
