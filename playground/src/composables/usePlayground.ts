@@ -1,6 +1,7 @@
 import type { UserConfig } from '@unocss/core';
 import { createGenerator } from '@unocss/core';
 import { presetWind4 } from '@unocss/preset-wind4';
+import { useStorage } from '@vueuse/core';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 import { computed, ref, watch } from 'vue';
 import defaultConfigSource from '../../uno.config.ts?raw';
@@ -18,6 +19,12 @@ const defaultCustomCss = `/* Write custom CSS here. */
 .custom {
   font-weight: 600;
 }`;
+
+const storageKeys = {
+  configSource: 'unocss-preset-magicolor:playground:config-source',
+  customCss: 'unocss-preset-magicolor:playground:custom-css',
+  html: 'unocss-preset-magicolor:playground:html',
+};
 
 const AsyncFunction = Object.getPrototypeOf(async () => undefined).constructor as new (
   ...args: string[]
@@ -69,9 +76,9 @@ async function evaluateConfigSource(source: string) {
 }
 
 export function usePlayground() {
-  const html = ref(defaultHtml);
-  const configSource = ref(defaultConfigSource);
-  const customCss = ref(defaultCustomCss);
+  const html = useStorage(storageKeys.html, defaultHtml);
+  const configSource = useStorage(storageKeys.configSource, defaultConfigSource);
+  const customCss = useStorage(storageKeys.customCss, defaultCustomCss);
   const generatedCss = ref('');
   const error = ref('');
   let version = 0;
