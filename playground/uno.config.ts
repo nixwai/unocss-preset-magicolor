@@ -1,9 +1,9 @@
 import { defineConfig, presetWind4 } from 'unocss';
-import { presetMagicolor } from '../packages/presets/src';
+import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4({ preflights: { reset: true } }),
+    presetWind4(),
     presetMagicolor({ colors: { primary: 'rose' } }),
   ],
   theme: {

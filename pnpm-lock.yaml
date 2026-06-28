@@ -125,6 +125,12 @@ importers:
 
   playground:
     dependencies:
+      '@unocss/core':
+        specifier: ^66.7.2
+        version: 66.7.2
+      '@unocss/preset-wind4':
+        specifier: ^66.7.2
+        version: 66.7.2
       '@unocss/reset':
         specifier: ^66.7.2
         version: 66.7.2
