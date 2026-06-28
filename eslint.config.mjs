@@ -6,7 +6,7 @@ export default antfu(
     unocss: true,
     typescript: true,
     vue: true,
-    ignores: ['.husky', '**/*.md'],
+    ignores: ['.husky', '**/*.md', './playground/src/template/default.html'],
     regexp: {
       overrides: {
         'regexp/no-empty-capturing-group': 'off',

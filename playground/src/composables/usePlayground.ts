@@ -3,12 +3,19 @@ import { createGenerator } from '@unocss/core';
 import { presetWind4 } from '@unocss/preset-wind4';
 import { useStorage } from '@vueuse/core';
 import { presetMagicolor } from 'unocss-preset-magicolor';
-import { computed, ref, watch } from 'vue';
+import { updateMagicColor } from 'unocss-preset-magicolor/helper';
+import { computed, nextTick, ref, watch } from 'vue';
 import defaultConfigSource from '../../uno.config.ts?raw';
 import defaultHtml from '../template/default.html?raw';
 
 type PlaygroundModule = Record<string, unknown>;
 type PlaygroundImport = (name: string) => Promise<PlaygroundModule>;
+
+declare global {
+  interface Window {
+    __unocssPresetMagicolorUpdateMagicColor?: typeof updateMagicColor
+  }
+}
 
 const defaultCustomCss = `/* Write custom CSS here. */
 .custom {
@@ -39,6 +46,7 @@ const playgroundModules: Record<string, PlaygroundModule> = {
     default: presetMagicolor,
     presetMagicolor,
   },
+  'unocss-preset-magicolor/helper': { updateMagicColor },
 };
 
 function toErrorMessage(exception: unknown) {
@@ -47,6 +55,17 @@ function toErrorMessage(exception: unknown) {
 
 function defineConfig(config: UserConfig) {
   return config;
+}
+
+function getRuntimeHelperScript() {
+  return `<script>
+window.updateMagicColor = function(params) {
+  if (params && typeof params.dom === 'string') {
+    params.dom = document.querySelector(params.dom);
+  }
+  window.parent.__unocssPresetMagicolorUpdateMagicColor?.(params);
+};
+</script>`;
 }
 
 function toRunnableConfigSource(source: string) {
@@ -72,6 +91,8 @@ async function evaluateConfigSource(source: string) {
 }
 
 export function usePlayground() {
+  window.__unocssPresetMagicolorUpdateMagicColor = updateMagicColor;
+
   const html = useStorage(storageKeys.html, defaultHtml);
   const configSource = useStorage(storageKeys.configSource, defaultConfigSource);
   const customCss = useStorage(storageKeys.customCss, defaultCustomCss);
@@ -93,6 +114,7 @@ export function usePlayground() {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>${outputCss.value}</style>
+    ${getRuntimeHelperScript()}
   </head>
   <body>${html.value}</body>
 </html>`);
@@ -119,10 +141,12 @@ export function usePlayground() {
     }
   }
 
-  function reset() {
-    html.value = defaultHtml;
+  async function reset() {
+    html.value = '';
     configSource.value = defaultConfigSource;
     customCss.value = defaultCustomCss;
+    await nextTick();
+    html.value = defaultHtml;
   }
 
   watch([html, configSource], render, { immediate: true });

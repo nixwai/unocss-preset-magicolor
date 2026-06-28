@@ -11,20 +11,20 @@ const collapsed = ref(props.defaultCollapsed || false);
 </script>
 
 <template>
-  <section class="panel-shell border-neutral-200 flex flex-1 flex-col min-h-0" :class="{ 'is-collapsed': collapsed }">
+  <section class="panel-shell border-neutral-200 flex flex-1 flex-col min-h-0 dark:border-neutral-800" :class="{ 'is-collapsed': collapsed }">
     <button
-      class="panel-title px-4 text-left border-b border-neutral-200 bg-neutral-50 flex h-10 w-full items-center justify-between"
+      class="panel-title px-4 text-left border-b border-neutral-200 bg-neutral-50 flex h-10 w-full items-center justify-between dark:border-neutral-800 dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800"
       type="button"
       :aria-expanded="!collapsed"
       @click="collapsed = !collapsed"
     >
       <span class="flex gap-2 min-w-0 items-center">
-        <span class="collapse-icon text-3 c-neutral-500">&gt;</span>
-        <span class="text-3.5 c-neutral-700 font-600 truncate">
+        <span class="collapse-icon text-3 c-neutral-500 dark:c-neutral-400">&gt;</span>
+        <span class="text-3.5 c-neutral-700 font-600 truncate dark:c-neutral-200">
           {{ title }}
         </span>
       </span>
-      <span v-if="meta" class="text-3 c-neutral-500 shrink-0">{{ meta }}</span>
+      <span v-if="meta" class="text-3 c-neutral-500 shrink-0 dark:c-neutral-400">{{ meta }}</span>
     </button>
     <div v-show="!collapsed" class="flex flex-1 flex-col min-h-0">
       <slot />
@@ -33,10 +33,6 @@ const collapsed = ref(props.defaultCollapsed || false);
 </template>
 
 <style scoped>
-.panel-title:hover {
-  background: rgb(245 245 245);
-}
-
 .panel-shell {
   flex-basis: 0;
 }

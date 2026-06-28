@@ -1,5 +1,43 @@
-<div class="min-h-screen flex items-center justify-center bg-mc-primary-80">
-  <div class="mc-card_rose bg-mc-card-120 c-mc-card-760 rounded-3 px-8 py-5 text-6 font-600 shadow-mc-card-160">
-    hello world
+<div class="min-h-screen bg-mc-neutral-50 p-5 c-neutral-900 dark:bg-mc-neutral-888">
+  <div class="grid grid-cols-2 gap-3">
+    <div class="bg-mc-rose-445 p-5 c-white">
+      color-depth
+    </div>
+
+    <div class="bg-mc-grape-160 p-5 c-mc-wine-red-575">
+      theme-color
+    </div>
+
+    <div class="bg-mc-[#789411]-430 p-5 c-white">
+      arbitrary-color
+    </div>
+
+    <div class="mc-card_mint bg-mc-card-90 p-5 c-mc-card-760">
+      class-color
+    </div>
+
+    <div class="bg-mc-brand-457/90 p-5 c-white hover:bg-mc-brand-620">
+      global-color
+    </div>
+
+    <div class="bg-mc-primary-457/60 p-5 c-mc-brand-900">
+      opacity-color
+    </div>
+
+    <div class="bg-gradient-to-r from-mc-primary-300 to-mc-brand-700 p-5 c-white">
+      gradient-color
+    </div>
+
+    <div class="bg-mc-surface-120 p-5 c-mc-primary-720 dark:bg-mc-surface-880 dark:c-mc-brand-180">
+      dark-color
+    </div>
+
+    <div 
+      id="runtime-dom"
+      onclick="updateMagicColor({ name: 'live', color: '#9c1d1e', dom: document.getElementById('runtime-dom') })"
+      class="bg-mc-live-457 p-5 c-white"
+    >
+      Click to change colors
+    </div>
   </div>
 </div>
