@@ -11,14 +11,15 @@ const {
   documentSource,
   error,
   html,
+  isDark,
   outputCss,
   reset,
 } = usePlayground();
 </script>
 
 <template>
-  <main class="c-neutral-900 bg-neutral-50 min-h-screen">
-    <PlaygroundHeader @reset="reset" />
+  <main class="c-neutral-900 bg-neutral-50 min-h-screen" :class="{ dark: isDark }">
+    <PlaygroundHeader v-model:dark="isDark" @reset="reset" />
 
     <section class="playground-layout grid">
       <PreviewPane :source="documentSource" />

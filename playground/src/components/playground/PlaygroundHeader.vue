@@ -1,28 +1,55 @@
 <script setup lang="ts">
+defineProps<{
+  dark: boolean
+}>();
+
 const emit = defineEmits<{
+  (event: 'update:dark', value: boolean): void
   (event: 'reset'): void
 }>();
 </script>
 
 <template>
   <header class="playground-header px-4 border-b border-neutral-200 bg-white flex h-13 items-center justify-between">
-    <div class="flex gap-3 items-center">
+    <div class="flex gap-3 min-w-0 items-center">
       <span class="bg-mc-primary-457 rounded-1 h-4 w-4" />
-      <h1 class="text-4 font-600">
+      <h1 class="text-4 font-600 truncate">
         unocss-preset-magicolor Playground
       </h1>
     </div>
-    <button
-      class="text-3.5 px-3 border border-neutral-300 rounded-1.5 bg-white h-8 hover:bg-neutral-100"
-      type="button"
-      @click="emit('reset')"
-    >
-      Reset
-    </button>
+    <div class="flex shrink-0 gap-2 items-center">
+      <button
+        class="header-button text-3.5 px-3 border border-neutral-300 rounded-1.5 bg-white h-8 hover:bg-neutral-100"
+        type="button"
+        :aria-pressed="dark"
+        @click="emit('update:dark', !dark)"
+      >
+        {{ dark ? 'Light' : 'Dark' }}
+      </button>
+      <button
+        class="header-button text-3.5 px-3 border border-neutral-300 rounded-1.5 bg-white h-8 hover:bg-neutral-100"
+        type="button"
+        @click="emit('reset')"
+      >
+        Reset
+      </button>
+      <a
+        class="header-button text-3.5 c-neutral-900 px-3 border border-neutral-300 rounded-1.5 bg-white no-underline flex h-8 items-center hover:bg-neutral-100"
+        href="https://github.com/nixwai/unocss-preset-magicolor"
+        rel="noreferrer"
+        target="_blank"
+      >
+        GitHub
+      </a>
+    </div>
   </header>
 </template>
 
 <style scoped>
+.header-button {
+  min-width: 4rem;
+}
+
 @media (width <=760px) {
   .playground-header {
     gap: 0.75rem;

@@ -18,6 +18,7 @@ const defaultCustomCss = `/* Write custom CSS here. */
 const storageKeys = {
   configSource: 'unocss-preset-magicolor:playground:config-source',
   customCss: 'unocss-preset-magicolor:playground:custom-css',
+  isDark: 'unocss-preset-magicolor:playground:is-dark',
   html: 'unocss-preset-magicolor:playground:html',
 };
 
@@ -74,6 +75,7 @@ export function usePlayground() {
   const html = useStorage(storageKeys.html, defaultHtml);
   const configSource = useStorage(storageKeys.configSource, defaultConfigSource);
   const customCss = useStorage(storageKeys.customCss, defaultCustomCss);
+  const isDark = useStorage(storageKeys.isDark, false);
   const generatedCss = ref('');
   const error = ref('');
   let version = 0;
@@ -86,7 +88,7 @@ export function usePlayground() {
   });
 
   const documentSource = computed(() => `<!doctype html>
-<html lang="en">
+<html lang="en"${isDark.value ? ' class="dark"' : ''}>
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -131,6 +133,7 @@ export function usePlayground() {
     documentSource,
     error,
     html,
+    isDark,
     outputCss,
     reset,
   };
