@@ -11,6 +11,7 @@ const LIGHTNESS_REVERSE_PREFIX = 'lr-';
 
 export function createColorVariable(context?: MagicColorContext): Rule[] {
   return [
+    [/^mc-lr$/, (_match, ctx) => resolveGlobalLightnessReverse(ctx, context)],
     [/^mc-(.+)$/, (match, ctx) => resolveMagicColor(match, ctx, context)],
   ];
 }
@@ -83,7 +84,7 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
   if (isVariableColorSource(mcColorObj.originColor, theme, context)) {
     return resolveMagicColorVariable(name, mcColorObj, ctx, context, lightnessReverse);
   }
-
+  // It will be directly parsed into colors，rather than variables
   return resolveThemeColorVariable(
     name,
     mcColorObj,
@@ -92,3 +93,31 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
     { lightnessReverse },
   );
 };
+
+function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicColorContext) {
+  const css: Record<string, string> = {};
+  const usageNames = context?.usage.getUsageNames() ?? [];
+
+  for (const name of usageNames) {
+    const usage = context?.usage.getUsage(name);
+    if (!usage) {
+      continue;
+    }
+
+    for (const depth of usage) {
+      if (depth === BASE_COLOR_DEPTH) {
+        continue;
+      }
+
+      const sourceDepth = resolveThemeDepth(depth, { lightnessReverse: true });
+      if (sourceDepth === undefined || sourceDepth === depth) {
+        continue;
+      }
+
+      css[getMagicColorVariableName(name, depth)] = `var(${getMagicColorVariableName(name, sourceDepth)})`;
+      context?.usage.recordUsage(`mc-${name}-${sourceDepth}`, ctx.rawSelector);
+    }
+  }
+
+  return css;
+}

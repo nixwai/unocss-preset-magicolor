@@ -547,6 +547,34 @@ describe('mc color definition rule', () => {
     expect(css).not.toContain('--mc-primary-50-color:');
   });
 
+  it('supports global lightness-reverse for configured color variables', async () => {
+    const { css } = await generate(
+      '<div class="mc-lr bg-mc-primary-50 bg-mc-primary-450 bg-mc-primary-500"></div>',
+      { colors: { primary: 'rose' } },
+    );
+
+    expect(css).toContain('--mc-primary-50-color:var(--mc-primary-950-color)');
+    expect(css).toContain('--mc-primary-450-color:var(--mc-primary-550-color)');
+    expect(css).not.toContain('--mc-primary-500-color:var(--mc-primary-500-color)');
+    expect(css).toMatch(/--mc-primary-950-color:\s*oklch\(/);
+    expect(css).toMatch(/--mc-primary-550-color:\s*oklch\(/);
+  });
+
+  it('supports global lightness-reverse for theme color variables', async () => {
+    const { css } = await generate('<div class="mc-lr bg-mc-rose-50"></div>');
+
+    expect(css).toContain('--mc-rose-50-color:var(--mc-rose-950-color)');
+    expect(css).toMatch(/--mc-rose-950-color:\s*oklch\(/);
+  });
+
+  it('does not reverse base variables globally', async () => {
+    const { css } = await generate('<div class="mc-lr c-mc-primary"></div>', { colors: { primary: 'rose' } });
+
+    expect(css).toMatch(/--mc-primary-color:\s*oklch\(/);
+    expect(css).not.toContain('--mc-primary-color:var(--mc-primary-500-color)');
+    expect(css).not.toContain('--mc-primary-500-color:');
+  });
+
   it('preserves inline source depth when referencing option color variables', async () => {
     const { css } = await generate('<div class="mc-btn_primary-620 c-mc-btn"></div>', { colors: { primary: 'rose' } });
     expect(css).toContain('--mc-btn-color:var(--mc-primary-620-color)');
