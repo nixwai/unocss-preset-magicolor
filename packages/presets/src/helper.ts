@@ -10,6 +10,7 @@ interface ColorVariableUsage {
 interface MagicColorStyleParams extends ColorVariableUsage {
   name: string
   color: string
+  lightnessReverse?: boolean
 }
 
 function escapeRegExp(value: string) {
@@ -67,7 +68,7 @@ function generateColorVariable(name: string, color: string, depth?: string | num
  * @returns CSS variables for the requested magic color usage
  */
 export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
-  const { name, color, hasBase, depths } = params;
+  const { name, color, hasBase, depths, lightnessReverse } = params;
   const { originColor, bodyNo } = resolveColorParts(color);
   if (isInvalidColor(originColor)) {
     return {};
@@ -79,7 +80,7 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
 
   if (hasBase) {
     if (bodyNo) {
-      const baseColor = getThemeDepthColor(themeMetaColors, bodyNo);
+      const baseColor = getThemeDepthColor(themeMetaColors, bodyNo, { lightnessReverse });
       baseColor && Object.assign(css, generateColorVariable(name, baseColor));
     }
     else if (mc.valid(originColor)) {
@@ -89,7 +90,7 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
   }
 
   for (const depth of depths) {
-    const depthColor = getThemeDepthColor(themeMetaColors, depth);
+    const depthColor = getThemeDepthColor(themeMetaColors, depth, { lightnessReverse });
     if (depthColor) {
       Object.assign(css, generateColorVariable(name, depthColor, depth));
     }
@@ -103,16 +104,17 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
  * @param params params Parameter object
  * @param params.name Color name
  * @param params.color Color
+ * @param params.lightnessReverse Reverse numeric lightness depths before resolving colors
  * @param params.dom params.dom Target element, modifying the entire page theme when passing `document.documentElement`
  */
-export function updateMagicColor(params: { name: string, color: string, dom?: HTMLElement }) {
-  const { name, color, dom } = params;
+export function updateMagicColor(params: { name: string, color: string, lightnessReverse?: boolean, dom?: HTMLElement }) {
+  const { name, color, lightnessReverse, dom } = params;
   if (!dom) {
     return;
   }
 
   const { hasBase, depths } = collectDefinedColorVariables(name, dom);
-  const css = getMagicColorStyle({ name, color, hasBase, depths });
+  const css = getMagicColorStyle({ name, color, hasBase, depths, lightnessReverse });
 
   for (const [variable, value] of Object.entries(css)) {
     if (value) {

@@ -119,6 +119,18 @@ export default defineConfig({
 
 `mc-btn_[#9c1d1e]` 只是定义颜色来源，真正需要输出哪些 CSS 变量由 `bg-mc-btn-450`、`shadow-mc-btn-620`、`c-mc-btn-610` 这些使用类决定。你也可以把定义类写成 `mc-btn_blue`、`mc-btn_primary`，其中 `blue` 可以来自 UnoCSS 默认色板，`primary` 可以来自下面的全局颜色配置。
 
+如果局部定义需要反向亮度色阶，可以使用 `mc-lr-<name>_<color>`。对外变量名仍然保持不变，但取色时会反向读取源色阶，例如 `50` 读取 `950`，`450` 读取 `550`，`500` 保持 `500`。
+
+```vue
+<template>
+  <div class="mc-lr-btn_rose">
+    <button class="bg-mc-btn-50 hover:bg-mc-btn-450">
+      Reversed lightness
+    </button>
+  </div>
+</template>
+```
+
 ### 全局颜色
 
 如果项目里有稳定的语义色，可以通过 `presetMagicolor({ colors })` 定义全局别名。别名会在 `:root` 中输出为 `--mc-<name>-color` 或 `--mc-<name>-<depth>-color`，但同样只会为实际用到的色阶生成变量。
@@ -132,7 +144,7 @@ export default defineConfig({
     presetWind4({ dark: 'class' }),
     presetMagicolor({
       colors: {
-        primary: 'rose',
+        primary: { color: 'rose', lightnessReverse: true },
         brand: '#4f7bff',
       },
       dark: {
@@ -153,6 +165,8 @@ export default defineConfig({
 ```
 
 这相当于在 UnoCSS 原有 `theme.colors` 之外增加一层语义映射：`primary`、`brand` 这样的业务色名可以继续享受任意色阶、透明度修饰和变体能力，例如 `bg-mc-primary-457/80`、`hover:bg-mc-primary-620`。
+
+全局 `colors` 和 `dark` 条目既可以写字符串，也可以写对象。使用 `{ color, lightnessReverse: true }` 可以只为这个别名启用数字亮度反转。基础变量例如 `--mc-primary-color` 不会被隐式当成 `500`，只有显式数字色阶会反转。
 
 `dark` 选项可以为同一组语义色定义全局暗色模式颜色。存在 `presetWind4` 时，暗色颜色表会跟随它的 `dark` 配置（`'class'`、`'media'` 或自定义选择器）。如果 Magicolor 无法读取到 `presetWind4` 的 dark 配置，则默认使用 `.dark`。生成的暗色块会覆盖同名 `--mc-*` 变量，不依赖 `dark:mc-*` 工具类是否成功生成。
 
@@ -180,6 +194,7 @@ function toggleColor() {
   updateMagicColor({
     name: 'primary',
     color: 'rgb(79 123 255)',
+    lightnessReverse: true,
     dom: document.documentElement,
   });
 }
@@ -193,6 +208,8 @@ function toggleColor() {
 ```
 
 `updateMagicColor` 会读取目标元素上已经存在的 `--mc-primary-color`、`--mc-primary-457-color` 等变量，并只更新这些已定义变量。它不会单纯根据 DOM 里的 class 反推新变量，因此需要先通过 `c-mc-primary`、`bg-mc-primary-457` 等 class 让 UnoCSS 生成对应变量。
+
+传入 `lightnessReverse: true` 时，运行时更新会使用和 `mc-lr-*`、全局颜色对象相同的反向亮度映射。
 
 ## 鸣谢
 

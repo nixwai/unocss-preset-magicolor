@@ -1,4 +1,4 @@
-import type { ResolvedColorParts } from '@unocss-preset-magicolor/utils';
+import type { ResolvedColorParts, ThemeDepthColorOptions } from '@unocss-preset-magicolor/utils';
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
@@ -62,6 +62,7 @@ function getBaseColor(
   colorParts: ResolvedColorParts,
   theme: Theme,
   themeMetaColors?: Partial<Record<ThemeKey, CSSColorValue>>,
+  options: ThemeDepthColorOptions = {},
 ) {
   const { originColor, bodyNo } = colorParts;
   if (!originColor || isInvalidColor(originColor)) {
@@ -80,7 +81,7 @@ function getBaseColor(
   if (!themeMetaColors) {
     return;
   }
-  return getThemeDepthColor(themeMetaColors, bodyNo);
+  return getThemeDepthColor(themeMetaColors, bodyNo, options);
 }
 
 /**
@@ -91,7 +92,13 @@ function getBaseColor(
  * @param context magic color context
  * @returns css variables
  */
-export function resolveThemeColorVariable(name: string, colorParts: ResolvedColorParts, theme: Theme = {}, context?: MagicColorContext) {
+export function resolveThemeColorVariable(
+  name: string,
+  colorParts: ResolvedColorParts,
+  theme: Theme = {},
+  context?: MagicColorContext,
+  options: ThemeDepthColorOptions = {},
+) {
   const css: CSSObject = {};
 
   const usage = context?.usage.getUsage(name);
@@ -106,14 +113,14 @@ export function resolveThemeColorVariable(name: string, colorParts: ResolvedColo
 
   for (const depth of usage) {
     if (depth === BASE_COLOR_DEPTH) {
-      const color = getBaseColor(colorParts, theme, themeMetaColors);
+      const color = getBaseColor(colorParts, theme, themeMetaColors, options);
       if (color) {
         css[`--mc-${name}-color`] = color;
       }
       continue;
     }
 
-    const color = getThemeDepthColor(themeMetaColors, depth);
+    const color = getThemeDepthColor(themeMetaColors, depth, options);
     if (color) {
       css[`--mc-${name}-${depth}-color`] = color;
     }
@@ -122,6 +129,6 @@ export function resolveThemeColorVariable(name: string, colorParts: ResolvedColo
   return css;
 }
 
-export function resolveThemeColorValue(colorParts: ResolvedColorParts, theme: Theme = {}) {
-  return getBaseColor(colorParts, theme);
+export function resolveThemeColorValue(colorParts: ResolvedColorParts, theme: Theme = {}, options: ThemeDepthColorOptions = {}) {
+  return getBaseColor(colorParts, theme, undefined, options);
 }

@@ -1,10 +1,13 @@
+import type { ResolvedColorParts } from '@unocss-preset-magicolor/utils';
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
-import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
+import { resolveBodyColor, resolveThemeDepth } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
 import { BASE_COLOR_DEPTH } from '../usages';
 import { resolveThemeColorVariable } from './utils';
+
+const LIGHTNESS_REVERSE_PREFIX = 'lr-';
 
 export function createColorVariable(context?: MagicColorContext): Rule[] {
   return [
@@ -22,56 +25,70 @@ function getMagicColorVariableName(originColor: string, bodyNo?: string | number
 
 function resolveMagicColorVariable(
   name: string,
-  originColor: string,
-  bodyNo: string | undefined,
+  colorParts: ResolvedColorParts & { originColor: string },
   ctx: RuleContext<Theme>,
   context?: MagicColorContext,
+  lightnessReverse = false,
 ) {
   const css: Record<string, string> = {};
   const usage = context?.usage.getUsage(name);
   if (!usage) {
     return css;
   }
-
+  const { originColor, bodyNo } = colorParts;
   for (const depth of usage) {
-    const sourceBodyNo = depth === BASE_COLOR_DEPTH ? bodyNo : depth;
+    let sourceBodyNo = depth === BASE_COLOR_DEPTH ? bodyNo : depth;
+    if (lightnessReverse) {
+      sourceBodyNo = resolveThemeDepth(sourceBodyNo, { lightnessReverse });
+    }
     const targetBodyNo = depth === BASE_COLOR_DEPTH ? undefined : depth;
 
-    if (name === originColor && sourceBodyNo === targetBodyNo) {
+    const targetVariableName = getMagicColorVariableName(name, targetBodyNo);
+    const sourceVariableName = getMagicColorVariableName(originColor, sourceBodyNo);
+    if (targetVariableName === sourceVariableName) {
       continue;
     }
 
-    const targetVariableName = getMagicColorVariableName(name, targetBodyNo);
-    css[targetVariableName] = `var(${getMagicColorVariableName(originColor, sourceBodyNo)})`;
+    css[targetVariableName] = `var(${sourceVariableName})`;
     context?.usage.recordUsage(sourceBodyNo ? `mc-${originColor}-${sourceBodyNo}` : `mc-${originColor}`, ctx.rawSelector);
   }
 
   return css;
 }
 
-function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
-  const { theme } = ctx;
-  // Use "_" to separate name and color
+function parseMagicColorDefinition(body: string) {
   const firstUnderscoreIndex = body.indexOf('_');
   if (firstUnderscoreIndex < 0) {
     return;
   }
-  const name = body.substring(0, firstUnderscoreIndex);
+  const rawName = body.substring(0, firstUnderscoreIndex);
   const hue = body.substring(firstUnderscoreIndex + 1);
-  if (!hue) {
+  const lightnessReverse = rawName.startsWith(LIGHTNESS_REVERSE_PREFIX);
+  const name = lightnessReverse ? rawName.slice(LIGHTNESS_REVERSE_PREFIX.length) : rawName;
+  if (!name || !hue) {
     return;
   }
+  return { name, hue, lightnessReverse };
+}
+
+function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
+  const { theme } = ctx;
+  const definition = parseMagicColorDefinition(body);
+  if (!definition) {
+    return;
+  }
+  const { name, hue, lightnessReverse } = definition;
   // Be compatible with the colors defined in the usage options
   const mcColorObj = resolveBodyColor(hue);
   if (isVariableColorSource(mcColorObj.originColor, theme, context)) {
-    return resolveMagicColorVariable(name, mcColorObj.originColor, mcColorObj.bodyNo, ctx, context);
+    return resolveMagicColorVariable(name, mcColorObj, ctx, context, lightnessReverse);
   }
 
-  const optionColorObj = resolveBodyColor(context?.options.colors?.[mcColorObj.originColor]);
-  const colorParts = {
-    originColor: optionColorObj.originColor || mcColorObj.originColor, // The color of the options configuration
-    bodyNo: mcColorObj.bodyNo || optionColorObj.bodyNo, // Retain the original depth
-  };
-  const css = resolveThemeColorVariable(name, colorParts, theme, context);
-  return css;
+  return resolveThemeColorVariable(
+    name,
+    mcColorObj,
+    theme,
+    context,
+    { lightnessReverse },
+  );
 };

@@ -1,5 +1,6 @@
 import type { PresetWind4Options } from '@unocss/preset-wind4';
 import type { CSSObject, Preflight, Preset } from 'unocss';
+import type { PresetMcColorValue } from '../types';
 import type { MagicColorContext } from '../typing';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
@@ -47,6 +48,19 @@ function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
   return `${selector} {\n\t${cssVariables}\n}\n`;
 }
 
+function resolveColorConfig(config?: PresetMcColorValue) {
+  if (!config) {
+    return { color: undefined, lightnessReverse: false };
+  }
+  if (typeof config === 'string') {
+    return { color: config, lightnessReverse: false };
+  }
+  return {
+    color: config.color,
+    lightnessReverse: config.lightnessReverse === true,
+  };
+}
+
 export function preflights(context?: MagicColorContext): Preflight[] {
   return [{
     getCSS: ({ theme, generator }) => {
@@ -54,15 +68,27 @@ export function preflights(context?: MagicColorContext): Preflight[] {
       const darkCss: CSSObject = {};
       for (const name of context?.usage.getUsageNames() ?? []) {
         const isUnocssThemeColor = hasParseableColor(name, theme);
-        const optionColor = context?.options.colors?.[name];
-        const darkColor = context?.options.dark?.[name];
+        const optionColor = resolveColorConfig(context?.options.colors?.[name]);
+        const darkColor = resolveColorConfig(context?.options.dark?.[name]);
 
-        if (optionColor || isUnocssThemeColor) {
-          Object.assign(css, resolveThemeColorVariable(name, resolveBodyColor(optionColor ?? name), theme, context));
+        if (optionColor.color || isUnocssThemeColor) {
+          Object.assign(css, resolveThemeColorVariable(
+            name,
+            resolveBodyColor(optionColor.color ?? name),
+            theme,
+            context,
+            { lightnessReverse: optionColor.lightnessReverse },
+          ));
         }
 
-        if (darkColor) {
-          Object.assign(darkCss, resolveThemeColorVariable(name, resolveBodyColor(darkColor), theme, context));
+        if (darkColor.color) {
+          Object.assign(darkCss, resolveThemeColorVariable(
+            name,
+            resolveBodyColor(darkColor.color),
+            theme,
+            context,
+            { lightnessReverse: darkColor.lightnessReverse },
+          ));
         }
       }
 

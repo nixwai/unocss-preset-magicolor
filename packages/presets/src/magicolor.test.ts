@@ -5,6 +5,7 @@ import {
   isInvalidColor,
   resolveBodyColor,
   resolveColorParts,
+  resolveThemeDepth,
   roundNum,
   toNum,
   toOklch,
@@ -47,6 +48,19 @@ async function generateWithoutWind4(input: string | string[], options: PresetMcO
     ],
   });
   return uno.generate(input, { preflights: true });
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getCssVar(css: string, name: string) {
+  const match = css.match(new RegExp(`${escapeRegExp(name)}:\\s*([^;{}]+)`));
+  return match?.[1]?.trim();
+}
+
+function getDarkBlock(css: string) {
+  return css.match(/\.dark\s*\{([\s\S]*?)\}/)?.[1] ?? '';
 }
 
 describe('presetMagicolor preset wiring', () => {
@@ -236,6 +250,20 @@ describe('preflight theme color variables', () => {
     expect(css).not.toContain('calc(');
   });
 
+  it('reverses configured color depths while preserving target variable names', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-primary-50 c-mc-primary-450 c-mc-primary-500 c-mc-primary-950"></div>',
+      { colors: { primary: { color: 'rose', lightnessReverse: true } } },
+    );
+    const reference = await generate('<div class="c-mc-rose-950 c-mc-rose-550 c-mc-rose-500 c-mc-rose-50"></div>');
+
+    expect(getCssVar(css, '--mc-primary-50-color')).toBe(getCssVar(reference.css, '--mc-rose-950-color'));
+    expect(getCssVar(css, '--mc-primary-450-color')).toBe(getCssVar(reference.css, '--mc-rose-550-color'));
+    expect(getCssVar(css, '--mc-primary-500-color')).toBe(getCssVar(reference.css, '--mc-rose-500-color'));
+    expect(getCssVar(css, '--mc-primary-950-color')).toBe(getCssVar(reference.css, '--mc-rose-50-color'));
+    expect(css).toContain('var(--mc-primary-50-color)');
+  });
+
   it('does not emit unused configured colors', async () => {
     const { css } = await generate('<div class="c-mc-primary"></div>', { colors: { primary: 'rose', secondary: 'blue' } });
 
@@ -282,6 +310,18 @@ describe('preflight theme color variables', () => {
     expect(css).toMatch(/:root\s*\{[\s\S]*--mc-primary-457-color:\s*oklch\(/);
     expect(css).toMatch(/\.dark\s*\{[\s\S]*--mc-primary-457-color:\s*oklch\(/);
     expect(css).not.toContain('--mc-primary-color:');
+  });
+
+  it('reverses dark color depths independently from light color variables', async () => {
+    const { css } = await generate(
+      '<div class="bg-mc-primary-50"></div>',
+      { colors: { primary: 'rose' }, dark: { primary: { color: 'blue', lightnessReverse: true } } },
+    );
+    const lightReference = await generate('<div class="c-mc-rose-50"></div>');
+    const darkReference = await generate('<div class="c-mc-blue-950"></div>');
+
+    expect(getCssVar(css, '--mc-primary-50-color')).toBe(getCssVar(lightReference.css, '--mc-rose-50-color'));
+    expect(getCssVar(getDarkBlock(css), '--mc-primary-50-color')).toBe(getCssVar(darkReference.css, '--mc-blue-950-color'));
   });
 
   it('emits simple dark color maps with the wind4 media dark mode', async () => {
@@ -489,6 +529,24 @@ describe('mc color definition rule', () => {
     expect(css).toMatch(/--mc-rose-457-color:\s*oklch\(/);
   });
 
+  it('supports local lightness-reverse definitions for theme color variables', async () => {
+    const { css } = await generate('<div class="mc-lr-btn_rose bg-mc-btn-50 bg-mc-btn-450 bg-mc-btn-500"></div>');
+
+    expect(css).toContain('--mc-btn-50-color:var(--mc-rose-950-color)');
+    expect(css).toContain('--mc-btn-450-color:var(--mc-rose-550-color)');
+    expect(css).toContain('--mc-btn-500-color:var(--mc-rose-500-color)');
+    expect(css).toMatch(/--mc-rose-950-color:\s*oklch\(/);
+    expect(css).toMatch(/--mc-rose-550-color:\s*oklch\(/);
+  });
+
+  it('records mapped source usage when local lightness-reverse references configured colors', async () => {
+    const { css } = await generate('<div class="mc-lr-btn_primary bg-mc-btn-50"></div>', { colors: { primary: 'rose' } });
+
+    expect(css).toContain('--mc-btn-50-color:var(--mc-primary-950-color)');
+    expect(css).toMatch(/--mc-primary-950-color:\s*oklch\(/);
+    expect(css).not.toContain('--mc-primary-50-color:');
+  });
+
   it('preserves inline source depth when referencing option color variables', async () => {
     const { css } = await generate('<div class="mc-btn_primary-620 c-mc-btn"></div>', { colors: { primary: 'rose' } });
     expect(css).toContain('--mc-btn-color:var(--mc-primary-620-color)');
@@ -576,6 +634,25 @@ describe('updateMagicColor', () => {
 
     expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
     expect(dom.style.getPropertyValue('--mc-primary-color')).toBe('');
+  });
+
+  it('writes lightness-reversed arbitrary depth variables at runtime', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-primary-50-color', 'red');
+    dom.style.setProperty('--mc-primary-450-color', 'red');
+    dom.style.setProperty('--mc-primary-500-color', 'red');
+    const reference = getMagicColorStyle({
+      name: 'expected',
+      color: '#9c1d1e',
+      hasBase: false,
+      depths: new Set(['950', '550', '500']),
+    });
+
+    updateMagicColor({ name: 'primary', color: '#9c1d1e', lightnessReverse: true, dom });
+
+    expect(dom.style.getPropertyValue('--mc-primary-50-color')).toBe(reference['--mc-expected-950-color']);
+    expect(dom.style.getPropertyValue('--mc-primary-450-color')).toBe(reference['--mc-expected-550-color']);
+    expect(dom.style.getPropertyValue('--mc-primary-500-color')).toBe(reference['--mc-expected-500-color']);
   });
 
   it('reads defined color variables from computed styles', () => {
@@ -858,6 +935,15 @@ describe('color transform utilities', () => {
   it('roundNum works correctly', () => {
     expect(roundNum(0.1234)).toBe(0.123);
     expect(roundNum(0.1235)).toBe(0.124);
+  });
+
+  it('resolveThemeDepth supports lightness reverse mapping after clamping', () => {
+    expect(resolveThemeDepth('50', { lightnessReverse: true })).toBe(950);
+    expect(resolveThemeDepth('450', { lightnessReverse: true })).toBe(550);
+    expect(resolveThemeDepth('457', { lightnessReverse: true })).toBe(543);
+    expect(resolveThemeDepth('500', { lightnessReverse: true })).toBe(500);
+    expect(resolveThemeDepth('1200', { lightnessReverse: true })).toBe(-200);
+    expect(resolveThemeDepth('not-a-depth', { lightnessReverse: true })).toBeUndefined();
   });
 });
 
