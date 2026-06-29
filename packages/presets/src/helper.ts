@@ -1,5 +1,5 @@
 import type { CSSObject } from 'unocss';
-import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveColorParts } from '@unocss-preset-magicolor/utils';
+import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveColorParts, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { mc } from 'magic-color';
 
 interface ColorVariableUsage {
@@ -74,9 +74,21 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
     return {};
   }
 
-  const themeMetaColors = getMcThemeMetaColors(originColor);
-
   const css: CSSObject = {};
+
+  // special color
+  const specialColor = resolveSpecialColor(originColor);
+  if (specialColor) {
+    if (hasBase) {
+      Object.assign(css, generateColorVariable(name, specialColor));
+    }
+    for (const depth of depths) {
+      Object.assign(css, generateColorVariable(name, specialColor, depth));
+    }
+    return css;
+  }
+
+  const themeMetaColors = getMcThemeMetaColors(originColor);
 
   if (hasBase) {
     if (bodyNo) {

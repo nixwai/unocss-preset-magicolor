@@ -1,7 +1,16 @@
+import { SpecialColorKey } from '@unocss/preset-wind4/utils';
+
 export interface ResolvedColorParts {
   originColor?: string
   bodyNo?: string
 }
+
+const specialColorValueMap = new Map<string, string>(
+  Object.entries(SpecialColorKey).flatMap(([key, value]) => [
+    [key.toLowerCase(), value],
+    [value.toLowerCase(), value],
+  ]),
+);
 
 const hyphenColorDepthRE = /^(.*)-(\d+)$/;
 const compactColorNameRE = /^[a-z][a-z0-9-]*$/i;
@@ -101,4 +110,12 @@ export function resolveColorParts(color?: string): ResolvedColorParts {
  */
 export function resolveBodyColor(body = ''): ResolvedColorParts & { originColor: string } {
   return resolveColorParts(extractBodyColor(body));
+}
+
+export function resolveSpecialColor(color?: string) {
+  if (!color) {
+    return;
+  }
+
+  return specialColorValueMap.get(color.trim().toLowerCase());
 }

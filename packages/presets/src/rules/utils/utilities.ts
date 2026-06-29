@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSValueInput, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../../typing';
-import { isInvalidColor, resolveBodyColor } from '@unocss-preset-magicolor/utils';
+import { isInvalidColor, resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
 import { resolveThemeColorValue } from './theme-colors';
 
@@ -21,6 +21,12 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   colorData.name = originColor;
   colorData.no = bodyNo;
   context?.usage.recordUsage(`mc-${body}`, ctx.rawSelector);
+
+  const specialColor = resolveSpecialColor(originColor);
+  if (specialColor) {
+    colorData.color = specialColor;
+    return colorData;
+  }
 
   // Names used by `mc-*` definitions, global options, and theme colors are
   // resolved through variables emitted by the definition class or preflight.

@@ -2,7 +2,7 @@ import type { PresetWind4Options } from '@unocss/preset-wind4';
 import type { CSSObject, Preflight, Preset } from 'unocss';
 import type { PresetMcColorValue } from '../types';
 import type { MagicColorContext } from '../typing';
-import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
+import { resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
 import { resolveThemeColorVariable } from '../rules/utils';
 
@@ -67,11 +67,11 @@ export function preflights(context?: MagicColorContext): Preflight[] {
       const css: CSSObject = {};
       const darkCss: CSSObject = {};
       for (const name of context?.usage.getUsageNames() ?? []) {
-        const isUnocssThemeColor = hasParseableColor(name, theme);
         const optionColor = resolveColorConfig(context?.options.colors?.[name]);
         const darkColor = resolveColorConfig(context?.options.dark?.[name]);
+        const shouldResolveThemeColor = hasParseableColor(name, theme) && !resolveSpecialColor(name);
 
-        if (optionColor.color || isUnocssThemeColor) {
+        if (optionColor.color || shouldResolveThemeColor) {
           Object.assign(css, resolveThemeColorVariable(
             name,
             resolveBodyColor(optionColor.color ?? name),

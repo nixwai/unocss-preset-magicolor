@@ -3,7 +3,7 @@ import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { MagicColorContext, ThemeKey } from '../../typing';
-import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
+import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { BASE_COLOR_DEPTH } from '../../usages';
 
@@ -69,6 +69,12 @@ function getBaseColor(
     return;
   }
 
+  // special color
+  const specialColor = resolveSpecialColor(originColor);
+  if (specialColor) {
+    return specialColor;
+  }
+
   if (!bodyNo) {
     let parsedColor = parseColor(originColor, theme)?.color;
     if (!parsedColor) {
@@ -103,6 +109,16 @@ export function resolveThemeColorVariable(
 
   const usage = context?.usage.getUsage(name);
   if (!usage) {
+    return css;
+  }
+
+  // special color
+  const specialColor = resolveSpecialColor(colorParts.originColor);
+  if (specialColor) {
+    for (const depth of usage) {
+      const suffix = depth === BASE_COLOR_DEPTH ? '' : `-${depth}`;
+      css[`--mc-${name}${suffix}-color`] = specialColor;
+    }
     return css;
   }
 

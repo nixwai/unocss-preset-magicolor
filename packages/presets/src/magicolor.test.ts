@@ -5,6 +5,7 @@ import {
   isInvalidColor,
   resolveBodyColor,
   resolveColorParts,
+  resolveSpecialColor,
   resolveThemeDepth,
   roundNum,
   toNum,
@@ -289,6 +290,20 @@ describe('preflight theme color variables', () => {
     expect(css).not.toContain('--mc-primary-500-color:');
   });
 
+  it('maps configured special color values to every requested depth', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-primary c-mc-primary-457 bg-mc-primary-950"></div>',
+      { colors: { primary: 'transparent' } },
+    );
+
+    expect(css).toContain('--mc-primary-color: transparent;');
+    expect(css).toContain('--mc-primary-457-color: transparent;');
+    expect(css).toContain('--mc-primary-950-color: transparent;');
+    expect(css).toContain('var(--mc-primary-color)');
+    expect(css).toContain('var(--mc-primary-457-color)');
+    expect(css).toContain('var(--mc-primary-950-color)');
+  });
+
   it('skips usage names that are neither configured nor theme colors', async () => {
     const { css } = await generate('<div class="c-mc-notacolor"></div>');
 
@@ -362,6 +377,16 @@ describe('color style rules', () => {
   it('resolves text color via the c- and color- prefixes', async () => {
     const { css } = await generate('<div class="c-mc-rose-445 color-mc-rose-445"></div>');
     expect(css).toContain('var(--mc-rose-445-color)');
+  });
+
+  it('resolves special color keywords directly without generated variables', async () => {
+    const { css } = await generate('<div class="c-mc-transparent c-mc-transparent-500 c-mc-current c-mc-inherit"></div>');
+
+    expect(css).toMatch(/\.c-mc-transparent,\s*\.c-mc-transparent-500\{color:transparent;\}/);
+    expect(css).toContain('.c-mc-current{color:currentColor;}');
+    expect(css).toContain('.c-mc-inherit{color:inherit;}');
+    expect(css).not.toContain('--mc-transparent-color:');
+    expect(css).not.toContain('--mc-transparent-500-color:');
   });
 
   it('resolves text-mc and text-color-mc', async () => {
@@ -529,6 +554,16 @@ describe('mc color definition rule', () => {
     expect(css).toMatch(/--mc-rose-457-color:\s*oklch\(/);
   });
 
+  it('defines magic color variables directly from special color keywords', async () => {
+    const { css } = await generate('<div class="mc-primary_transparent c-mc-primary c-mc-primary-457 bg-mc-primary-950"></div>');
+
+    expect(css).toContain('--mc-primary-color:transparent');
+    expect(css).toContain('--mc-primary-457-color:transparent');
+    expect(css).toContain('--mc-primary-950-color:transparent');
+    expect(css).not.toContain('var(--mc-transparent');
+    expect(css).not.toContain('--mc-transparent-457-color:');
+  });
+
   it('supports local lightness-reverse definitions for theme color variables', async () => {
     const { css } = await generate('<div class="mc-lr-btn_rose bg-mc-btn-50 bg-mc-btn-450 bg-mc-btn-500"></div>');
 
@@ -629,6 +664,14 @@ describe('color parsing utilities', () => {
     expect(resolveBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual({ originColor: '[oklch(20.1%_0.1_20/50)]', bodyNo: '200' });
   });
 
+  it('normalizes special color keywords and canonical values', () => {
+    expect(resolveSpecialColor('transparent')).toBe('transparent');
+    expect(resolveSpecialColor('current')).toBe('currentColor');
+    expect(resolveSpecialColor('currentColor')).toBe('currentColor');
+    expect(resolveSpecialColor('inherit')).toBe('inherit');
+    expect(resolveSpecialColor('rose')).toBeUndefined();
+  });
+
   it('handles empty and missing token bodies', () => {
     expect(resolveBodyColor()).toEqual({ originColor: '', bodyNo: undefined });
     expect(resolveBodyColor('')).toEqual({ originColor: '', bodyNo: undefined });
@@ -712,6 +755,17 @@ describe('updateMagicColor', () => {
 
     expect(dom.style.getPropertyValue('--mc-primary-630-color')).toContain('oklch(');
     expect(dom.style.getPropertyValue('--mc-primary-230-color')).toContain('oklch(');
+  });
+
+  it('writes special color values at runtime for base and depth variables', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-primary-color', 'red');
+    dom.style.setProperty('--mc-primary-630-color', 'red');
+
+    updateMagicColor({ name: 'primary', color: 'transparent', dom });
+
+    expect(dom.style.getPropertyValue('--mc-primary-color')).toBe('transparent');
+    expect(dom.style.getPropertyValue('--mc-primary-630-color')).toBe('transparent');
   });
 
   it('only writes arbitrary depth variables for the target color name', () => {

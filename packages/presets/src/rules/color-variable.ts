@@ -2,7 +2,7 @@ import type { ResolvedColorParts } from '@unocss-preset-magicolor/utils';
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
-import { resolveBodyColor, resolveThemeDepth } from '@unocss-preset-magicolor/utils';
+import { resolveBodyColor, resolveSpecialColor, resolveThemeDepth } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
 import { BASE_COLOR_DEPTH } from '../usages';
 import { resolveThemeColorVariable } from './utils';
@@ -17,6 +17,9 @@ export function createColorVariable(context?: MagicColorContext): Rule[] {
 }
 
 function isVariableColorSource(color: string, theme: Theme, context?: MagicColorContext) {
+  if (resolveSpecialColor(color)) {
+    return false;
+  }
   return !!context?.options.colors?.[color] || (!color.startsWith('[') && hasParseableColor(color, theme));
 }
 
@@ -79,8 +82,9 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
     return;
   }
   const { name, hue, lightnessReverse } = definition;
-  // Be compatible with the colors defined in the usage options
+
   const mcColorObj = resolveBodyColor(hue);
+  // Be compatible with the colors defined in the usage options
   if (isVariableColorSource(mcColorObj.originColor, theme, context)) {
     return resolveMagicColorVariable(name, mcColorObj, ctx, context, lightnessReverse);
   }
