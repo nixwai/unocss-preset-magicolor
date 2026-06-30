@@ -8,10 +8,10 @@ import { parseColor } from '@unocss/preset-wind4/utils';
 import { BASE_COLOR_DEPTH } from '../usages';
 
 /**
- * get themeMetaColors
- * @param colorParts parsed color origin and depth
- * @param theme unocss theme
- * @returns themeMetaColors
+ * Builds the full magic-color theme scale for a source color.
+ *
+ * UnoCSS theme colors take priority for standard depth keys; any missing keys
+ * are generated from the base color with `magic-color`.
  */
 function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
   const { originColor } = colorParts;
@@ -23,7 +23,7 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
   const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
   let hasEmptyColor = false;
 
-  // give priority to using the colors configured by the theme
+  // Give priority to colors configured by the host UnoCSS theme.
   for (const themeMeta of themeMetaList) {
     const cssColor = parseColor(`${originColor}-${themeMeta}`, theme)?.cssColor;
     if (cssColor) {
@@ -34,7 +34,7 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
     }
   }
 
-  // use 'mc.theme' to supplement the colors
+  // Generate only missing depths from the parsed base color.
   if (hasEmptyColor) {
     let parsedOriginColor = parseColor(originColor, theme);
     if (!parsedOriginColor?.color) {
@@ -50,7 +50,7 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
     }
   }
 
-  // uniform use oklch
+  // Store generated variables in one color space to keep output predictable.
   for (const themeMeta of themeMetaList) {
     themeMetaColors[themeMeta] = toOklch(themeMetaColors[themeMeta]);
   }
@@ -58,6 +58,7 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
   return themeMetaColors;
 }
 
+/** Resolves the base variable value, honoring special colors and inline depth suffixes. */
 function getBaseColor(
   colorParts: ResolvedColorParts,
   theme: Theme,
@@ -69,7 +70,7 @@ function getBaseColor(
     return;
   }
 
-  // special color
+  // Special colors are valid CSS keywords and do not need theme resolution.
   const specialColor = resolveSpecialColor(originColor);
   if (specialColor) {
     return specialColor;
@@ -91,12 +92,10 @@ function getBaseColor(
 }
 
 /**
- * resolve color variable
- * @param name color name
- * @param colorParts parsed color origin and depth
- * @param theme unocss theme
- * @param context magic color context
- * @returns css variables
+ * Resolves the CSS variables needed for one magic color name.
+ *
+ * The usage tracker controls which depths are emitted so unused color scales do
+ * not inflate the generated CSS.
  */
 export function resolveThemeColorVariable(
   name: string,
@@ -112,7 +111,7 @@ export function resolveThemeColorVariable(
     return css;
   }
 
-  // special color
+  // Apply special color keywords to every requested variable depth.
   const specialColor = resolveSpecialColor(colorParts.originColor);
   if (specialColor) {
     for (const depth of usage) {
@@ -145,6 +144,7 @@ export function resolveThemeColorVariable(
   return css;
 }
 
+/** Resolves a single color value for non-variable utility fallbacks. */
 export function resolveThemeColorValue(colorParts: ResolvedColorParts, theme: Theme = {}, options: ThemeDepthColorOptions = {}) {
   return getBaseColor(colorParts, theme, undefined, options);
 }

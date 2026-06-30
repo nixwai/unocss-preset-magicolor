@@ -8,6 +8,7 @@ import { resolveThemeColorVariable } from '../utils/theme-colors';
 const PRESET_NAME_LIST = ['@unocss/preset-mini', '@unocss/preset-wind3', '@unocss/preset-wind4'];
 const DEFAULT_DARK_SELECTOR = '.dark';
 
+/** Serializes non-empty CSS custom properties into a declaration block body. */
 function stringifyCssVariables(css: CSSObject) {
   return Object.entries(css)
     .filter(([, value]) => value != null)
@@ -15,10 +16,12 @@ function stringifyCssVariables(css: CSSObject) {
     .join('\n\t');
 }
 
+/** Checks whether a generated CSS object contains at least one real value. */
 function hasCssVariables(css: CSSObject) {
   return Object.values(css).some(value => value != null);
 }
 
+/** Creates the light-mode variable block and skips empty output entirely. */
 function createRootCss(css: CSSObject) {
   if (!hasCssVariables(css)) {
     return '';
@@ -27,10 +30,12 @@ function createRootCss(css: CSSObject) {
   return `:root {\n\t${stringifyCssVariables(css)}\n}\n`;
 }
 
+/** Creates dark-mode variables using the host preset's dark mode strategy. */
 function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
   if (!hasCssVariables(css)) {
     return '';
   }
+  // Reuse UnoCSS preset dark-mode settings so this preset follows the app convention.
   const presetOptions = presets.find(preset => PRESET_NAME_LIST.includes(preset.name))?.options as PresetWind4Options | undefined;
   const darkMode = presetOptions?.dark === 'media' ? 'media' : 'class';
 
@@ -41,20 +46,22 @@ function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
     ${cssVariables}
   }\n}\n`;
   }
+  // Object dark config can provide a custom selector; string dark config means `.dark`.
   const selector = typeof presetOptions?.dark === 'string'
     ? DEFAULT_DARK_SELECTOR
     : (presetOptions?.dark?.dark || DEFAULT_DARK_SELECTOR);
   return `${selector} {\n\t${cssVariables}\n}\n`;
 }
 
+/** Emits only the color variables that were discovered by the usage extractor. */
 export function preflights(context?: MagicColorContext): Preflight[] {
   return [{
     getCSS: ({ theme, generator }) => {
       const css: CSSObject = {};
       const darkCss: CSSObject = {};
       for (const name of context?.usage.getUsageNames() ?? []) {
+        // Light variables may come from explicit options or directly from UnoCSS theme colors.
         const optionColor = resolveMixtureColorConfig(name, theme, context);
-
         if (optionColor.color) {
           Object.assign(css, resolveThemeColorVariable(
             name,
@@ -65,6 +72,7 @@ export function preflights(context?: MagicColorContext): Preflight[] {
           ));
         }
 
+        // Dark variables are emitted only for explicit dark aliases.
         const darkColor = resolveColorConfig(context?.options.dark?.[name]);
         if (darkColor.color) {
           Object.assign(darkCss, resolveThemeColorVariable(

@@ -6,6 +6,7 @@ import { TokenUsage } from './token';
 // UnoCSS may omit an id for inline input; keep those scans under a stable bucket.
 const DEFAULT_ID = '__inline__';
 
+/** Merges usage from one scan into another without losing previously seen depths. */
 function mergeFileUsage(target: FileUsage, source: FileUsage) {
   for (const [name, sourceDepths] of source.colors.entries()) {
     const targetDepths = target.colors.get(name) ?? new Set<MagicColorDepth>();
@@ -27,6 +28,7 @@ export class MagicColorUsage {
 
   private readonly tokenIndex = new TokenUsage();
 
+  /** UnoCSS extractor hook that indexes usage tokens before rules and preflights run. */
   readonly extractor: Extractor = {
     name: 'magicolor-usage',
     order: 1,
@@ -36,6 +38,7 @@ export class MagicColorUsage {
     },
   };
 
+  /** Replaces the usage snapshot for one input so watch-mode edits remove stale tokens. */
   private replaceFileUsage(id: string, tokens: Iterable<string>) {
     const previousUsage = this.files.get(id);
     if (previousUsage) {
@@ -45,6 +48,7 @@ export class MagicColorUsage {
     const usage = scanUsage(tokens);
     this.tokenIndex.add(id, usage.tokens);
 
+    // Shortcuts can expand after extraction, so merge any rule-recorded usage back into this file.
     for (const token of usage.tokens) {
       const recordedUsage = this.recordedUsages.get(token);
       if (recordedUsage) {
@@ -86,6 +90,7 @@ export class MagicColorUsage {
     return Array.from(names);
   }
 
+  /** Records usage produced by a rule expansion, such as aliases pointing at source variables. */
   recordUsage(token: string, rawSelector?: string) {
     if (!rawSelector) {
       return;
@@ -105,6 +110,7 @@ export class MagicColorUsage {
       return;
     }
 
+    // If the selector was already seen in one or more files, update their snapshots immediately.
     for (const id of ids) {
       const fileUsage = this.files.get(id);
       if (fileUsage) {

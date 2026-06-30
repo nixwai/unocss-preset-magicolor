@@ -8,12 +8,14 @@ import { BASE_COLOR_DEPTH } from '../usages';
 import { generateColorName, parseMagicColorDefinition } from '../utils/color-variable';
 import { resolveThemeColorVariable } from '../utils/theme-colors';
 
+/** Creates `mc-name_source` rules that define reusable magic color variables. */
 export function createColorVariable(context?: MagicColorContext): Rule[] {
   return [
     [/^mc-(?!lr(?:-|$))(.+)$/, (match, ctx) => resolveMagicColor(match, ctx, context)],
   ];
 }
 
+/** Returns true when the source color should be linked through generated CSS variables. */
 function isVariableColorSource(color: string, theme: Theme, context?: MagicColorContext) {
   if (resolveSpecialColor(color)) {
     return false;
@@ -34,6 +36,8 @@ function resolveMagicColorVariable(
   }
   const { originColor, bodyNo } = colorParts;
   for (const depth of usage) {
+    // The target depth controls the variable being defined; the source depth
+    // keeps an inline suffix such as `primary-620` for base aliases.
     const sourceBodyNo = depth === BASE_COLOR_DEPTH ? bodyNo : depth;
     const targetBodyNo = depth === BASE_COLOR_DEPTH ? undefined : depth;
 
@@ -44,6 +48,7 @@ function resolveMagicColorVariable(
     }
 
     css[targetVariableName] = `var(${sourceVariableName})`;
+    // Ensure the source variable itself is generated even when it only appears through an alias.
     context?.usage.recordUsage(sourceBodyNo ? `mc-${originColor}-${sourceBodyNo}` : `mc-${originColor}`, ctx.rawSelector);
   }
 
@@ -59,11 +64,11 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
   const { name, hue } = definition;
 
   const mcColorObj = resolveBodyColor(hue);
-  // Be compatible with the colors defined in the usage options
+  // Link option and theme colors through variables so aliases stay reactive.
   if (isVariableColorSource(mcColorObj.originColor, theme, context)) {
     return resolveMagicColorVariable(name, mcColorObj, ctx, context);
   }
-  // It will be directly parsed into colors，rather than variables
+  // Arbitrary or literal colors are resolved directly rather than linked through variables.
   return resolveThemeColorVariable(
     name,
     mcColorObj,

@@ -6,6 +6,7 @@ import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
 import { generateColorName } from '../../utils/color-variable';
 import { resolveThemeColorValue } from '../../utils/theme-colors';
 
+/** Parses a magic color token body and records the usage needed for preflight variables. */
 export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?: MagicColorContext) {
   const colorData = parseColor(body, ctx.theme);
   if (!colorData) {
@@ -19,6 +20,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   if (isInvalidColor(originColor)) {
     return;
   }
+  // Preserve UnoCSS parser metadata while replacing the color name/depth with magic-color parts.
   colorData.name = originColor;
   colorData.no = bodyNo;
   context?.usage.recordUsage(`mc-${body}`, ctx.rawSelector);
@@ -35,16 +37,17 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   if (usage) {
     colorData.color = `var(${generateColorName(originColor, bodyNo)})`;
   }
-  // use unocss parseColor
+  // If UnoCSS already resolved the token, keep its parsed value and metadata.
   if (colorData.color) {
     return colorData;
   }
-  // resolve color
+  // Fall back to a generated theme depth when the token was not a standard theme color.
   colorData.color = resolveThemeColorValue(colorParts, ctx.theme) ?? '';
 
   return colorData;
 }
 
+/** Creates a rule resolver that pipes magic-color parsing into UnoCSS color CSS output. */
 export function mcColorResolver(property: string, varName: string, context?: MagicColorContext) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
     const colorData = parseMagicColor(body ?? '', ctx, context);

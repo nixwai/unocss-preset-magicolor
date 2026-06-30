@@ -2,7 +2,7 @@ import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, Rule } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import { notLastChildSelectorVariant } from '@unocss/preset-wind4/rules';
-import { handleImage, handlerBorderColor, handleShadow, mcBgGradientColorResolver, mcColorResolver } from './utils';
+import { handleImage, handlerBorderColor, handleShadow, mcBgGradientColorResolver, mcColorResolver } from './unocss-utils';
 
 export function createColorStyle(context?: MagicColorContext): Rule<Theme>[] {
   return [

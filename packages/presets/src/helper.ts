@@ -14,10 +14,12 @@ interface MagicColorStyleParams extends ColorVariableUsage {
   lightnessReverse?: boolean
 }
 
+/** Escapes a color name before it is interpolated into a CSS variable regex. */
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/** Collects the base and depth variables already present in one style object. */
 function collectStyleVariables(name: string, style: CSSStyleDeclaration, usage: ColorVariableUsage) {
   const colorVariableRE = new RegExp(`^--mc-${escapeRegExp(name)}(?:-(\\d+))?-color$`);
 
@@ -38,6 +40,7 @@ function collectStyleVariables(name: string, style: CSSStyleDeclaration, usage: 
   }
 }
 
+/** Reads inline and computed styles so runtime updates only touch variables that exist. */
 function collectDefinedColorVariables(name: string, dom: HTMLElement): ColorVariableUsage {
   const usage: ColorVariableUsage = {
     hasBase: false,
@@ -72,7 +75,7 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
 
   const css: CSSObject = {};
 
-  // special color
+  // Special colors bypass depth generation because the same keyword is valid at every depth.
   const specialColor = resolveSpecialColor(originColor);
   if (specialColor) {
     if (hasBase) {
@@ -88,6 +91,7 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
 
   if (hasBase) {
     if (bodyNo) {
+      // A base variable may point at a specific source depth, such as `#9c1d1e-457`.
       const baseColor = getThemeDepthColor(themeMetaColors, bodyNo, { lightnessReverse });
       baseColor && Object.assign(css, generateColorVariable(name, baseColor));
     }
@@ -108,7 +112,10 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
 }
 
 /**
- * Modify the value of the color variable
+ * Updates already-defined CSS variables for a magic color on a DOM element.
+ *
+ * The helper intentionally does not infer usage from class names at runtime;
+ * it only rewrites variables that were emitted by UnoCSS or declared by the app.
  * @param params params Parameter object
  * @param params.name Color name
  * @param params.color Color

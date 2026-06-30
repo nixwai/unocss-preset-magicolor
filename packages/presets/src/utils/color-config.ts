@@ -9,6 +9,7 @@ export interface ResolvedColorConfig {
   lightnessReverse: boolean
 }
 
+/** Normalizes string and object color options into one internal shape. */
 export function resolveColorConfig(config?: PresetMcColorValue): ResolvedColorConfig {
   if (!config) {
     return { color: undefined, lightnessReverse: false };
@@ -22,6 +23,10 @@ export function resolveColorConfig(config?: PresetMcColorValue): ResolvedColorCo
   };
 }
 
+/**
+ * Resolves a color by checking dark options, light options, and finally UnoCSS
+ * theme colors in that priority order.
+ */
 export function resolveMixtureColorConfig(
   name: string,
   theme: Theme,
@@ -29,6 +34,7 @@ export function resolveMixtureColorConfig(
   preferDark?: boolean,
 ): ResolvedColorConfig {
   if (preferDark) {
+    // Dark aliases only win when the selector is being generated for a dark variant.
     const darkColor = resolveColorConfig(context?.options.dark?.[name]);
     if (darkColor.color) {
       return darkColor;
@@ -41,6 +47,7 @@ export function resolveMixtureColorConfig(
   }
 
   if (!resolveSpecialColor(name) && hasParseableColor(name, theme)) {
+    // Plain theme colors can be used without being declared in preset options.
     return { color: name, lightnessReverse: false };
   }
 

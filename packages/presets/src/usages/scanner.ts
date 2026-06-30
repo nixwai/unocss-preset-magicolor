@@ -15,6 +15,7 @@ export interface FileUsage {
 const colorUsagePrefixRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-/;
 
 // Matches magic color usages such as `c-mc-my-btn-630`, `c-mc-grape120:20`, or `c-mc-qq/34:20`.
+// Definition utilities like `mc-btn_red` are intentionally excluded.
 const colorUsageTokenRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)(?:[:/].*)?$/;
 
 /** Stores the requested numeric color depth. */
