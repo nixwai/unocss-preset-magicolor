@@ -2,10 +2,10 @@ import type { ResolvedColorParts, ThemeDepthColorOptions } from '@unocss-preset-
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
-import type { MagicColorContext, ThemeKey } from '../../typing';
+import type { MagicColorContext, ThemeKey } from '../typing';
 import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
-import { BASE_COLOR_DEPTH } from '../../usages';
+import { BASE_COLOR_DEPTH } from '../usages';
 
 /**
  * get themeMetaColors

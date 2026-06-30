@@ -3,7 +3,8 @@ import type { CSSValueInput, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../../typing';
 import { isInvalidColor, resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
-import { resolveThemeColorValue } from './theme-colors';
+import { generateColorName } from '../../utils/color-variable';
+import { resolveThemeColorValue } from '../../utils/theme-colors';
 
 export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?: MagicColorContext) {
   const colorData = parseColor(body, ctx.theme);
@@ -32,7 +33,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   // resolved through variables emitted by the definition class or preflight.
   const usage = context?.usage.getUsage(originColor);
   if (usage) {
-    colorData.color = bodyNo ? `var(--mc-${originColor}-${bodyNo}-color)` : `var(--mc-${originColor}-color)`;
+    colorData.color = `var(${generateColorName(originColor, bodyNo)})`;
   }
   // use unocss parseColor
   if (colorData.color) {

@@ -119,3 +119,8 @@ export function resolveSpecialColor(color?: string) {
 
   return specialColorValueMap.get(color.trim().toLowerCase());
 }
+
+/** use dark modal */
+export function hasDarkVariant(rawSelector?: string) {
+  return rawSelector?.split(':').includes('dark') === true;
+}

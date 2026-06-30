@@ -1,6 +1,7 @@
 import type { CSSObject } from 'unocss';
 import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveColorParts, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { mc } from 'magic-color';
+import { generateColorVariable } from './utils/color-variable';
 
 interface ColorVariableUsage {
   hasBase: boolean
@@ -51,11 +52,6 @@ function collectDefinedColorVariables(name: string, dom: HTMLElement): ColorVari
   }
 
   return usage;
-}
-
-function generateColorVariable(name: string, color: string, depth?: string | number) {
-  const suffix = depth == null ? '' : `-${depth}`;
-  return { [`--mc-${name}${suffix}-color`]: color };
 }
 
 /**
