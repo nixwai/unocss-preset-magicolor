@@ -116,7 +116,6 @@ export function resolveSpecialColor(color?: string) {
   if (!color) {
     return;
   }
-
   return specialColorValueMap.get(color.trim().toLowerCase());
 }
 

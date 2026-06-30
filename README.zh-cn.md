@@ -133,7 +133,7 @@ export default defineConfig({
 
 ### 全局颜色
 
-如果项目里有稳定的语义色，可以通过 `presetMagicolor({ colors })` 定义全局别名。别名会在 `:root` 中输出为 `--mc-<name>-color` 或 `--mc-<name>-<depth>-color`，但同样只会为实际用到的色阶生成变量。
+如果项目里有稳定的语义色，可以通过 `presetMagicolor({ colors })` 定义全局别名。别名会在 `:root` 中输出为 `--mc-colors-<name>-DEFAULT` 或 `--mc-colors-<name>-<depth>`，但同样只会为实际用到的色阶生成变量。
 
 ```ts
 import { defineConfig, presetWind4 } from 'unocss';
@@ -166,9 +166,9 @@ export default defineConfig({
 
 这相当于在 UnoCSS 原有 `theme.colors` 之外增加一层语义映射：`primary`、`brand` 这样的业务色名可以继续享受任意色阶、透明度修饰和变体能力，例如 `bg-mc-primary-457/80`、`hover:bg-mc-primary-620`。
 
-全局 `colors` 和 `dark` 条目既可以写字符串，也可以写对象。使用 `{ color, lightnessReverse: true }` 可以只为这个别名启用数字亮度反转。基础变量例如 `--mc-primary-color` 不会被隐式当成 `500`，只有显式数字色阶会反转。
+全局 `colors` 和 `dark` 条目既可以写字符串，也可以写对象。使用 `{ color, lightnessReverse: true }` 可以只为这个别名启用数字亮度反转。基础变量例如 `--mc-colors-primary-DEFAULT` 不会被隐式当成 `500`，只有显式数字色阶会反转。
 
-`dark` 选项可以为同一组语义色定义全局暗色模式颜色。存在 `presetWind4` 时，暗色颜色表会跟随它的 `dark` 配置（`'class'`、`'media'` 或自定义选择器）。如果 Magicolor 无法读取到 `presetWind4` 的 dark 配置，则默认使用 `.dark`。生成的暗色块会覆盖同名 `--mc-*` 变量，不依赖 `dark:mc-*` 工具类是否成功生成。
+`dark` 选项可以为同一组语义色定义全局暗色模式颜色。存在 `presetWind4` 时，暗色颜色表会跟随它的 `dark` 配置（`'class'`、`'media'` 或自定义选择器）。如果 Magicolor 无法读取到 `presetWind4` 的 dark 配置，则默认使用 `.dark`。生成的暗色块会覆盖同名 `--mc-colors-*` 变量，不依赖 `dark:mc-*` 工具类是否成功生成。
 
 同一个语义色仍然可以通过变体在局部组件中重新定义。例如使用 `mc-primary_<color>` 定义亮色主题，再用 `dark:mc-primary_<color>` 在暗黑模式下覆盖颜色；所有读取 `primary` 的工具类都会跟随当前主题变化。
 
@@ -207,7 +207,7 @@ function toggleColor() {
 </template>
 ```
 
-`updateMagicColor` 会读取目标元素上已经存在的 `--mc-primary-color`、`--mc-primary-457-color` 等变量，并只更新这些已定义变量。它不会单纯根据 DOM 里的 class 反推新变量，因此需要先通过 `c-mc-primary`、`bg-mc-primary-457` 等 class 让 UnoCSS 生成对应变量。
+`updateMagicColor` 会读取目标元素上已经存在的 `--mc-colors-primary-DEFAULT`、`--mc-colors-primary-457` 等变量，并只更新这些已定义变量。它不会单纯根据 DOM 里的 class 反推新变量，因此需要先通过 `c-mc-primary`、`bg-mc-primary-457` 等 class 让 UnoCSS 生成对应变量。
 
 传入 `lightnessReverse: true` 时，运行时更新会使用和 `mc-lr-*`、全局颜色对象相同的反向亮度映射。
 
