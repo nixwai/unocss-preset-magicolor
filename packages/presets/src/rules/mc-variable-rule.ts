@@ -4,7 +4,7 @@ import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import { resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
-import { BASE_COLOR_DEPTH, generateColorName, parseMagicColorDefinition } from '../utils/color-variable';
+import { BASE_COLOR_DEPTH, createCssVariableReference, generateColorName, parseMagicColorDefinition } from '../utils/color-variable';
 import { resolveThemeColorVariable } from '../utils/theme-colors';
 
 /** Creates `mc-name_source` rules that define reusable magic color variables. */
@@ -45,9 +45,10 @@ function resolveMagicColorVariable(
       continue;
     }
 
-    css[targetVariableName] = `var(${sourceVariableName})`;
+    css[targetVariableName] = createCssVariableReference(sourceVariableName);
     // Ensure the source variable itself is generated even when it only appears through an alias.
-    context?.usage.recordUsage(sourceBodyNo ? `mc-${originColor}-${sourceBodyNo}` : `mc-${originColor}`, ctx.rawSelector);
+    const bodyName = sourceBodyNo || sourceBodyNo === BASE_COLOR_DEPTH ? `mc-${originColor}-${sourceBodyNo}` : `mc-${originColor}`;
+    context?.usage.recordUsage(bodyName, ctx.rawSelector);
   }
 
   return css;
@@ -66,11 +67,10 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
   if (isVariableColorSource(mcColorObj.originColor, theme, context)) {
     return resolveMagicColorVariable(name, mcColorObj, ctx, context);
   }
+  const usage = context?.usage.getUsage(name);
+  if (!usage) {
+    return;
+  }
   // Arbitrary or literal colors are resolved directly rather than linked through variables.
-  return resolveThemeColorVariable(
-    name,
-    mcColorObj,
-    theme,
-    context,
-  );
+  return resolveThemeColorVariable(name, mcColorObj, theme, usage);
 };

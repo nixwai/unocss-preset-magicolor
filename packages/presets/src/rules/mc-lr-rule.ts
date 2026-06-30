@@ -55,11 +55,16 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
     hasDarkVariant(ctx.rawSelector),
   );
 
+  const usage = context?.usage.getUsage(name);
+  if (!usage) {
+    return;
+  }
+
   return resolveThemeColorVariable(
     name,
     source.colorParts,
     ctx.theme,
-    context,
+    usage,
     { lightnessReverse: !source.lightnessReverse },
   );
 }
@@ -88,7 +93,7 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicC
       name,
       resolveBodyColor(sourceConfig.color),
       theme,
-      context,
+      usage,
       { lightnessReverse: !sourceConfig.lightnessReverse },
     ));
   }

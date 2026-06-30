@@ -2,7 +2,8 @@ import type { ResolvedColorParts, ThemeDepthColorOptions } from '@unocss-preset-
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
-import type { MagicColorContext, ThemeKey } from '../typing';
+import type { ThemeKey } from '../typing';
+import type { MagicColorDepth } from './color-variable';
 import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { BASE_COLOR_DEPTH, generateColorName } from './color-variable';
@@ -101,21 +102,17 @@ export function resolveThemeColorVariable(
   name: string,
   colorParts: ResolvedColorParts,
   theme: Theme = {},
-  context?: MagicColorContext,
+  usage: Set<MagicColorDepth>,
   options: ThemeDepthColorOptions = {},
+  generateVariableName: (name: string, depth?: string | number) => string = generateColorName,
 ) {
   const css: CSSObject = {};
-
-  const usage = context?.usage.getUsage(name);
-  if (!usage) {
-    return css;
-  }
 
   // Apply special color keywords to every requested variable depth.
   const specialColor = resolveSpecialColor(colorParts.originColor);
   if (specialColor) {
     for (const depth of usage) {
-      css[generateColorName(name, depth)] = specialColor;
+      css[generateVariableName(name, depth)] = specialColor;
     }
     return css;
   }
@@ -130,7 +127,7 @@ export function resolveThemeColorVariable(
       ? getBaseColor(colorParts, theme, themeMetaColors, options)
       : getThemeDepthColor(themeMetaColors, depth, options);
     if (color) {
-      css[generateColorName(name, depth)] = color;
+      css[generateVariableName(name, depth)] = color;
     }
   }
 

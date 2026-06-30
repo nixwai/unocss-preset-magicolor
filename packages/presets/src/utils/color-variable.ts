@@ -7,6 +7,16 @@ export function generateColorName(name: string, depth: string | number = BASE_CO
   return `--mc-colors-${name}-${depth}`;
 }
 
+/** Builds the internal source variable name used to avoid target-variable cycles. */
+export function generateSourceColorName(name: string, depth: string | number = BASE_COLOR_DEPTH) {
+  return `--mc-source-colors-${name}-${depth}`;
+}
+
+/** Wraps a CSS custom property name in a var() reference. */
+export function createCssVariableReference(variableName: string) {
+  return `var(${variableName})`;
+}
+
 /** Creates a single CSS custom property object for generated variables. */
 export function generateColorVariable(name: string, color: string, depth?: string | number) {
   return { [generateColorName(name, depth)]: color };
