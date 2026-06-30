@@ -1,7 +1,10 @@
+export const BASE_COLOR_DEPTH = 'DEFAULT';
+
+export type MagicColorDepth = number | typeof BASE_COLOR_DEPTH;
+
 /** Builds the CSS custom property name for a magic color and optional depth. */
-export function generateColorName(name: string, depth?: string | number) {
-  const suffix = depth == null ? '' : `-${depth}`;
-  return `--mc-${name}${suffix}-color`;
+export function generateColorName(name: string, depth: string | number = BASE_COLOR_DEPTH) {
+  return `--mc-colors-${name}-${depth}`;
 }
 
 /** Creates a single CSS custom property object for generated variables. */

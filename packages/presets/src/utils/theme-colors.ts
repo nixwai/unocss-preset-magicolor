@@ -5,7 +5,7 @@ import type { CSSObject } from 'unocss';
 import type { MagicColorContext, ThemeKey } from '../typing';
 import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
-import { BASE_COLOR_DEPTH } from '../usages';
+import { BASE_COLOR_DEPTH, generateColorName } from './color-variable';
 
 /**
  * Builds the full magic-color theme scale for a source color.
@@ -115,8 +115,7 @@ export function resolveThemeColorVariable(
   const specialColor = resolveSpecialColor(colorParts.originColor);
   if (specialColor) {
     for (const depth of usage) {
-      const suffix = depth === BASE_COLOR_DEPTH ? '' : `-${depth}`;
-      css[`--mc-${name}${suffix}-color`] = specialColor;
+      css[generateColorName(name, depth)] = specialColor;
     }
     return css;
   }
@@ -127,17 +126,11 @@ export function resolveThemeColorVariable(
   }
 
   for (const depth of usage) {
-    if (depth === BASE_COLOR_DEPTH) {
-      const color = getBaseColor(colorParts, theme, themeMetaColors, options);
-      if (color) {
-        css[`--mc-${name}-color`] = color;
-      }
-      continue;
-    }
-
-    const color = getThemeDepthColor(themeMetaColors, depth, options);
+    const color = depth === BASE_COLOR_DEPTH
+      ? getBaseColor(colorParts, theme, themeMetaColors, options)
+      : getThemeDepthColor(themeMetaColors, depth, options);
     if (color) {
-      css[`--mc-${name}-${depth}-color`] = color;
+      css[generateColorName(name, depth)] = color;
     }
   }
 

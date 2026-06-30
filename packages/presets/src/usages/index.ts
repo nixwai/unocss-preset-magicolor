@@ -1,5 +1,6 @@
 import type { Extractor } from 'unocss';
-import type { FileUsage, MagicColorDepth } from './scanner';
+import type { MagicColorDepth } from '../utils/color-variable';
+import type { FileUsage } from './scanner';
 import { scanUsage } from './scanner';
 import { TokenUsage } from './token';
 
@@ -119,5 +120,3 @@ export class MagicColorUsage {
     }
   }
 }
-
-export { BASE_COLOR_DEPTH } from './scanner';

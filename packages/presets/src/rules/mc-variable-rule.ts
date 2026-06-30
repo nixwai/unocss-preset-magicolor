@@ -4,8 +4,7 @@ import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import { resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
-import { BASE_COLOR_DEPTH } from '../usages';
-import { generateColorName, parseMagicColorDefinition } from '../utils/color-variable';
+import { BASE_COLOR_DEPTH, generateColorName, parseMagicColorDefinition } from '../utils/color-variable';
 import { resolveThemeColorVariable } from '../utils/theme-colors';
 
 /** Creates `mc-name_source` rules that define reusable magic color variables. */
@@ -39,9 +38,8 @@ function resolveMagicColorVariable(
     // The target depth controls the variable being defined; the source depth
     // keeps an inline suffix such as `primary-620` for base aliases.
     const sourceBodyNo = depth === BASE_COLOR_DEPTH ? bodyNo : depth;
-    const targetBodyNo = depth === BASE_COLOR_DEPTH ? undefined : depth;
 
-    const targetVariableName = generateColorName(name, targetBodyNo);
+    const targetVariableName = generateColorName(name, depth);
     const sourceVariableName = generateColorName(originColor, sourceBodyNo);
     if (targetVariableName === sourceVariableName) {
       continue;

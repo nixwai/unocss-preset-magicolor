@@ -21,7 +21,7 @@ function escapeRegExp(value: string) {
 
 /** Collects the base and depth variables already present in one style object. */
 function collectStyleVariables(name: string, style: CSSStyleDeclaration, usage: ColorVariableUsage) {
-  const colorVariableRE = new RegExp(`^--mc-${escapeRegExp(name)}(?:-(\\d+))?-color$`);
+  const colorVariableRE = new RegExp(`^--mc-colors-${escapeRegExp(name)}-(DEFAULT|\\d+)$`);
 
   for (let i = 0; i < style.length; i++) {
     const variable = style.item(i);
@@ -31,11 +31,11 @@ function collectStyleVariables(name: string, style: CSSStyleDeclaration, usage: 
     }
 
     const [, depth] = match;
-    if (depth) {
-      usage.depths.add(depth);
-    }
-    else {
+    if (depth === 'DEFAULT') {
       usage.hasBase = true;
+    }
+    else if (depth) {
+      usage.depths.add(depth);
     }
   }
 }

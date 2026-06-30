@@ -1,8 +1,6 @@
+import type { MagicColorDepth } from '../utils/color-variable';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
-
-export const BASE_COLOR_DEPTH = 'none';
-
-export type MagicColorDepth = number | typeof BASE_COLOR_DEPTH;
+import { BASE_COLOR_DEPTH } from '../utils/color-variable';
 
 /** Usage collected from one UnoCSS extractor input. */
 export interface FileUsage {
