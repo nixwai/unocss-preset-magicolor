@@ -5,8 +5,12 @@ import { roundNum, toNum, toOklch } from './transforms';
 
 type ThemeKey = keyof ThemeMetas;
 
-export interface ThemeDepthOptions<TDefault = undefined> {
+export interface ThemeDepthOptions {
   lightnessReverse?: boolean
+}
+
+export interface DepthOptions<TDefault = undefined> extends ThemeDepthOptions {
+  depth?: number | string
   defaultValue?: TDefault
 }
 
@@ -66,18 +70,15 @@ function stringifyOklchColor(cssColor?: CSSColorValue) {
   return `oklch(${components.join(' ')}${alpha})`;
 }
 
-// export function resolveThemeDepth<TDefault>(
-//   depth: number | string | undefined,
-//   options: ThemeDepthColorOptions<TDefault> & { defaultValue: TDefault },
-// ): number | TDefault;
-// export function resolveThemeDepth(depth?: number | string, options?: ThemeDepthColorOptions): number | undefined;
-export function resolveThemeDepth<TDefault>(depth?: number | string, options: ThemeDepthOptions<TDefault> = {}) {
-  const defaultValue = options.defaultValue;
+export function resolveThemeDepth<TDefault>(options: DepthOptions<TDefault> & { defaultValue: TDefault }): number | TDefault;
+export function resolveThemeDepth(options?: DepthOptions): number | undefined;
+export function resolveThemeDepth<TDefault>(options: DepthOptions<TDefault> = {}) {
+  const { defaultValue, depth, lightnessReverse } = options;
   const originDepth = Number(depth);
   if (!Number.isFinite(originDepth)) {
     return defaultValue as TDefault;
   }
-  if (options.lightnessReverse) {
+  if (lightnessReverse) {
     return 1000 - originDepth;
   }
   return originDepth;
@@ -85,12 +86,12 @@ export function resolveThemeDepth<TDefault>(depth?: number | string, options: Th
 
 function resolveDepth(no: string | number, options: ThemeDepthOptions = {}) {
   // origin depth
-  let originDepth = resolveThemeDepth(no, options) as ThemeKey;
-  originDepth = originDepth <= 50 ? 50 : originDepth;
-  originDepth = originDepth >= 950 ? 950 : originDepth;
-  if (!originDepth) {
+  let originDepth = resolveThemeDepth({ depth: no, ...options });
+  if (typeof originDepth !== 'number') {
     return;
   }
+  originDepth = originDepth <= 50 ? 50 : originDepth;
+  originDepth = originDepth >= 950 ? 950 : originDepth;
   // get before depth, can not be less than 50
   let beforeDepth = Math.floor(originDepth / 100) * 100 as ThemeKey;
   beforeDepth = beforeDepth <= 50 ? 50 : beforeDepth;
@@ -110,7 +111,7 @@ export function getThemeDepthColor(
     return;
   }
   const { originDepth, beforeDepth, afterDepth } = depth;
-  const originColor = themeMetaColors[originDepth];
+  const originColor = themeMetaColors[originDepth as ThemeKey];
 
   if (originColor) {
     return stringifyOklchColor(originColor);

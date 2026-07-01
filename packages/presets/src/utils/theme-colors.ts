@@ -11,22 +11,16 @@ import { BASE_COLOR_DEPTH, createTargetColorVariableName } from './color-variabl
 /**
  * Builds the full magic-color theme scale for a source color.
  *
- * UnoCSS theme colors take priority for standard depth keys; any missing keys
- * are generated from the base color with `magic-color`.
+ * UnoCSS theme colors take priority for standard depth keys;
+ * any missing keys are generated from the base color with `magic-color`.
  */
-function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
-  const { originColor } = colorParts;
-
-  if (!originColor || isInvalidColor(originColor)) {
-    return;
-  }
-
+function getThemeMetaColors(color: string, theme: Theme) {
   const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
   let hasEmptyColor = false;
 
   // Give priority to colors configured by the host UnoCSS theme.
   for (const themeMeta of themeMetaList) {
-    const cssColor = parseColor(`${originColor}-${themeMeta}`, theme)?.cssColor;
+    const cssColor = parseColor(`${color}-${themeMeta}`, theme)?.cssColor;
     if (cssColor) {
       themeMetaColors[themeMeta] = cssColor;
     }
@@ -37,9 +31,9 @@ function getThemeMetaColors(colorParts: ResolvedColorParts, theme: Theme) {
 
   // Generate only missing depths from the parsed base color.
   if (hasEmptyColor) {
-    let parsedOriginColor = parseColor(originColor, theme);
+    let parsedOriginColor = parseColor(color, theme);
     if (!parsedOriginColor?.color) {
-      parsedOriginColor = parseColor(`[${originColor}]`, theme); // It is compatible with or without []
+      parsedOriginColor = parseColor(`[${color}]`, theme); // It is compatible with or without []
     }
     if (parsedOriginColor?.color) {
       const mcThemeMetaColors = getMcThemeMetaColors(parsedOriginColor.color);
@@ -85,7 +79,7 @@ function getBaseColor(
     return parsedColor;
   }
 
-  themeMetaColors = themeMetaColors ?? getThemeMetaColors(colorParts, theme);
+  themeMetaColors = themeMetaColors ?? getThemeMetaColors(originColor, theme);
   if (!themeMetaColors) {
     return;
   }
@@ -112,8 +106,15 @@ export function resolveThemeColorCss(
     return css;
   }
 
+  const { originColor } = colorParts;
+
+  // Early exit if the source color is invalid.
+  if (!originColor || isInvalidColor(originColor)) {
+    return css;
+  }
+
   // Apply special color keywords to every requested variable depth.
-  const specialColor = resolveSpecialColor(colorParts.originColor);
+  const specialColor = resolveSpecialColor(originColor);
   if (specialColor) {
     for (const depth of depths) {
       css[createVariableName(name, depth)] = specialColor;
@@ -121,19 +122,26 @@ export function resolveThemeColorCss(
     return css;
   }
 
-  const themeMetaColors = getThemeMetaColors(colorParts, theme);
+  const themeDepths = Array.from(depths).filter(depth => depth !== BASE_COLOR_DEPTH);
+  const themeMetaColors = themeDepths.length ? getThemeMetaColors(originColor, theme) : undefined;
+
+  if (depths.has(BASE_COLOR_DEPTH)) {
+    const color = getBaseColor(colorParts, theme, themeMetaColors, options);
+    if (color) {
+      css[createVariableName(name, BASE_COLOR_DEPTH)] = color;
+    }
+  }
+
   if (!themeMetaColors) {
     return css;
   }
 
-  for (const depth of depths) {
-    const color = depth === BASE_COLOR_DEPTH
-      ? getBaseColor(colorParts, theme, themeMetaColors, options)
-      : getThemeDepthColor(themeMetaColors, depth, options);
+  themeDepths.forEach((depth) => {
+    const color = getThemeDepthColor(themeMetaColors, depth, options);
     if (color) {
       css[createVariableName(name, depth)] = color;
     }
-  }
+  });
 
   return css;
 }

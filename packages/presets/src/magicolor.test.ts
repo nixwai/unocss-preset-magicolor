@@ -778,22 +778,22 @@ describe('mc color definition rule', () => {
 
 describe('color parsing utilities', () => {
   it('parses bracket arbitrary colors with optional depth suffixes', () => {
-    expect(resolveColorParts('[#1313aa]1200')).toEqual({ originColor: '[#1313aa]', bodyNo: '1200' });
-    expect(resolveColorParts('[rgb(12,22,33)]')).toEqual({ originColor: '[rgb(12,22,33)]', bodyNo: undefined });
-    expect(resolveColorParts('[hsl(210_60%_40%)]-300')).toEqual({ originColor: '[hsl(210_60%_40%)]', bodyNo: '300' });
-    expect(resolveColorParts('[lab(60_20_10)]-350')).toEqual({ originColor: '[lab(60_20_10)]', bodyNo: '350' });
-    expect(resolveColorParts('[lch(40_20_21.57)]-400')).toEqual({ originColor: '[lch(40_20_21.57)]', bodyNo: '400' });
-    expect(resolveColorParts('[oklch(40.1%_0.123_21.57)]-200')).toEqual({ originColor: '[oklch(40.1%_0.123_21.57)]', bodyNo: '200' });
+    expect(resolveColorParts('[#1313aa]1200')).toEqual({ originColor: '[#1313aa]', originDepth: '1200' });
+    expect(resolveColorParts('[rgb(12,22,33)]')).toEqual({ originColor: '[rgb(12,22,33)]', originDepth: undefined });
+    expect(resolveColorParts('[hsl(210_60%_40%)]-300')).toEqual({ originColor: '[hsl(210_60%_40%)]', originDepth: '300' });
+    expect(resolveColorParts('[lab(60_20_10)]-350')).toEqual({ originColor: '[lab(60_20_10)]', originDepth: '350' });
+    expect(resolveColorParts('[lch(40_20_21.57)]-400')).toEqual({ originColor: '[lch(40_20_21.57)]', originDepth: '400' });
+    expect(resolveColorParts('[oklch(40.1%_0.123_21.57)]-200')).toEqual({ originColor: '[oklch(40.1%_0.123_21.57)]', originDepth: '200' });
   });
 
   it('resolves hyphenated and compact depth names', () => {
-    expect(resolveColorParts('rose-445')).toEqual({ originColor: 'rose', bodyNo: '445' });
-    expect(resolveColorParts('grape120')).toEqual({ originColor: 'grape', bodyNo: '120' });
-    expect(resolveColorParts('rose')).toEqual({ originColor: 'rose', bodyNo: undefined });
+    expect(resolveColorParts('rose-445')).toEqual({ originColor: 'rose', originDepth: '445' });
+    expect(resolveColorParts('grape120')).toEqual({ originColor: 'grape', originDepth: '120' });
+    expect(resolveColorParts('rose')).toEqual({ originColor: 'rose', originDepth: undefined });
   });
 
   it('returns the original color when no depth is present', () => {
-    expect(resolveColorParts(undefined)).toEqual({ originColor: undefined, bodyNo: undefined });
+    expect(resolveColorParts(undefined)).toEqual({ originColor: undefined, originDepth: undefined });
   });
 
   it('keeps opacity and modifiers outside bracket arbitrary colors', () => {
@@ -802,9 +802,9 @@ describe('color parsing utilities', () => {
 
   it('resolves a token body into color parts in one step', () => {
     // Strips opacity/modifier suffixes, then resolves the depth.
-    expect(resolveBodyColor('rose-445/40:dark')).toEqual({ originColor: 'rose', bodyNo: '445' });
-    expect(resolveBodyColor('grape120')).toEqual({ originColor: 'grape', bodyNo: '120' });
-    expect(resolveBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual({ originColor: '[oklch(20.1%_0.1_20/50)]', bodyNo: '200' });
+    expect(resolveBodyColor('rose-445/40:dark')).toEqual({ originColor: 'rose', originDepth: '445' });
+    expect(resolveBodyColor('grape120')).toEqual({ originColor: 'grape', originDepth: '120' });
+    expect(resolveBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual({ originColor: '[oklch(20.1%_0.1_20/50)]', originDepth: '200' });
   });
 
   it('normalizes special color keywords and canonical values', () => {
@@ -816,8 +816,8 @@ describe('color parsing utilities', () => {
   });
 
   it('handles empty and missing token bodies', () => {
-    expect(resolveBodyColor()).toEqual({ originColor: '', bodyNo: undefined });
-    expect(resolveBodyColor('')).toEqual({ originColor: '', bodyNo: undefined });
+    expect(resolveBodyColor()).toEqual({ originColor: '', originDepth: undefined });
+    expect(resolveBodyColor('')).toEqual({ originColor: '', originDepth: undefined });
   });
 });
 
@@ -1056,7 +1056,7 @@ describe('helper function edge cases', () => {
   });
 
   describe('getMagicColorStyle edge cases', () => {
-    it('handles hasBase true, bodyNo exists but mc.valid returns false', () => {
+    it('handles hasBase true, originDepth exists but mc.valid returns false', () => {
       const result = getMagicColorStyle({
         name: 'test',
         color: 'invalid-color-with-no-123',
@@ -1163,14 +1163,14 @@ describe('color transform utilities', () => {
   });
 
   it('resolveThemeDepth supports lightness reverse mapping after clamping', () => {
-    expect(resolveThemeDepth('50', { lightnessReverse: true })).toBe(950);
-    expect(resolveThemeDepth('450', { lightnessReverse: true })).toBe(550);
-    expect(resolveThemeDepth('457', { lightnessReverse: true })).toBe(543);
-    expect(resolveThemeDepth('500', { lightnessReverse: true })).toBe(500);
-    expect(resolveThemeDepth('1200', { lightnessReverse: true })).toBe(-200);
-    expect(resolveThemeDepth('not-a-depth', { lightnessReverse: true })).toBeUndefined();
-    expect(resolveThemeDepth(undefined, { defaultValue: 'DEFAULT' })).toBe('DEFAULT');
-    expect(resolveThemeDepth('not-a-depth', { defaultValue: 'DEFAULT', lightnessReverse: true })).toBe('DEFAULT');
+    expect(resolveThemeDepth({ depth: '50', lightnessReverse: true })).toBe(950);
+    expect(resolveThemeDepth({ depth: '450', lightnessReverse: true })).toBe(550);
+    expect(resolveThemeDepth({ depth: '457', lightnessReverse: true })).toBe(543);
+    expect(resolveThemeDepth({ depth: '500', lightnessReverse: true })).toBe(500);
+    expect(resolveThemeDepth({ depth: '1200', lightnessReverse: true })).toBe(-200);
+    expect(resolveThemeDepth({ depth: 'not-a-depth', lightnessReverse: true })).toBeUndefined();
+    expect(resolveThemeDepth({ depth: undefined, defaultValue: 'DEFAULT' })).toBe('DEFAULT');
+    expect(resolveThemeDepth({ depth: 'not-a-depth', defaultValue: 'DEFAULT', lightnessReverse: true })).toBe('DEFAULT');
   });
 });
 

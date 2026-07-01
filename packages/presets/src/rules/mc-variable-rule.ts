@@ -34,7 +34,10 @@ function resolveMagicColorVariable(
   for (const depth of usage) {
     // The target depth controls the variable being defined;
     // The source depthkeeps an inline suffix such as `primary-620` for base aliases.
-    const sourceBodyNo = resolveThemeDepth(depth === BASE_COLOR_DEPTH ? originDepth : depth, { defaultValue: BASE_COLOR_DEPTH });
+    const sourceBodyNo = resolveThemeDepth({
+      depth: depth === BASE_COLOR_DEPTH ? originDepth : depth,
+      defaultValue: BASE_COLOR_DEPTH,
+    });
 
     const targetVariableName = createTargetColorVariableName(name, depth);
     const sourceVariableName = createTargetColorVariableName(originColor, sourceBodyNo);

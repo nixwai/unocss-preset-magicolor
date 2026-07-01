@@ -68,11 +68,16 @@ function refreshVariableLightnessReverseReferences(
   }
 
   for (const depth of depths) {
-    const rawSourceDepth = resolveThemeDepth(depth === BASE_COLOR_DEPTH ? source.no : depth, { defaultValue: BASE_COLOR_DEPTH });
-    const sourceDepth = resolveThemeDepth(rawSourceDepth, { defaultValue: rawSourceDepth, lightnessReverse: true });
-    css[createTargetColorVariableName(name, depth)] = toVar(
-      createSourceColorVariableName(source.name, sourceDepth),
-    );
+    const rawSourceDepth = resolveThemeDepth({
+      depth: depth === BASE_COLOR_DEPTH ? source.no : depth,
+      defaultValue: BASE_COLOR_DEPTH,
+    });
+    const sourceDepth = resolveThemeDepth({
+      depth: rawSourceDepth,
+      defaultValue: rawSourceDepth,
+      lightnessReverse: true,
+    });
+    css[createTargetColorVariableName(name, depth)] = toVar(createSourceColorVariableName(source.name, sourceDepth));
     addSourceDepth(sourceDepths, source.name, sourceDepth);
   }
 
