@@ -3,7 +3,7 @@ import type { CSSValueInput, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../../typing';
 import { isInvalidColor, resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
-import { generateColorName } from '../../utils/color-variable';
+import { createTargetColorVariableName, toVar } from '../../utils/color-variable';
 import { resolveThemeColorValue } from '../../utils/theme-colors';
 
 /** Parses a magic color token body and records the usage needed for preflight variables. */
@@ -23,7 +23,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   // Preserve UnoCSS parser metadata while replacing the color name/depth with magic-color parts.
   colorData.name = originColor;
   colorData.no = bodyNo;
-  context?.usage.recordUsage(`mc-${body}`, ctx.rawSelector);
+  context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, `mc-${body}`);
 
   const specialColor = resolveSpecialColor(originColor);
   if (specialColor) {
@@ -33,9 +33,9 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
 
   // Names used by `mc-*` definitions, global options, and theme colors are
   // resolved through variables emitted by the definition class or preflight.
-  const usage = context?.usage.getUsage(originColor);
+  const usage = context?.usage.getColorVariableTargetDepths(originColor);
   if (usage) {
-    colorData.color = `var(${generateColorName(originColor, bodyNo)})`;
+    colorData.color = toVar(createTargetColorVariableName(originColor, bodyNo));
   }
   // If UnoCSS already resolved the token, keep its parsed value and metadata.
   if (colorData.color) {

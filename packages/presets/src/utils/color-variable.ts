@@ -1,29 +1,29 @@
-export const BASE_COLOR_DEPTH = 'DEFAULT';
+export const BASE_COLOR_DEPTH = 'DEFAULT' as const;
 
 export type MagicColorDepth = number | typeof BASE_COLOR_DEPTH;
 
-/** Builds the CSS custom property name for a magic color and optional depth. */
-export function generateColorName(name: string, depth: string | number = BASE_COLOR_DEPTH) {
+/** Builds the public target CSS custom property name for a magic color depth. */
+export function createTargetColorVariableName(name: string, depth: string | number = BASE_COLOR_DEPTH) {
   return `--mc-colors-${name}-${depth}`;
 }
 
-/** Builds the internal source variable name used to avoid target-variable cycles. */
-export function generateSourceColorName(name: string, depth: string | number = BASE_COLOR_DEPTH) {
+/** Builds the internal source CSS custom property name for a magic color depth. */
+export function createSourceColorVariableName(name: string, depth: string | number = BASE_COLOR_DEPTH) {
   return `--mc-source-colors-${name}-${depth}`;
 }
 
 /** Wraps a CSS custom property name in a var() reference. */
-export function createCssVariableReference(variableName: string) {
+export function toVar(variableName: string) {
   return `var(${variableName})`;
 }
 
-/** Creates a single CSS custom property object for generated variables. */
-export function generateColorVariable(name: string, color: string, depth?: string | number) {
-  return { [generateColorName(name, depth)]: color };
+/** Creates a single target CSS custom property declaration. */
+export function createTargetColorVariableDeclaration(name: string, color: string, depth?: string | number) {
+  return { [createTargetColorVariableName(name, depth)]: color };
 }
 
 /** Parses definition bodies in the `name_source` format used by `mc-*` rules. */
-export function parseMagicColorDefinition(body: string) {
+export function parseColorVariableDefinition(body: string) {
   const firstUnderscoreIndex = body.indexOf('_');
   if (firstUnderscoreIndex < 0) {
     return;

@@ -1,7 +1,7 @@
 import type { CSSObject } from 'unocss';
 import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveColorParts, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { mc } from 'magic-color';
-import { generateColorVariable } from './utils/color-variable';
+import { createTargetColorVariableDeclaration } from './utils/color-variable';
 
 interface ColorVariableUsage {
   hasBase: boolean
@@ -79,10 +79,10 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
   const specialColor = resolveSpecialColor(originColor);
   if (specialColor) {
     if (hasBase) {
-      Object.assign(css, generateColorVariable(name, specialColor));
+      Object.assign(css, createTargetColorVariableDeclaration(name, specialColor));
     }
     for (const depth of depths) {
-      Object.assign(css, generateColorVariable(name, specialColor, depth));
+      Object.assign(css, createTargetColorVariableDeclaration(name, specialColor, depth));
     }
     return css;
   }
@@ -93,18 +93,18 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
     if (bodyNo) {
       // A base variable may point at a specific source depth, such as `#9c1d1e-457`.
       const baseColor = getThemeDepthColor(themeMetaColors, bodyNo, { lightnessReverse });
-      baseColor && Object.assign(css, generateColorVariable(name, baseColor));
+      baseColor && Object.assign(css, createTargetColorVariableDeclaration(name, baseColor));
     }
     else if (mc.valid(originColor)) {
       const baseColor = mc(originColor).css('oklch');
-      Object.assign(css, generateColorVariable(name, baseColor));
+      Object.assign(css, createTargetColorVariableDeclaration(name, baseColor));
     }
   }
 
   for (const depth of depths) {
     const depthColor = getThemeDepthColor(themeMetaColors, depth, { lightnessReverse });
     if (depthColor) {
-      Object.assign(css, generateColorVariable(name, depthColor, depth));
+      Object.assign(css, createTargetColorVariableDeclaration(name, depthColor, depth));
     }
   }
 

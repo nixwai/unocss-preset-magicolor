@@ -9,6 +9,14 @@ export interface ResolvedColorConfig {
   lightnessReverse: boolean
 }
 
+/** Returns true when a color source should be linked through generated CSS variables. */
+export function isVariableColorSource(color: string, theme: Theme, context?: MagicColorContext) {
+  if (resolveSpecialColor(color)) {
+    return false;
+  }
+  return !!context?.options.colors?.[color] || (!color.startsWith('[') && hasParseableColor(color, theme));
+}
+
 /** Normalizes string and object color options into one internal shape. */
 export function resolveColorConfig(config?: PresetMcColorValue): ResolvedColorConfig {
   if (!config) {

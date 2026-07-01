@@ -1,10 +1,11 @@
 import type { PresetWind4Options } from '@unocss/preset-wind4';
 import type { CSSObject, Preflight, Preset } from 'unocss';
 import type { MagicColorContext } from '../typing';
+import type { MagicColorDepth } from '../utils/color-variable';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { resolveColorConfig, resolveMixtureColorConfig } from '../utils/color-config';
-import { createCssVariableReference, generateColorName, generateSourceColorName } from '../utils/color-variable';
-import { resolveThemeColorVariable } from '../utils/theme-colors';
+import { createSourceColorVariableName, createTargetColorVariableName, toVar } from '../utils/color-variable';
+import { resolveThemeColorCss } from '../utils/theme-colors';
 
 const PRESET_NAME_LIST = ['@unocss/preset-mini', '@unocss/preset-wind3', '@unocss/preset-wind4'];
 const DEFAULT_DARK_SELECTOR = '.dark';
@@ -58,52 +59,60 @@ function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
 export function preflights(context?: MagicColorContext): Preflight[] {
   return [{
     getCSS: ({ theme, generator }) => {
-      const sourceCss: CSSObject = {};
+      const rootSourceCss: CSSObject = {};
+      const rootTargetCss: CSSObject = {};
       const sourceDarkCss: CSSObject = {};
-      const targetCss: CSSObject = {};
-      for (const name of context?.usage.getUsageNames() ?? []) {
-        const usage = context?.usage.getUsage(name);
-        if (!usage) {
+      const colorNames = new Set([
+        ...(context?.usage.getColorVariableTargetNames() ?? []),
+        ...(context?.usage.getColorVariableSourceNames() ?? []),
+      ]);
+
+      for (const name of colorNames) {
+        const targetDepths = context?.usage.getColorVariableTargetDepths(name);
+        const sourceDepths = context?.usage.getColorVariableSourceDepths(name);
+        const allDepths = new Set<MagicColorDepth>([...(targetDepths ?? []), ...(sourceDepths ?? [])]);
+
+        if (!allDepths.size) {
           continue;
         }
         // Light variables may come from explicit options or directly from UnoCSS theme colors.
         const optionColor = resolveMixtureColorConfig(name, theme, context);
         if (optionColor.color) {
-          Object.assign(sourceCss, resolveThemeColorVariable(
+          Object.assign(rootSourceCss, resolveThemeColorCss(
             name,
             resolveBodyColor(optionColor.color),
             theme,
-            usage,
+            allDepths,
             { lightnessReverse: optionColor.lightnessReverse },
-            generateSourceColorName,
+            createSourceColorVariableName,
           ));
         }
 
         // Dark variables are emitted only for explicit dark aliases.
         const darkColor = resolveColorConfig(context?.options.dark?.[name]);
         if (darkColor.color) {
-          Object.assign(sourceDarkCss, resolveThemeColorVariable(
+          Object.assign(sourceDarkCss, resolveThemeColorCss(
             name,
             resolveBodyColor(darkColor.color),
             theme,
-            usage,
+            allDepths,
             { lightnessReverse: darkColor.lightnessReverse },
-            generateSourceColorName,
+            createSourceColorVariableName,
           ));
         }
 
-        if (optionColor.color || darkColor.color) {
-          for (const depth of usage) {
-            targetCss[generateColorName(name, depth)] = createCssVariableReference(generateSourceColorName(name, depth));
+        if ((optionColor.color || darkColor.color) && targetDepths) {
+          for (const depth of targetDepths) {
+            rootTargetCss[createTargetColorVariableName(name, depth)] = toVar(createSourceColorVariableName(name, depth));
           }
         }
       }
 
-      const rootSourceCssStr = createRootCss(sourceCss);
+      const rootSourceCssStr = createRootCss(rootSourceCss);
+      const rootTargetCssStr = createRootCss(rootTargetCss);
       const rootSourceDarkCssStr = createDarkCss(sourceDarkCss, generator.config.presets);
-      const rootCssStr = createRootCss(targetCss);
 
-      return `${rootSourceCssStr}${rootSourceDarkCssStr}${rootCssStr}`;
+      return `${rootSourceCssStr}${rootSourceDarkCssStr}${rootTargetCssStr}`;
     },
   }];
 };

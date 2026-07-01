@@ -1,4 +1,4 @@
-import type { ResolvedColorParts, ThemeDepthColorOptions } from '@unocss-preset-magicolor/utils';
+import type { ResolvedColorParts, ThemeDepthOptions } from '@unocss-preset-magicolor/utils';
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
@@ -6,7 +6,7 @@ import type { ThemeKey } from '../typing';
 import type { MagicColorDepth } from './color-variable';
 import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
-import { BASE_COLOR_DEPTH, generateColorName } from './color-variable';
+import { BASE_COLOR_DEPTH, createTargetColorVariableName } from './color-variable';
 
 /**
  * Builds the full magic-color theme scale for a source color.
@@ -64,7 +64,7 @@ function getBaseColor(
   colorParts: ResolvedColorParts,
   theme: Theme,
   themeMetaColors?: Partial<Record<ThemeKey, CSSColorValue>>,
-  options: ThemeDepthColorOptions = {},
+  options: ThemeDepthOptions = {},
 ) {
   const { originColor, bodyNo } = colorParts;
   if (!originColor || isInvalidColor(originColor)) {
@@ -98,21 +98,25 @@ function getBaseColor(
  * The usage tracker controls which depths are emitted so unused color scales do
  * not inflate the generated CSS.
  */
-export function resolveThemeColorVariable(
+export function resolveThemeColorCss(
   name: string,
   colorParts: ResolvedColorParts,
   theme: Theme = {},
-  usage: Set<MagicColorDepth>,
-  options: ThemeDepthColorOptions = {},
-  generateVariableName: (name: string, depth?: string | number) => string = generateColorName,
+  depths?: Set<MagicColorDepth>,
+  options: ThemeDepthOptions = {},
+  createVariableName: (name: string, depth?: string | number) => string = createTargetColorVariableName,
 ) {
   const css: CSSObject = {};
+
+  if (!depths?.size) {
+    return css;
+  }
 
   // Apply special color keywords to every requested variable depth.
   const specialColor = resolveSpecialColor(colorParts.originColor);
   if (specialColor) {
-    for (const depth of usage) {
-      css[generateVariableName(name, depth)] = specialColor;
+    for (const depth of depths) {
+      css[createVariableName(name, depth)] = specialColor;
     }
     return css;
   }
@@ -122,12 +126,12 @@ export function resolveThemeColorVariable(
     return css;
   }
 
-  for (const depth of usage) {
+  for (const depth of depths) {
     const color = depth === BASE_COLOR_DEPTH
       ? getBaseColor(colorParts, theme, themeMetaColors, options)
       : getThemeDepthColor(themeMetaColors, depth, options);
     if (color) {
-      css[generateVariableName(name, depth)] = color;
+      css[createVariableName(name, depth)] = color;
     }
   }
 
@@ -135,6 +139,6 @@ export function resolveThemeColorVariable(
 }
 
 /** Resolves a single color value for non-variable utility fallbacks. */
-export function resolveThemeColorValue(colorParts: ResolvedColorParts, theme: Theme = {}, options: ThemeDepthColorOptions = {}) {
+export function resolveThemeColorValue(colorParts: ResolvedColorParts, theme: Theme = {}, options: ThemeDepthOptions = {}) {
   return getBaseColor(colorParts, theme, undefined, options);
 }

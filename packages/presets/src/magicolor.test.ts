@@ -242,6 +242,22 @@ describe('watch-mode usage replacement', () => {
     expect(second.css).not.toContain('--mc-colors-primary-DEFAULT:');
     expect(second.css).not.toContain('--mc-colors-primary-630:');
   });
+
+  it('tracks shortcut-expanded usage for selector-local lightness reverse', async () => {
+    const uno = await createUno(
+      { colors: { primary: 'rose' } },
+      { shortcuts: [['btn', 'p-5 bg-mc-primary-333 text-white cursor-pointer']] },
+    );
+
+    const { css } = await uno.generate('<div class="btn hover:mc-lr-primary_primary">5555</div>', { preflights: true, id: 'shortcut-lr.vue' });
+    const hoverBlock = getSelectorBlock(css, '.hover\\:mc-lr-primary_primary:hover');
+    const reference = await generate('<div class="c-mc-rose-667"></div>');
+
+    expect(getCssVar(hoverBlock, '--mc-colors-primary-333')).toBe('var(--mc-source-colors-primary-667)');
+    expect(getCssVar(css, '--mc-colors-primary-333')).toBe('var(--mc-source-colors-primary-333)');
+    expect(getCssVar(css, '--mc-source-colors-primary-667')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-667'));
+    expect(css).toContain('var(--mc-colors-primary-333)');
+  });
 });
 
 describe('preflight theme color variables', () => {
@@ -263,14 +279,14 @@ describe('preflight theme color variables', () => {
     );
     const reference = await generate('<div class="c-mc-rose-950 c-mc-rose-550 c-mc-rose-500 c-mc-rose-50"></div>');
 
-    expect(getCssVar(css, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-950)');
-    expect(getCssVar(css, '--mc-colors-primary-450')).toBe('var(--mc-source-colors-primary-550)');
+    expect(getCssVar(css, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-50)');
+    expect(getCssVar(css, '--mc-colors-primary-450')).toBe('var(--mc-source-colors-primary-450)');
     expect(getCssVar(css, '--mc-colors-primary-500')).toBe('var(--mc-source-colors-primary-500)');
-    expect(getCssVar(css, '--mc-colors-primary-950')).toBe('var(--mc-source-colors-primary-50)');
-    expect(getCssVar(css, '--mc-source-colors-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
-    expect(getCssVar(css, '--mc-source-colors-primary-550')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-550'));
+    expect(getCssVar(css, '--mc-colors-primary-950')).toBe('var(--mc-source-colors-primary-950)');
+    expect(getCssVar(css, '--mc-source-colors-primary-50')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
+    expect(getCssVar(css, '--mc-source-colors-primary-450')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-550'));
     expect(getCssVar(css, '--mc-source-colors-primary-500')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-500'));
-    expect(getCssVar(css, '--mc-source-colors-primary-50')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-50'));
+    expect(getCssVar(css, '--mc-source-colors-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-50'));
     expect(css).toContain('var(--mc-colors-primary-50)');
   });
 
@@ -335,8 +351,12 @@ describe('preflight theme color variables', () => {
       { colors: { primary: 'rose' }, dark: { primary: 'blue' } },
     );
 
-    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
-    expect(css).toMatch(/\.dark\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    const darkBlock = getDarkBlock(css);
+
+    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);/);
+    expect(darkBlock).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(darkBlock).not.toContain('--mc-colors-primary-457:');
     expect(css).not.toContain('--mc-colors-primary-DEFAULT:');
   });
 
@@ -351,8 +371,8 @@ describe('preflight theme color variables', () => {
 
     expect(getCssVar(css, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-50)');
     expect(getCssVar(css, '--mc-source-colors-primary-50')).toBe(getCssVar(lightReference.css, '--mc-source-colors-rose-50'));
-    expect(getCssVar(darkBlock, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-950)');
-    expect(getCssVar(darkBlock, '--mc-source-colors-primary-950')).toBe(getCssVar(darkReference.css, '--mc-source-colors-blue-950'));
+    expect(darkBlock).not.toContain('--mc-colors-primary-50:');
+    expect(getCssVar(darkBlock, '--mc-source-colors-primary-50')).toBe(getCssVar(darkReference.css, '--mc-source-colors-blue-950'));
   });
 
   it('emits simple dark color maps with the wind4 media dark mode', async () => {
@@ -362,7 +382,8 @@ describe('preflight theme color variables', () => {
       { dark: 'media' },
     );
 
-    expect(css).toMatch(/@media \(prefers-color-scheme: dark\)\s*\{[\s\S]*:root\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(css).toMatch(/@media \(prefers-color-scheme: dark\)\s*\{[\s\S]*:root\s*\{[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);/);
   });
 
   it('emits simple dark color maps with custom wind4 dark selectors', async () => {
@@ -372,7 +393,9 @@ describe('preflight theme color variables', () => {
       { dark: { dark: '.app-dark', light: '.app-light' } },
     );
 
-    expect(css).toMatch(/\.app-dark\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    const darkBlock = getSelectorBlock(css, '.app-dark');
+    expect(darkBlock).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(darkBlock).not.toContain('--mc-colors-primary-457:');
     expect(css).not.toContain('.app-light');
   });
 
@@ -385,7 +408,9 @@ describe('preflight theme color variables', () => {
       },
     );
 
-    expect(css).toMatch(/\.dark\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    const darkBlock = getDarkBlock(css);
+    expect(darkBlock).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(darkBlock).not.toContain('--mc-colors-primary-457:');
   });
 });
 
@@ -701,6 +726,21 @@ describe('mc color definition rule', () => {
     expect(getCssVar(css, '--mc-source-colors-rose-80')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-80'));
     expect(css).not.toContain('--mc-colors-btn-80:var(--mc-colors-rose-920)');
     expect(css).not.toContain('--mc-colors-btn-920:var(--mc-colors-rose-80)');
+  });
+
+  it('reverses local lightness-reverse literal inline depth for base variables', async () => {
+    const { css } = await generate('<div class="mc-lr-btn-[#9c1d1e]-620 c-mc-btn"></div>');
+    const reference = await generate('<div class="c-mc-[#9c1d1e]-380"></div>');
+
+    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe(getCssVar(reference.css, '--mc-colors-[#9c1d1e]-380'));
+  });
+
+  it('reverses inherited option inline depth for local lightness-reverse base variables', async () => {
+    const { css } = await generate('<div class="mc-lr-btn_primary c-mc-btn"></div>', { colors: { primary: 'rose-620' } });
+    const reference = await generate('<div class="c-mc-rose-380"></div>');
+
+    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-primary-380)');
+    expect(getCssVar(css, '--mc-source-colors-primary-380')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-380'));
   });
 
   it('does not reverse base variables globally', async () => {
@@ -1129,6 +1169,8 @@ describe('color transform utilities', () => {
     expect(resolveThemeDepth('500', { lightnessReverse: true })).toBe(500);
     expect(resolveThemeDepth('1200', { lightnessReverse: true })).toBe(-200);
     expect(resolveThemeDepth('not-a-depth', { lightnessReverse: true })).toBeUndefined();
+    expect(resolveThemeDepth(undefined, { defaultValue: 'DEFAULT' })).toBe('DEFAULT');
+    expect(resolveThemeDepth('not-a-depth', { defaultValue: 'DEFAULT', lightnessReverse: true })).toBe('DEFAULT');
   });
 });
 

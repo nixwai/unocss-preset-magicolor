@@ -5,8 +5,9 @@ import { roundNum, toNum, toOklch } from './transforms';
 
 type ThemeKey = keyof ThemeMetas;
 
-export interface ThemeDepthColorOptions {
+export interface ThemeDepthOptions<TDefault = undefined> {
   lightnessReverse?: boolean
+  defaultValue?: TDefault
 }
 
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
@@ -65,10 +66,16 @@ function stringifyOklchColor(cssColor?: CSSColorValue) {
   return `oklch(${components.join(' ')}${alpha})`;
 }
 
-export function resolveThemeDepth(depth: number | string = '', options: ThemeDepthColorOptions = {}) {
-  const originDepth = Number(depth) as ThemeKey;
+// export function resolveThemeDepth<TDefault>(
+//   depth: number | string | undefined,
+//   options: ThemeDepthColorOptions<TDefault> & { defaultValue: TDefault },
+// ): number | TDefault;
+// export function resolveThemeDepth(depth?: number | string, options?: ThemeDepthColorOptions): number | undefined;
+export function resolveThemeDepth<TDefault>(depth?: number | string, options: ThemeDepthOptions<TDefault> = {}) {
+  const defaultValue = options.defaultValue;
+  const originDepth = Number(depth);
   if (!Number.isFinite(originDepth)) {
-    return;
+    return defaultValue as TDefault;
   }
   if (options.lightnessReverse) {
     return 1000 - originDepth;
@@ -76,7 +83,7 @@ export function resolveThemeDepth(depth: number | string = '', options: ThemeDep
   return originDepth;
 }
 
-function resolveDepth(no: string | number, options: ThemeDepthColorOptions = {}) {
+function resolveDepth(no: string | number, options: ThemeDepthOptions = {}) {
   // origin depth
   let originDepth = resolveThemeDepth(no, options) as ThemeKey;
   originDepth = originDepth <= 50 ? 50 : originDepth;
@@ -96,7 +103,7 @@ function resolveDepth(no: string | number, options: ThemeDepthColorOptions = {})
 export function getThemeDepthColor(
   themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>,
   no: string | number,
-  options: ThemeDepthColorOptions = {},
+  options: ThemeDepthOptions = {},
 ) {
   const depth = resolveDepth(no, options);
   if (!depth) {
