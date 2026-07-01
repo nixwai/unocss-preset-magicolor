@@ -90,7 +90,7 @@ export function scanColorVariableTargets(tokens: Iterable<string>): FileUsage {
       continue;
     }
 
-    const { originColor: name, bodyNo: no } = resolveBodyColor(body);
+    const { originColor: name, originDepth: no } = resolveBodyColor(body);
     if (!name) {
       continue;
     }

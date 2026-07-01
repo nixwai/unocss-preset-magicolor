@@ -68,7 +68,7 @@ function collectDefinedColorVariables(name: string, dom: HTMLElement): ColorVari
  */
 export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
   const { name, color, hasBase, depths, lightnessReverse } = params;
-  const { originColor, bodyNo } = resolveColorParts(color);
+  const { originColor, originDepth } = resolveColorParts(color);
   if (isInvalidColor(originColor)) {
     return {};
   }
@@ -90,9 +90,9 @@ export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
   const themeMetaColors = getMcThemeMetaColors(originColor);
 
   if (hasBase) {
-    if (bodyNo) {
+    if (originDepth) {
       // A base variable may point at a specific source depth, such as `#9c1d1e-457`.
-      const baseColor = getThemeDepthColor(themeMetaColors, bodyNo, { lightnessReverse });
+      const baseColor = getThemeDepthColor(themeMetaColors, originDepth, { lightnessReverse });
       baseColor && Object.assign(css, createTargetColorVariableDeclaration(name, baseColor));
     }
     else if (mc.valid(originColor)) {

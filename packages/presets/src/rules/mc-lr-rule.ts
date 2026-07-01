@@ -98,7 +98,7 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
   );
   if (sourceConfig.color) {
     const sourceColorParts = resolveBodyColor(sourceConfig.color);
-    const sourceBodyNo = colorParts.bodyNo ?? sourceColorParts.bodyNo;
+    const sourceBodyNo = colorParts.originDepth ?? sourceColorParts.originDepth;
     context?.usage.registerLightnessReverseIntent({
       rawSelector: ctx.rawSelector,
       css,
@@ -171,7 +171,7 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicC
           name,
           {
             name,
-            no: resolveBodyColor(sourceConfig.color).bodyNo,
+            no: resolveBodyColor(sourceConfig.color).originDepth,
           },
           usage,
         );

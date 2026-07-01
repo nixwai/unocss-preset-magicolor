@@ -66,7 +66,7 @@ function getBaseColor(
   themeMetaColors?: Partial<Record<ThemeKey, CSSColorValue>>,
   options: ThemeDepthOptions = {},
 ) {
-  const { originColor, bodyNo } = colorParts;
+  const { originColor, originDepth } = colorParts;
   if (!originColor || isInvalidColor(originColor)) {
     return;
   }
@@ -77,7 +77,7 @@ function getBaseColor(
     return specialColor;
   }
 
-  if (!bodyNo) {
+  if (!originDepth) {
     let parsedColor = parseColor(originColor, theme)?.color;
     if (!parsedColor) {
       parsedColor = parseColor(`[${originColor}]`, theme)?.color; // It is compatible with or without []
@@ -89,7 +89,7 @@ function getBaseColor(
   if (!themeMetaColors) {
     return;
   }
-  return getThemeDepthColor(themeMetaColors, bodyNo, options);
+  return getThemeDepthColor(themeMetaColors, originDepth, options);
 }
 
 /**

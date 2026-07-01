@@ -14,7 +14,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   }
 
   const colorParts = resolveBodyColor(body);
-  const { originColor, bodyNo } = colorParts;
+  const { originColor, originDepth } = colorParts;
 
   // invalid color
   if (isInvalidColor(originColor)) {
@@ -22,7 +22,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   }
   // Preserve UnoCSS parser metadata while replacing the color name/depth with magic-color parts.
   colorData.name = originColor;
-  colorData.no = bodyNo;
+  colorData.no = originDepth;
   context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, `mc-${body}`);
 
   const specialColor = resolveSpecialColor(originColor);
@@ -35,7 +35,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   // resolved through variables emitted by the definition class or preflight.
   const usage = context?.usage.getColorVariableTargetDepths(originColor);
   if (usage) {
-    colorData.color = toVar(createTargetColorVariableName(originColor, bodyNo));
+    colorData.color = toVar(createTargetColorVariableName(originColor, originDepth));
   }
   // If UnoCSS already resolved the token, keep its parsed value and metadata.
   if (colorData.color) {

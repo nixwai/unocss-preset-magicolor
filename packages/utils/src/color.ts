@@ -2,7 +2,7 @@ import { SpecialColorKey } from '@unocss/preset-wind4/utils';
 
 export interface ResolvedColorParts {
   originColor?: string
-  bodyNo?: string
+  originDepth?: string
 }
 
 const specialColorValueMap = new Map<string, string>(
@@ -75,7 +75,7 @@ export function resolveColorParts(color: string): ResolvedColorParts & { originC
 export function resolveColorParts(color?: string): ResolvedColorParts;
 export function resolveColorParts(color?: string): ResolvedColorParts {
   if (!color) {
-    return { originColor: color, bodyNo: undefined };
+    return { originColor: color, originDepth: undefined };
   }
 
   const bracketColorEnd = getBracketColorEnd(color);
@@ -85,23 +85,23 @@ export function resolveColorParts(color?: string): ResolvedColorParts {
     const depthMatch = suffix.match(bracketColorDepthRE);
     return {
       originColor,
-      bodyNo: depthMatch ? normalizeDepthNo(depthMatch[1]) : undefined,
+      originDepth: depthMatch ? normalizeDepthNo(depthMatch[1]) : undefined,
     };
   }
 
   const hyphenMatch = color.match(hyphenColorDepthRE);
   if (hyphenMatch?.[1]) {
-    return { originColor: hyphenMatch[1], bodyNo: normalizeDepthNo(hyphenMatch[2]) };
+    return { originColor: hyphenMatch[1], originDepth: normalizeDepthNo(hyphenMatch[2]) };
   }
 
   if (compactColorNameRE.test(color)) {
     const bodyNo = color.match(trailingDigitsRE)?.[0];
     if (bodyNo !== undefined) {
-      return { originColor: color.slice(0, -bodyNo.length), bodyNo: normalizeDepthNo(bodyNo) };
+      return { originColor: color.slice(0, -bodyNo.length), originDepth: normalizeDepthNo(bodyNo) };
     }
   }
 
-  return { originColor: color, bodyNo: undefined };
+  return { originColor: color, originDepth: undefined };
 }
 
 /**
