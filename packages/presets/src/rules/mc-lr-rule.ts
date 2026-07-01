@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
-import type { ColorVariableSourceDepths, StaticShortcutColorVariableTargetUsage } from '../usages';
+import type { MagicColorDepthMap, StaticShortcutColorVariableTargetUsage } from '../usages';
 import type { MagicColorDepth } from '../utils/color-variable';
 import { hasDarkVariant, resolveBodyColor, resolveThemeDepth } from '@unocss-preset-magicolor/utils';
 import { resolveMixtureColorConfig } from '../utils/color-config';
@@ -49,7 +49,7 @@ function collectStaticShortcutColorVariableTargetUsages(ctx: RuleContext<Theme>)
   return usages;
 }
 
-function addSourceDepth(sourceDepths: ColorVariableSourceDepths, name: string, depth: MagicColorDepth) {
+function addSourceDepth(sourceDepths: MagicColorDepthMap, name: string, depth: MagicColorDepth) {
   const depths = sourceDepths.get(name) ?? new Set<MagicColorDepth>();
   depths.add(depth);
   sourceDepths.set(name, depths);
@@ -61,7 +61,7 @@ function refreshVariableLightnessReverseReferences(
   source: { name: string, no?: string },
   depths: Set<MagicColorDepth> | undefined,
 ) {
-  const sourceDepths: ColorVariableSourceDepths = new Map();
+  const sourceDepths: MagicColorDepthMap = new Map();
 
   if (!depths) {
     return sourceDepths;
@@ -86,7 +86,7 @@ function refreshVariableLightnessReverseReferences(
 
 /** Resolves local definitions such as `mc-lr-btn_rose-600`. */
 function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
-  context?.usage.recordShortcutColorVariableTargetUsages(ctx.rawSelector, collectStaticShortcutColorVariableTargetUsages(ctx));
+  context?.usage.recordShortcutColorVariableTargetUsages(collectStaticShortcutColorVariableTargetUsages(ctx));
   const definition = parseColorVariableDefinition(body);
   if (!definition) {
     return;
@@ -142,19 +142,18 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
       },
     });
   }
-  context?.usage.refreshLightnessReverseIntent(ctx.rawSelector);
   return css;
 }
 
 /** Rebuilds all currently used configured variables with reversed lightness depths. */
 function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicColorContext) {
-  context?.usage.recordShortcutColorVariableTargetUsages(ctx.rawSelector, collectStaticShortcutColorVariableTargetUsages(ctx));
+  context?.usage.recordShortcutColorVariableTargetUsages(collectStaticShortcutColorVariableTargetUsages(ctx));
   const css: Record<string, string> = {};
   context?.usage.registerLightnessReverseIntent({
     rawSelector: ctx.rawSelector,
     css,
     refresh: () => {
-      const sourceDepths: ColorVariableSourceDepths = new Map();
+      const sourceDepths: MagicColorDepthMap = new Map();
       clearCssObject(css);
 
       for (const name of context.usage.getColorVariableTargetNames()) {
@@ -190,6 +189,5 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicC
       return sourceDepths;
     },
   });
-  context?.usage.refreshLightnessReverseIntent(ctx.rawSelector);
   return css;
 }

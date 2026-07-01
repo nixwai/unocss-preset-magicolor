@@ -1,3 +1,4 @@
+import type { UnocssPluginContext, UnoGenerator } from 'unocss';
 import type { PresetMcOptions } from './types';
 import {
   extractBodyColor,
@@ -11,7 +12,8 @@ import {
   toNum,
   toOklch,
 } from '@unocss-preset-magicolor/utils';
-import { createGenerator, presetWind4 } from 'unocss';
+import MagicString from 'magic-string';
+import { createGenerator, presetWind4, transformerDirectives } from 'unocss';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getMagicColorStyle, updateMagicColor } from './helper';
 import { presetMagicolor } from './index';
@@ -30,6 +32,32 @@ async function createUno(options: PresetMcOptions = {}, extra: Record<string, un
 async function generate(input: string | string[], options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   const uno = await createUno(options, extra);
   return uno.generate(input, { preflights: true });
+}
+
+async function transformDirectivesCss(uno: UnoGenerator, input: string, id: string) {
+  const code = new MagicString(input);
+  for (const transformer of uno.config.transformers || []) {
+    if (transformer.idFilter && !transformer.idFilter(id)) {
+      continue;
+    }
+    if (transformer.codeFilter && !transformer.codeFilter(input, id)) {
+      continue;
+    }
+
+    await transformer.transform(code, id, {
+      uno,
+      tokens: new Set<string>(),
+      invalidate: () => {},
+    } as UnocssPluginContext);
+  }
+  return code.toString();
+}
+
+async function generateWithDirectives(input: string, options: PresetMcOptions = {}, id = 'directives.css') {
+  const uno = await createUno(options, { transformers: [transformerDirectives()] });
+  const transformed = await transformDirectivesCss(uno, input, id);
+  const generated = await uno.generate(transformed, { preflights: true, id });
+  return { ...generated, transformed };
 }
 
 async function generateWithWind4(input: string | string[], options: PresetMcOptions = {}, wind4Options?: Parameters<typeof presetWind4>[0]) {
@@ -215,6 +243,17 @@ describe('watch-mode usage replacement', () => {
     expect(second.css).not.toContain('--mc-colors-btn-DEFAULT:');
   });
 
+  it('keeps usage from another input id when a later file has no magic color usage', async () => {
+    const uno = await createUno({ colors: { primary: 'rose' } });
+
+    const first = await uno.generate('<div class="c-mc-primary-457"></div>', { preflights: true, id: 'a.vue' });
+    expect(first.css).toContain('--mc-colors-primary-457:');
+
+    const second = await uno.generate('<div class="text-white"></div>', { preflights: true, id: 'b.vue' });
+    expect(second.css).toContain('--mc-colors-primary-457:');
+    expect(second.css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+  });
+
   it('tracks magic color utilities expanded from user shortcuts', async () => {
     const uno = await createUno(
       { colors: { primary: 'rose' } },
@@ -243,6 +282,17 @@ describe('watch-mode usage replacement', () => {
     expect(second.css).not.toContain('--mc-colors-primary-630:');
   });
 
+  it('drops lightness-reverse source usage when the same input id removes the selector', async () => {
+    const uno = await createUno({ colors: { primary: 'rose' } });
+
+    const first = await uno.generate('<div class="mc-lr c-mc-primary-80"></div>', { preflights: true, id: 'lr.vue' });
+    expect(first.css).toContain('--mc-source-colors-primary-920:');
+
+    const second = await uno.generate('<div class="c-mc-primary-80"></div>', { preflights: true, id: 'lr.vue' });
+    expect(second.css).toContain('--mc-source-colors-primary-80:');
+    expect(second.css).not.toContain('--mc-source-colors-primary-920:');
+  });
+
   it('tracks shortcut-expanded usage for selector-local lightness reverse', async () => {
     const uno = await createUno(
       { colors: { primary: 'rose' } },
@@ -257,6 +307,47 @@ describe('watch-mode usage replacement', () => {
     expect(getCssVar(css, '--mc-colors-primary-333')).toBe('var(--mc-source-colors-primary-333)');
     expect(getCssVar(css, '--mc-source-colors-primary-667')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-667'));
     expect(css).toContain('var(--mc-colors-primary-333)');
+  });
+
+  it('tracks ownerless magic color usage from safelist rules', async () => {
+    const uno = await createUno(
+      { colors: { primary: 'rose' } },
+      { safelist: ['bg-mc-primary-630'] },
+    );
+
+    const { css } = await uno.generate('<div class="text-white"></div>', { preflights: true, id: 'safelist.vue' });
+
+    expect(css).toContain('--mc-colors-primary-630:');
+    expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-primary-630)');
+  });
+});
+
+describe('css directive usage extraction', () => {
+  it('tracks magic color usage from --at-apply declarations', async () => {
+    const { css, transformed } = await generateWithDirectives(
+      '.btn { --at-apply: bg-mc-primary-630; }',
+      { colors: { primary: 'rose' } },
+      'at-apply.css',
+    );
+
+    expect(transformed).toContain('background-color:');
+    expect(transformed).toContain('var(--mc-colors-primary-630)');
+    expect(css).toContain('--mc-colors-primary-630:');
+    expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
+  });
+
+  it('tracks magic color usage from @apply declarations', async () => {
+    const { css, transformed } = await generateWithDirectives(
+      '.card { @apply c-mc-primary-457; }',
+      { colors: { primary: 'rose' } },
+      'apply.css',
+    );
+
+    expect(transformed).toContain('color:');
+    expect(transformed).toContain('var(--mc-colors-primary-457)');
+    expect(css).toContain('--mc-colors-primary-457:');
+    expect(css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
   });
 });
 
