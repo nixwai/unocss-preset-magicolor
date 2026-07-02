@@ -1,11 +1,11 @@
-import type { MagicColorDepth } from '../utils/color-variable';
 import type { TokenScan } from './scanner';
+import type { MagicColorDepthMap } from './types';
 import { mergeColorDepths } from './scanner';
 
 export interface UsageCache {
-  targetDepths: Map<string, Set<MagicColorDepth>>
+  targetDepths: MagicColorDepthMap
   targetNames: string[]
-  sourceDepths: Map<string, Set<MagicColorDepth>>
+  sourceDepths: MagicColorDepthMap
   sourceNames: string[]
 }
 
@@ -66,7 +66,7 @@ export class UsageCacheStore {
   private buildCache(): UsageCache {
     const referencedSelectors = collectReferencedSelectors(this.scansById);
 
-    const targetDepths = new Map<string, Set<MagicColorDepth>>();
+    const targetDepths: MagicColorDepthMap = new Map();
     const targetNames = new Set<string>();
 
     for (const scan of this.scansById.values()) {
@@ -80,7 +80,7 @@ export class UsageCacheStore {
       addScanColors(targetDepths, targetNames, scan);
     }
 
-    const sourceDepths = new Map<string, Set<MagicColorDepth>>();
+    const sourceDepths: MagicColorDepthMap = new Map();
     const sourceNames = new Set<string>();
 
     for (const [selector, scan] of this.lrScans) {
@@ -112,7 +112,7 @@ function collectReferencedSelectors(scansById: ReadonlyMap<string, TokenScan>) {
 }
 
 function addScanColors(
-  target: Map<string, Set<MagicColorDepth>>,
+  target: MagicColorDepthMap,
   names: Set<string>,
   scan: TokenScan,
 ) {

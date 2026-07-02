@@ -1,11 +1,12 @@
 import type { MagicColorDepth } from '../utils/color-variable';
+import type { MagicColorDepthMap } from './types';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { BASE_COLOR_DEPTH } from '../utils/color-variable';
 
 /** Token scan result from one UnoCSS extractor input. */
 export interface TokenScan {
   /** Color depths grouped by magic color name. */
-  colors: Map<string, Set<MagicColorDepth>>
+  colors: MagicColorDepthMap
   /** Raw tokens found by UnoCSS extractors for this input id. */
   tokens: Set<string>
 }
@@ -30,8 +31,8 @@ function normalizeToken(token: string) {
 
 /** Merges color-variable depths into an existing grouped usage map. */
 export function mergeColorDepths(
-  target: Map<string, Set<MagicColorDepth>>,
-  source: Map<string, Set<MagicColorDepth>>,
+  target: MagicColorDepthMap,
+  source: MagicColorDepthMap,
 ) {
   for (const [name, sourceDepths] of source.entries()) {
     const targetDepths = target.get(name) ?? new Set<MagicColorDepth>();
@@ -51,7 +52,7 @@ export function mergeDepth(a: Set<MagicColorDepth>, b: Set<MagicColorDepth> = ne
 /** Scans extracted tokens into color depths for one input id. */
 export function scanUsage(tokens = new Set<string>()): TokenScan {
   const tokenList = Array.from(tokens);
-  const colors = new Map<string, Set<MagicColorDepth>>();
+  const colors: MagicColorDepthMap = new Map();
 
   for (const token of tokenList) {
     const current = normalizeToken(token);
