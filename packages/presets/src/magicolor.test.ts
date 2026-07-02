@@ -247,6 +247,19 @@ describe('watch-mode usage replacement', () => {
     expect(css).toContain('var(--mc-colors-primary-630)');
   });
 
+  it('uses shortcut-declared depths when resolving magic color definitions', async () => {
+    const uno = await createUno(
+      {},
+      { shortcuts: [['btn', 'bg-mc-btn-333 text-white']] },
+    );
+
+    const { css } = await uno.generate('<button class="btn mc-btn_red"></button>', { preflights: true, id: 'shortcut-definition.vue' });
+
+    expect(css).toContain('--mc-colors-btn-333:var(--mc-source-colors-red-333)');
+    expect(css).toMatch(/--mc-source-colors-red-333:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-btn-333)');
+  });
+
   it('drops shortcut-expanded usage when the same input id no longer uses the shortcut', async () => {
     const uno = await createUno(
       { colors: { primary: 'rose' } },

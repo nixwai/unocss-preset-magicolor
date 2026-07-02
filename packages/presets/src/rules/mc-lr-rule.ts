@@ -37,12 +37,12 @@ function parseLightnessReverseDefinition(body: string) {
 
 /** Resolves local definitions such as `mc-lr-btn_rose-600`. */
 function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
-  context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts);
   const definition = parseLightnessReverseDefinition(body);
-
   if (!definition) {
     return;
   }
+
+  context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts);
 
   const { name, hue } = definition;
   const colorParts = resolveBodyColor(hue);
