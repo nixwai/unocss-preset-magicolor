@@ -1,11 +1,10 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
-import type { MagicColorDepthMap } from '../usages';
-import type { MagicColorDepth } from '../utils/color-variable';
-import { hasDarkVariant, resolveBodyColor, resolveThemeDepth } from '@unocss-preset-magicolor/utils';
+import { hasDarkVariant, resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { resolveMixtureColorConfig } from '../utils/color-config';
-import { BASE_COLOR_DEPTH, createSourceColorVariableName, createTargetColorVariableName, parseColorVariableDefinition, toVar } from '../utils/color-variable';
+import { resolveColorReferences } from '../utils/color-references';
+import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
 /** Creates `mc-lr` rules that regenerate variables with reversed lightness depth lookup. */
@@ -36,101 +35,51 @@ function parseLightnessReverseDefinition(body: string) {
   return { name, hue };
 }
 
-function addSourceDepth(sourceDepths: MagicColorDepthMap, name: string, depth: MagicColorDepth) {
-  const depths = sourceDepths.get(name) ?? new Set<MagicColorDepth>();
-  depths.add(depth);
-  sourceDepths.set(name, depths);
-}
-
-function resolveVariableLightnessReverseReferences(
-  css: Record<string, string>,
-  name: string,
-  source: { name: string, no?: string },
-  depths: Set<MagicColorDepth> | undefined,
-) {
-  const sourceDepths: MagicColorDepthMap = new Map();
-
-  if (!depths) {
-    return sourceDepths;
-  }
-
-  for (const depth of depths) {
-    const rawSourceDepth = resolveThemeDepth({
-      depth: depth === BASE_COLOR_DEPTH ? source.no : depth,
-      defaultValue: BASE_COLOR_DEPTH,
-    });
-    const sourceDepth = resolveThemeDepth({
-      depth: rawSourceDepth,
-      defaultValue: rawSourceDepth,
-      lightnessReverse: true,
-    });
-    css[createTargetColorVariableName(name, depth)] = toVar(createSourceColorVariableName(source.name, sourceDepth));
-    addSourceDepth(sourceDepths, source.name, sourceDepth);
-  }
-
-  return sourceDepths;
-}
-
 /** Resolves local definitions such as `mc-lr-btn_rose-600`. */
 function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
   context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts);
   const definition = parseLightnessReverseDefinition(body);
+
   if (!definition) {
     return;
   }
-  const { name, hue } = definition;
 
-  const css: Record<string, string> = {};
+  const { name, hue } = definition;
   const colorParts = resolveBodyColor(hue);
-  const sourceConfig = resolveMixtureColorConfig(
-    colorParts.originColor,
-    ctx.theme,
-    context,
-    hasDarkVariant(ctx.rawSelector),
-  );
+  const sourceConfig = resolveMixtureColorConfig(colorParts.originColor, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
     const sourceColorParts = resolveBodyColor(sourceConfig.color);
     const sourceBodyNo = colorParts.originDepth ?? sourceColorParts.originDepth;
-    const sourceDepths = resolveVariableLightnessReverseReferences(
-      css,
+    const result = resolveColorReferences({
       name,
-      {
-        name: colorParts.originColor,
-        no: sourceBodyNo,
+      colorParts: {
+        originColor: colorParts.originColor,
+        originDepth: sourceBodyNo,
       },
-      context?.usage.getColorVariableTargetDepths(name),
-    );
-    context?.usage.recordColorVariableSourceUsage(ctx.rawSelector, sourceDepths);
+      depths: context?.usage.getColorVariableTargetDepths(name),
+      lightnessReverse: true,
+    });
+    context?.usage.recordColorVariableSourceUsage(ctx.rawSelector, result.depthMap);
+    return result.css;
   }
   else {
     const depths = context?.usage.getColorVariableTargetDepths(name);
-    if (depths) {
-      Object.assign(css, resolveThemeColorCss(
-        name,
-        colorParts,
-        ctx.theme,
-        depths,
-        { lightnessReverse: true },
-      ));
-    }
-    context?.usage.recordColorVariableSourceUsage(ctx.rawSelector, new Map());
+    return resolveThemeColorCss(
+      name,
+      colorParts,
+      ctx.theme,
+      depths,
+      { lightnessReverse: true },
+    );
   }
-  return css;
 }
 
 /** Rebuilds all currently used configured variables with reversed lightness depths. */
 function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicColorContext) {
   context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts);
   const css: Record<string, string> = {};
-  const sourceDepths: MagicColorDepthMap = new Map();
-
   for (const name of context?.usage.getColorVariableTargetNames() ?? []) {
-    const sourceConfig = resolveMixtureColorConfig(
-      name,
-      ctx.theme,
-      context,
-      hasDarkVariant(ctx.rawSelector),
-    );
+    const sourceConfig = resolveMixtureColorConfig(name, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
     if (!sourceConfig.color) {
       continue;
     }
@@ -138,22 +87,18 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicC
     if (!depths) {
       continue;
     }
-    const nextSourceDepths = resolveVariableLightnessReverseReferences(
-      css,
+    const sourceColorParts = resolveBodyColor(sourceConfig.color);
+    const result = resolveColorReferences({
       name,
-      {
-        name,
-        no: resolveBodyColor(sourceConfig.color).originDepth,
+      colorParts: {
+        originDepth: sourceColorParts.originDepth,
+        originColor: name,
       },
       depths,
-    );
-    for (const [sourceName, depths] of nextSourceDepths) {
-      for (const depth of depths) {
-        addSourceDepth(sourceDepths, sourceName, depth);
-      }
-    }
+      lightnessReverse: true,
+    });
+    Object.assign(css, result.css);
+    context?.usage.recordColorVariableSourceUsage(ctx.rawSelector, result.depthMap);
   }
-
-  context?.usage.recordColorVariableSourceUsage(ctx.rawSelector, sourceDepths);
   return css;
 }

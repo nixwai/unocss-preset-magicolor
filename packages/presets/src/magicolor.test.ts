@@ -421,6 +421,18 @@ describe('preflight theme color variables', () => {
     expect(css).toContain('var(--mc-colors-primary-950)');
   });
 
+  it('ignores configured special color names as aliases', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-transparent c-mc-current"></div>',
+      { colors: { transparent: 'rose', current: 'blue' } },
+    );
+
+    expect(css).toContain('.c-mc-transparent{color:transparent;}');
+    expect(css).toContain('.c-mc-current{color:currentColor;}');
+    expect(css).not.toContain('--mc-colors-transparent-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-current-DEFAULT:');
+  });
+
   it('skips usage names that are neither configured nor theme colors', async () => {
     const { css } = await generate('<div class="c-mc-notacolor"></div>');
 
