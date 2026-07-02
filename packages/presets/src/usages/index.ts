@@ -1,117 +1,90 @@
-import type { Extractor } from 'unocss';
-import type { FileUsage, MagicColorDepth } from './scanner';
-import { scanUsage } from './scanner';
-import { TokenUsage } from './token';
+import type { Extractor, Shortcut } from 'unocss';
+import type { TokenScan } from './scanner';
+import type { MagicColorDepthMap } from './types';
+import { UsageCacheStore } from './cache';
+import { mergeColorDepths, scanUsage } from './scanner';
+import { collectShortcuts } from './shortcuts';
+
+export type { MagicColorDepthMap } from './types';
 
 // UnoCSS may omit an id for inline input; keep those scans under a stable bucket.
 const DEFAULT_ID = '__inline__';
-
-function mergeFileUsage(target: FileUsage, source: FileUsage) {
-  for (const [name, sourceDepths] of source.colors.entries()) {
-    const targetDepths = target.colors.get(name) ?? new Set<MagicColorDepth>();
-    for (const depth of sourceDepths) {
-      targetDepths.add(depth);
-    }
-    target.colors.set(name, targetDepths);
-  }
-}
 
 /**
  * Stores the per-preset usage state shared by the extractor, rules, and preflights.
  * Keeping this state per preset prevents scans from leaking between UnoCSS generators.
  */
 export class MagicColorUsage {
-  private readonly files = new Map<string, FileUsage>();
+  /** Scans indexed by extractor input id. */
+  private readonly scansById = new Map<string, TokenScan>();
 
-  private readonly recordedUsages = new Map<string, FileUsage>();
+  /** Scans produced by rule expansions (shortcuts/aliases), indexed by raw selector. */
+  private readonly ruleScans = new Map<string, TokenScan>();
 
-  private readonly tokenIndex = new TokenUsage();
+  /** Source variable scans produced by lightness reverse rules, indexed by raw selector. */
+  private readonly lrScans = new Map<string, TokenScan>();
+
+  private readonly cacheStore = new UsageCacheStore(this.scansById, this.ruleScans, this.lrScans);
 
   readonly extractor: Extractor = {
     name: 'magicolor-usage',
     order: 1,
-    extract: ({ extracted, id }) => {
-      // Replace each input id on every scan so watch-mode updates drop stale tokens.
-      this.replaceFileUsage(id ?? DEFAULT_ID, extracted);
+    extract: ({ extracted, id = DEFAULT_ID }) => {
+      const scan = scanUsage(extracted);
+      this.scansById.set(id, scan);
+      this.cacheStore.invalidate();
     },
   };
 
-  private replaceFileUsage(id: string, tokens: Iterable<string>) {
-    const previousUsage = this.files.get(id);
-    if (previousUsage) {
-      this.tokenIndex.remove(id, previousUsage.tokens);
-    }
-
-    const usage = scanUsage(tokens);
-    this.tokenIndex.add(id, usage.tokens);
-
-    for (const token of usage.tokens) {
-      const recordedUsage = this.recordedUsages.get(token);
-      if (recordedUsage) {
-        mergeFileUsage(usage, recordedUsage);
-      }
-    }
-
-    this.files.set(id, usage);
+  /** Aggregates public target variable depths for a color name across input scans. */
+  getColorVariableTargetDepths(name: string) {
+    return this.cacheStore.getTargetDepths(name);
   }
 
-  /** Aggregates all scanned selector usages for a color name across input files. */
-  getUsage(name: string): Set<MagicColorDepth> | undefined {
-    const depths = new Set<MagicColorDepth>();
-
-    for (const fileUsage of this.files.values()) {
-      const colorDepths = fileUsage.colors.get(name);
-      if (!colorDepths) {
-        continue;
-      }
-
-      for (const depth of colorDepths) {
-        depths.add(depth);
-      }
-    }
-
-    return this.files.size > 0 && depths.size > 0 ? depths : undefined;
+  /** Lists all color names seen in public target variable usages across scanned inputs. */
+  getColorVariableTargetNames() {
+    return this.cacheStore.getTargetNames();
   }
 
-  /** Lists all color names seen in selector usages across scanned inputs. */
-  getUsageNames() {
-    const names = new Set<string>();
-
-    for (const fileUsage of this.files.values()) {
-      for (const name of fileUsage.colors.keys()) {
-        names.add(name);
-      }
-    }
-
-    return Array.from(names);
+  /** Aggregates internal source variable depths for a color name across input scans. */
+  getColorVariableSourceDepths(name: string) {
+    return this.cacheStore.getSourceDepths(name);
   }
 
-  recordUsage(token: string, rawSelector?: string) {
-    if (!rawSelector) {
+  /** Lists all color names seen in internal source variable usages across scanned inputs. */
+  getColorVariableSourceNames() {
+    return this.cacheStore.getSourceNames();
+  }
+
+  private recordColorVariableUsage(
+    scans: Map<string, TokenScan>,
+    rawSelector: string | undefined,
+    colors: MagicColorDepthMap,
+  ) {
+    if (!rawSelector || !colors.size) {
       return;
     }
 
-    const usage = scanUsage([token]);
-    if (!usage.colors.size) {
-      return;
-    }
+    const recorded = scans.get(rawSelector) ?? scanUsage();
+    mergeColorDepths(recorded.colors, colors);
+    scans.set(rawSelector, recorded);
+    this.cacheStore.invalidate();
+  }
 
-    const recordedUsage = this.recordedUsages.get(rawSelector) ?? scanUsage([]);
-    mergeFileUsage(recordedUsage, usage);
-    this.recordedUsages.set(rawSelector, recordedUsage);
+  /** Records public target variable usage produced by a rule expansion, such as shortcuts or aliases. */
+  recordColorVariableTargetUsage(rawSelector: string | undefined, depths: MagicColorDepthMap) {
+    this.recordColorVariableUsage(this.ruleScans, rawSelector, depths);
+  }
 
-    const ids = this.tokenIndex.getIds(rawSelector);
-    if (!ids) {
-      return;
-    }
+  /** Records source variable depths required by a lightness reverse rule. */
+  recordColorVariableSourceUsage(rawSelector: string | undefined, sourceDepths: MagicColorDepthMap) {
+    this.recordColorVariableUsage(this.lrScans, rawSelector, sourceDepths);
+  }
 
-    for (const id of ids) {
-      const fileUsage = this.files.get(id);
-      if (fileUsage) {
-        mergeFileUsage(fileUsage, usage);
-      }
+  /** Records static shortcut-expanded target usages when a shortcut and a consumer token share one input file. */
+  recordColorVariableTargetUsagesByShortcut<Theme extends object = object>(shortcuts: Iterable<Shortcut<Theme>>) {
+    for (const shortcut of collectShortcuts(shortcuts)) {
+      this.recordColorVariableTargetUsage(shortcut.rawSelector, shortcut.depths);
     }
   }
 }
-
-export { BASE_COLOR_DEPTH } from './scanner';

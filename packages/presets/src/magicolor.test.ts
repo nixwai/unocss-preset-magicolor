@@ -5,15 +5,17 @@ import {
   isInvalidColor,
   resolveBodyColor,
   resolveColorParts,
+  resolveSpecialColor,
+  resolveThemeDepth,
   roundNum,
   toNum,
   toOklch,
 } from '@unocss-preset-magicolor/utils';
-import { createGenerator, presetWind4 } from 'unocss';
+import { createGenerator, presetWind4, transformerDirectives } from 'unocss';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getMagicColorStyle, updateMagicColor } from './helper';
 import { presetMagicolor } from './index';
-import { TokenUsage } from './usages/token';
+import { MagicColorUsage } from './usages';
 
 async function createUno(options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   return createGenerator({
@@ -28,6 +30,13 @@ async function createUno(options: PresetMcOptions = {}, extra: Record<string, un
 async function generate(input: string | string[], options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   const uno = await createUno(options, extra);
   return uno.generate(input, { preflights: true });
+}
+
+async function generateWithDirectives(input: string, options: PresetMcOptions = {}, id = 'directives.css') {
+  const uno = await createUno(options, { transformers: [transformerDirectives()] });
+  // Let UnoCSS handle the transformers internally
+  const result = await uno.generate(input, { preflights: true, id });
+  return { ...result, transformed: input };
 }
 
 async function generateWithWind4(input: string | string[], options: PresetMcOptions = {}, wind4Options?: Parameters<typeof presetWind4>[0]) {
@@ -47,6 +56,23 @@ async function generateWithoutWind4(input: string | string[], options: PresetMcO
     ],
   });
   return uno.generate(input, { preflights: true });
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function getCssVar(css: string, name: string) {
+  const match = css.match(new RegExp(`${escapeRegExp(name)}:\\s*([^;{}]+)`));
+  return match?.[1]?.trim();
+}
+
+function getDarkBlock(css: string) {
+  return css.match(/\.dark\s*\{([\s\S]*?)\}/)?.[1] ?? '';
+}
+
+function getSelectorBlock(css: string, selector: string) {
+  return css.match(new RegExp(`${escapeRegExp(selector)}\\s*\\{([\\s\\S]*?)\\}`))?.[1] ?? '';
 }
 
 describe('presetMagicolor preset wiring', () => {
@@ -75,13 +101,13 @@ describe('presetMagicolor preset wiring', () => {
 
   it('isolates usage state between independent preset instances', async () => {
     const first = await generate('<div class="mc-btn_red c-mc-btn-200"></div>');
-    expect(first.css).toContain('--mc-btn-200-color:var(--mc-red-200-color)');
-    expect(first.css).toMatch(/--mc-red-200-color:\s*oklch\(/);
+    expect(first.css).toContain('--mc-colors-btn-200:var(--mc-source-colors-red-200)');
+    expect(first.css).toMatch(/--mc-source-colors-red-200:\s*oklch\(/);
 
     // A fresh generator must not retain depths scanned by the previous one.
     const second = await generate('<div class="mc-btn_red c-mc-btn"></div>');
-    expect(second.css).toContain('--mc-btn-color:');
-    expect(second.css).not.toContain('--mc-btn-200-color:');
+    expect(second.css).toContain('--mc-colors-btn-DEFAULT:');
+    expect(second.css).not.toContain('--mc-colors-btn-200:');
   });
 });
 
@@ -89,11 +115,11 @@ describe('magicolor usage extraction', () => {
   it('generates only variables needed by scanned custom color depths', async () => {
     const { css } = await generate('<div class="mc-btn_red bg-mc-btn-640 c-mc-btn-200 c-mc-btn"></div>');
 
-    expect(css).toContain('--mc-btn-color:');
-    expect(css).toContain('--mc-btn-200-color:var(--mc-red-200-color)');
-    expect(css).toContain('--mc-btn-640-color:var(--mc-red-640-color)');
-    expect(css).toMatch(/--mc-red-200-color:\s*oklch\(/);
-    expect(css).toMatch(/--mc-red-640-color:\s*oklch\(/);
+    expect(css).toContain('--mc-colors-btn-DEFAULT:');
+    expect(css).toContain('--mc-colors-btn-200:var(--mc-source-colors-red-200)');
+    expect(css).toContain('--mc-colors-btn-640:var(--mc-source-colors-red-640)');
+    expect(css).toMatch(/--mc-source-colors-red-200:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-640:\s*oklch\(/);
     expect(css).not.toContain('--mc-btn-50-l:');
     expect(css).not.toContain('--mc-btn-300-l:');
     expect(css).not.toContain('calc(');
@@ -102,27 +128,27 @@ describe('magicolor usage extraction', () => {
   it('uses generated depth color variables without per-selector channel variables', async () => {
     const { css } = await generate('<div class="mc-btn_red bg-mc-btn-640"></div>');
 
-    expect(css).toContain('var(--mc-btn-640-color)');
-    expect(css).toContain('--mc-btn-640-color:var(--mc-red-640-color)');
-    expect(css).toMatch(/--mc-red-640-color:\s*oklch\(/);
-    expect(css).not.toContain('--mc-btn-color:');
+    expect(css).toContain('var(--mc-colors-btn-640)');
+    expect(css).toContain('--mc-colors-btn-640:var(--mc-source-colors-red-640)');
+    expect(css).toMatch(/--mc-source-colors-red-640:\s*oklch\(/);
+    expect(css).not.toContain('--mc-colors-btn-DEFAULT:');
     expect(css).not.toContain('--mc-btn-640-l:');
   });
 
   it('tracks custom color depths with opacity modifiers', async () => {
     const { css } = await generate('<div class="mc-btn_red bg-mc-btn-640/50"></div>');
 
-    expect(css).toContain('--mc-btn-640-color:var(--mc-red-640-color)');
-    expect(css).toMatch(/--mc-red-640-color:\s*oklch\(/);
-    expect(css).toContain('var(--mc-btn-640-color)');
+    expect(css).toContain('--mc-colors-btn-640:var(--mc-source-colors-red-640)');
+    expect(css).toMatch(/--mc-source-colors-red-640:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-btn-640)');
     expect(css).not.toContain('calc(');
   });
 
   it('does not generate depth variables when only the base custom color is used', async () => {
     const { css } = await generate('<div class="mc-btn_red c-mc-btn"></div>');
 
-    expect(css).toContain('--mc-btn-color:');
-    expect(css).toContain('var(--mc-btn-color)');
+    expect(css).toContain('--mc-colors-btn-DEFAULT:');
+    expect(css).toContain('var(--mc-colors-btn-DEFAULT)');
     expect(css).not.toContain('--mc-btn-200-l:');
   });
 
@@ -130,8 +156,8 @@ describe('magicolor usage extraction', () => {
     // Passing tokens as an array skips the HTML extractor scan.
     const { css } = await generate(['mc-btn_red', 'bg-mc-btn-640']);
 
-    expect(css).not.toContain('--mc-btn-color:');
-    expect(css).not.toContain('--mc-btn-640-color:');
+    expect(css).not.toContain('--mc-colors-btn-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-btn-640:');
     expect(css).not.toContain('calc(');
   });
 
@@ -141,13 +167,13 @@ describe('magicolor usage extraction', () => {
       { colors: { brand: 'blue', grape: 'rose' } },
     );
 
-    expect(css).toMatch(/--mc-brand-20-color:\s*oklch\(/);
-    expect(css).toMatch(/--mc-grape-120-color:\s*oklch\(/);
-    expect(css).toMatch(/--mc-grape-123-color:\s*oklch\(/);
-    expect(css).toContain('--mc-btn-230-color:var(--mc-red-230-color)');
-    expect(css).toMatch(/--mc-red-230-color:\s*oklch\(/);
-    expect(css).not.toContain('--mc-brand20-color:');
-    expect(css).not.toContain('--mc-grape120-color:');
+    expect(css).toMatch(/--mc-source-colors-brand-20:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-grape-120:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-grape-123:\s*oklch\(/);
+    expect(css).toContain('--mc-colors-btn-230:var(--mc-source-colors-red-230)');
+    expect(css).toMatch(/--mc-source-colors-red-230:\s*oklch\(/);
+    expect(css).not.toContain('--mc-colors-brand20-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-grape120-DEFAULT:');
   });
 
   it('matches hyphenated magic color names with depth and modifiers', async () => {
@@ -165,21 +191,21 @@ describe('magicolor usage extraction', () => {
       },
     );
 
-    expect(css).toContain('--mc-red-123-color:');
-    expect(css).toContain('--mc-btn-230-color:');
-    expect(css).toContain('--mc-my-btn-630-color:');
-    expect(css).toContain('--mc-gg-560-color:');
-    expect(css).toContain('--mc-aa-99-color:');
-    expect(css).toContain('--mc-ss-color:');
-    expect(css).toContain('--mc-qq-color:');
+    expect(css).toContain('--mc-colors-red-123:');
+    expect(css).toContain('--mc-colors-btn-230:');
+    expect(css).toContain('--mc-colors-my-btn-630:');
+    expect(css).toContain('--mc-colors-gg-560:');
+    expect(css).toContain('--mc-colors-aa-99:');
+    expect(css).toContain('--mc-colors-ss-DEFAULT:');
+    expect(css).toContain('--mc-colors-qq-DEFAULT:');
   });
 
   it('ignores mc color definitions (mc-name_color) as usage tokens', async () => {
     // `mc-btn_red` is a definition, not a usage, so it must not by itself emit variables.
     const { css } = await generate('<div class="mc-btn_red"></div>');
 
-    expect(css).not.toContain('--mc-btn-color:');
-    expect(css).not.toContain('--mc-btn-200-color:');
+    expect(css).not.toContain('--mc-colors-btn-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-btn-200:');
   });
 });
 
@@ -188,12 +214,23 @@ describe('watch-mode usage replacement', () => {
     const uno = await createUno();
 
     const first = await uno.generate('<div class="mc-btn_red c-mc-btn-200"></div>', { preflights: true, id: 'a.vue' });
-    expect(first.css).toContain('--mc-btn-200-color:var(--mc-red-200-color)');
-    expect(first.css).toMatch(/--mc-red-200-color:\s*oklch\(/);
+    expect(first.css).toContain('--mc-colors-btn-200:var(--mc-source-colors-red-200)');
+    expect(first.css).toMatch(/--mc-source-colors-red-200:\s*oklch\(/);
 
     const second = await uno.generate('<div class="text-white"></div>', { preflights: true, id: 'a.vue' });
-    expect(second.css).not.toContain('--mc-btn-200-color:');
-    expect(second.css).not.toContain('--mc-btn-color:');
+    expect(second.css).not.toContain('--mc-colors-btn-200:');
+    expect(second.css).not.toContain('--mc-colors-btn-DEFAULT:');
+  });
+
+  it('keeps usage from another input id when a later file has no magic color usage', async () => {
+    const uno = await createUno({ colors: { primary: 'rose' } });
+
+    const first = await uno.generate('<div class="c-mc-primary-457"></div>', { preflights: true, id: 'a.vue' });
+    expect(first.css).toContain('--mc-colors-primary-457:');
+
+    const second = await uno.generate('<div class="text-white"></div>', { preflights: true, id: 'b.vue' });
+    expect(second.css).toContain('--mc-colors-primary-457:');
+    expect(second.css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
   });
 
   it('tracks magic color utilities expanded from user shortcuts', async () => {
@@ -204,10 +241,10 @@ describe('watch-mode usage replacement', () => {
 
     const { css } = await uno.generate('<button class="btn"></button>', { preflights: true, id: 'shortcut.vue' });
 
-    expect(css).toContain('--mc-primary-color:');
-    expect(css).toMatch(/--mc-primary-630-color:\s*oklch\(/);
-    expect(css).toContain('var(--mc-primary-color)');
-    expect(css).toContain('var(--mc-primary-630-color)');
+    expect(css).toContain('--mc-colors-primary-DEFAULT:');
+    expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-primary-DEFAULT)');
+    expect(css).toContain('var(--mc-colors-primary-630)');
   });
 
   it('drops shortcut-expanded usage when the same input id no longer uses the shortcut', async () => {
@@ -217,11 +254,97 @@ describe('watch-mode usage replacement', () => {
     );
 
     const first = await uno.generate('<button class="btn"></button>', { preflights: true, id: 'shortcut.vue' });
-    expect(first.css).toContain('--mc-primary-color:');
+    expect(first.css).toContain('--mc-colors-primary-DEFAULT:');
 
     const second = await uno.generate('<button class="text-white"></button>', { preflights: true, id: 'shortcut.vue' });
-    expect(second.css).not.toContain('--mc-primary-color:');
-    expect(second.css).not.toContain('--mc-primary-630-color:');
+    expect(second.css).not.toContain('--mc-colors-primary-DEFAULT:');
+    expect(second.css).not.toContain('--mc-colors-primary-630:');
+  });
+
+  it('drops lightness-reverse source usage when the same input id removes the selector', async () => {
+    const uno = await createUno({ colors: { primary: 'rose' } });
+
+    const first = await uno.generate('<div class="mc-lr c-mc-primary-80"></div>', { preflights: true, id: 'lr.vue' });
+    expect(first.css).toContain('--mc-source-colors-primary-920:');
+
+    const second = await uno.generate('<div class="c-mc-primary-80"></div>', { preflights: true, id: 'lr.vue' });
+    expect(second.css).toContain('--mc-source-colors-primary-80:');
+    expect(second.css).not.toContain('--mc-source-colors-primary-920:');
+  });
+
+  it('merges repeated lightness-reverse source usage for the same selector', () => {
+    const usage = new MagicColorUsage();
+
+    usage.extractor.extract?.({
+      extracted: new Set(['mc-lr-primary_primary']),
+      id: 'same-selector.vue',
+      original: '',
+      code: '',
+    });
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+      ['primary', new Set([920])],
+    ]));
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+      ['primary', new Set([80])],
+      ['secondary', new Set([880])],
+    ]));
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map());
+
+    expect(usage.getColorVariableSourceDepths('primary')).toEqual(new Set([920, 80]));
+    expect(usage.getColorVariableSourceDepths('secondary')).toEqual(new Set([880]));
+  });
+
+  it('tracks shortcut-expanded usage for selector-local lightness reverse', async () => {
+    const uno = await createUno(
+      { colors: { primary: 'rose' } },
+      { shortcuts: [['btn', 'p-5 bg-mc-primary-333 text-white cursor-pointer']] },
+    );
+
+    const { css } = await uno.generate('<div class="btn hover:mc-lr-primary_primary">5555</div>', { preflights: true, id: 'shortcut-lr.vue' });
+    const hoverBlock = getSelectorBlock(css, '.hover\\:mc-lr-primary_primary:hover');
+    const reference = await generate('<div class="c-mc-rose-667"></div>');
+
+    expect(getCssVar(hoverBlock, '--mc-colors-primary-333')).toBe('var(--mc-source-colors-primary-667)');
+    expect(getCssVar(css, '--mc-colors-primary-333')).toBe('var(--mc-source-colors-primary-333)');
+    expect(getCssVar(css, '--mc-source-colors-primary-667')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-667'));
+    expect(css).toContain('var(--mc-colors-primary-333)');
+  });
+
+  it('tracks ownerless magic color usage from safelist rules', async () => {
+    const uno = await createUno(
+      { colors: { primary: 'rose' } },
+      { safelist: ['bg-mc-primary-630'] },
+    );
+
+    const { css } = await uno.generate('<div class="text-white"></div>', { preflights: true, id: 'safelist.vue' });
+
+    expect(css).toContain('--mc-colors-primary-630:');
+    expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-primary-630)');
+  });
+});
+
+describe('css directive usage extraction', () => {
+  it('tracks magic color usage from --at-apply declarations', async () => {
+    const { css } = await generateWithDirectives(
+      '.btn { --at-apply: bg-mc-primary-630; p-5; }',
+      { colors: { primary: 'rose' } },
+      'at-apply.css',
+    );
+
+    expect(css).toContain('--mc-colors-primary-630:');
+    expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
+  });
+
+  it('tracks magic color usage from @apply declarations', async () => {
+    const { css } = await generateWithDirectives(
+      '.card { @apply c-mc-primary-457; p-5; }',
+      { colors: { primary: 'rose' } },
+      'apply.css',
+    );
+
+    expect(css).toContain('--mc-colors-primary-457:');
+    expect(css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
   });
 });
 
@@ -230,41 +353,90 @@ describe('preflight theme color variables', () => {
     const { css } = await generate('<div class="c-mc-primary-457"></div>', { colors: { primary: 'rose' } });
 
     expect(css).toContain(':root');
-    expect(css).not.toContain('--mc-primary-color:');
-    expect(css).toMatch(/--mc-primary-457-color:\s*oklch\(/);
-    expect(css).toContain('var(--mc-primary-457-color)');
+    expect(css).not.toContain('--mc-colors-primary-DEFAULT:');
+    expect(css).toContain('--mc-colors-primary-457: var(--mc-source-colors-primary-457);');
+    expect(css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-primary-457)');
     expect(css).not.toContain('calc(');
+  });
+
+  it('reverses configured color depths while preserving target variable names', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-primary-50 c-mc-primary-450 c-mc-primary-500 c-mc-primary-950"></div>',
+      { colors: { primary: { color: 'rose', lightnessReverse: true } } },
+    );
+    const reference = await generate('<div class="c-mc-rose-950 c-mc-rose-550 c-mc-rose-500 c-mc-rose-50"></div>');
+
+    expect(getCssVar(css, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-50)');
+    expect(getCssVar(css, '--mc-colors-primary-450')).toBe('var(--mc-source-colors-primary-450)');
+    expect(getCssVar(css, '--mc-colors-primary-500')).toBe('var(--mc-source-colors-primary-500)');
+    expect(getCssVar(css, '--mc-colors-primary-950')).toBe('var(--mc-source-colors-primary-950)');
+    expect(getCssVar(css, '--mc-source-colors-primary-50')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
+    expect(getCssVar(css, '--mc-source-colors-primary-450')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-550'));
+    expect(getCssVar(css, '--mc-source-colors-primary-500')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-500'));
+    expect(getCssVar(css, '--mc-source-colors-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-50'));
+    expect(css).toContain('var(--mc-colors-primary-50)');
   });
 
   it('does not emit unused configured colors', async () => {
     const { css } = await generate('<div class="c-mc-primary"></div>', { colors: { primary: 'rose', secondary: 'blue' } });
 
-    expect(css).toContain('--mc-primary-color:');
-    expect(css).not.toContain('--mc-secondary-color:');
+    expect(css).toContain('--mc-colors-primary-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-secondary-DEFAULT:');
   });
 
   it('generates theme color variables for unocss theme color names without options', async () => {
     const { css } = await generate('<div class="bg-mc-rose-445"></div>');
 
     expect(css).toContain(':root');
-    expect(css).not.toContain('--mc-rose-color:');
-    expect(css).toMatch(/--mc-rose-445-color:\s*oklch\(/);
-    expect(css).toContain('var(--mc-rose-445-color)');
+    expect(css).not.toContain('--mc-colors-rose-DEFAULT:');
+    expect(css).toContain('--mc-colors-rose-445: var(--mc-source-colors-rose-445);');
+    expect(css).toMatch(/--mc-source-colors-rose-445:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-rose-445)');
     expect(css).not.toContain('calc(');
   });
 
   it('generates configured base variables only when base color is used', async () => {
     const { css } = await generate('<div class="c-mc-primary c-mc-rose"></div>', { colors: { primary: 'rose' } });
 
-    expect(css).toContain('--mc-primary-color:');
-    expect(css).toContain('--mc-rose-color:');
-    expect(css).not.toContain('--mc-primary-500-color:');
+    expect(css).toContain('--mc-colors-primary-DEFAULT:');
+    expect(css).toContain('--mc-colors-rose-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-primary-500:');
+  });
+
+  it('maps configured special color values to every requested depth', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-primary c-mc-primary-457 bg-mc-primary-950"></div>',
+      { colors: { primary: 'transparent' } },
+    );
+
+    expect(css).toContain('--mc-colors-primary-DEFAULT: var(--mc-source-colors-primary-DEFAULT);');
+    expect(css).toContain('--mc-colors-primary-457: var(--mc-source-colors-primary-457);');
+    expect(css).toContain('--mc-colors-primary-950: var(--mc-source-colors-primary-950);');
+    expect(css).toContain('--mc-source-colors-primary-DEFAULT: transparent;');
+    expect(css).toContain('--mc-source-colors-primary-457: transparent;');
+    expect(css).toContain('--mc-source-colors-primary-950: transparent;');
+    expect(css).toContain('var(--mc-colors-primary-DEFAULT)');
+    expect(css).toContain('var(--mc-colors-primary-457)');
+    expect(css).toContain('var(--mc-colors-primary-950)');
+  });
+
+  it('ignores configured special color names as aliases', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-transparent c-mc-current"></div>',
+      { colors: { transparent: 'rose', current: 'blue' } },
+    );
+
+    expect(css).toContain('.c-mc-transparent{color:transparent;}');
+    expect(css).toContain('.c-mc-current{color:currentColor;}');
+    expect(css).not.toContain('--mc-colors-transparent-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-current-DEFAULT:');
   });
 
   it('skips usage names that are neither configured nor theme colors', async () => {
     const { css } = await generate('<div class="c-mc-notacolor"></div>');
 
-    expect(css).not.toContain('--mc-notacolor-color:');
+    expect(css).not.toContain('--mc-colors-notacolor-DEFAULT:');
   });
 
   it('emits no :root block when no usage resolves to a color', async () => {
@@ -279,9 +451,28 @@ describe('preflight theme color variables', () => {
       { colors: { primary: 'rose' }, dark: { primary: 'blue' } },
     );
 
-    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-primary-457-color:\s*oklch\(/);
-    expect(css).toMatch(/\.dark\s*\{[\s\S]*--mc-primary-457-color:\s*oklch\(/);
-    expect(css).not.toContain('--mc-primary-color:');
+    const darkBlock = getDarkBlock(css);
+
+    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);/);
+    expect(darkBlock).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(darkBlock).not.toContain('--mc-colors-primary-457:');
+    expect(css).not.toContain('--mc-colors-primary-DEFAULT:');
+  });
+
+  it('reverses dark color depths independently from light color variables', async () => {
+    const { css } = await generate(
+      '<div class="bg-mc-primary-50"></div>',
+      { colors: { primary: 'rose' }, dark: { primary: { color: 'blue', lightnessReverse: true } } },
+    );
+    const lightReference = await generate('<div class="c-mc-rose-50"></div>');
+    const darkReference = await generate('<div class="c-mc-blue-950"></div>');
+    const darkBlock = getDarkBlock(css);
+
+    expect(getCssVar(css, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-50)');
+    expect(getCssVar(css, '--mc-source-colors-primary-50')).toBe(getCssVar(lightReference.css, '--mc-source-colors-rose-50'));
+    expect(darkBlock).not.toContain('--mc-colors-primary-50:');
+    expect(getCssVar(darkBlock, '--mc-source-colors-primary-50')).toBe(getCssVar(darkReference.css, '--mc-source-colors-blue-950'));
   });
 
   it('emits simple dark color maps with the wind4 media dark mode', async () => {
@@ -291,7 +482,8 @@ describe('preflight theme color variables', () => {
       { dark: 'media' },
     );
 
-    expect(css).toMatch(/@media \(prefers-color-scheme: dark\)\s*\{[\s\S]*:root\s*\{[\s\S]*--mc-primary-457-color:\s*oklch\(/);
+    expect(css).toMatch(/@media \(prefers-color-scheme: dark\)\s*\{[\s\S]*:root\s*\{[\s\S]*--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(css).toMatch(/:root\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);/);
   });
 
   it('emits simple dark color maps with custom wind4 dark selectors', async () => {
@@ -301,7 +493,9 @@ describe('preflight theme color variables', () => {
       { dark: { dark: '.app-dark', light: '.app-light' } },
     );
 
-    expect(css).toMatch(/\.app-dark\s*\{[\s\S]*--mc-primary-457-color:\s*oklch\(/);
+    const darkBlock = getSelectorBlock(css, '.app-dark');
+    expect(darkBlock).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(darkBlock).not.toContain('--mc-colors-primary-457:');
     expect(css).not.toContain('.app-light');
   });
 
@@ -314,19 +508,31 @@ describe('preflight theme color variables', () => {
       },
     );
 
-    expect(css).toMatch(/\.dark\s*\{[\s\S]*--mc-primary-457-color:\s*oklch\(/);
+    const darkBlock = getDarkBlock(css);
+    expect(darkBlock).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
+    expect(darkBlock).not.toContain('--mc-colors-primary-457:');
   });
 });
 
 describe('color style rules', () => {
   it('resolves text color via the c- and color- prefixes', async () => {
     const { css } = await generate('<div class="c-mc-rose-445 color-mc-rose-445"></div>');
-    expect(css).toContain('var(--mc-rose-445-color)');
+    expect(css).toContain('var(--mc-colors-rose-445)');
+  });
+
+  it('resolves special color keywords directly without generated variables', async () => {
+    const { css } = await generate('<div class="c-mc-transparent c-mc-transparent-500 c-mc-current c-mc-inherit"></div>');
+
+    expect(css).toMatch(/\.c-mc-transparent,\s*\.c-mc-transparent-500\{color:transparent;\}/);
+    expect(css).toContain('.c-mc-current{color:currentColor;}');
+    expect(css).toContain('.c-mc-inherit{color:inherit;}');
+    expect(css).not.toContain('--mc-colors-transparent-DEFAULT:');
+    expect(css).not.toContain('--mc-colors-transparent-500:');
   });
 
   it('resolves text-mc and text-color-mc', async () => {
     const { css } = await generate('<div class="text-mc-rose-445 text-color-mc-rose-445"></div>');
-    expect(css).toContain('var(--mc-rose-445-color)');
+    expect(css).toContain('var(--mc-colors-rose-445)');
   });
 
   it('resolves outline, accent and caret colors', async () => {
@@ -334,13 +540,13 @@ describe('color style rules', () => {
     expect(css).toContain('outline-color:');
     expect(css).toContain('accent-color:');
     expect(css).toContain('caret-color:');
-    expect(css).toContain('var(--mc-rose-445-color)');
+    expect(css).toContain('var(--mc-colors-rose-445)');
   });
 
   it('resolves background color', async () => {
     const { css } = await generate('<div class="bg-mc-rose-445"></div>');
     expect(css).toContain('background-color:');
-    expect(css).toContain('var(--mc-rose-445-color)');
+    expect(css).toContain('var(--mc-colors-rose-445)');
   });
 
   it('resolves underline and decoration colors with webkit fallback', async () => {
@@ -352,7 +558,7 @@ describe('color style rules', () => {
   it('resolves divide color with last-child variant', async () => {
     const { css } = await generate('<div class="divide-mc-rose-445"></div>');
     expect(css).toContain('border-color:');
-    expect(css).toContain('var(--mc-rose-445-color)');
+    expect(css).toContain('var(--mc-colors-rose-445)');
   });
 
   it('resolves drop-shadow color', async () => {
@@ -390,7 +596,7 @@ describe('border color rules', () => {
   it('resolves a plain border color', async () => {
     const { css } = await generate('<div class="border-mc-rose-445 b-mc-rose-445"></div>');
     expect(css).toContain('border-color:');
-    expect(css).toContain('var(--mc-rose-445-color)');
+    expect(css).toContain('var(--mc-colors-rose-445)');
   });
 
   it('resolves directional border colors and per-direction opacity', async () => {
@@ -466,7 +672,7 @@ describe('arbitrary bracket colors', () => {
 
   it('handles invalid colors gracefully without emitting variables', async () => {
     const { css } = await generate('<div class="c-mc-123"></div>');
-    expect(css).not.toContain('--mc-123-color:');
+    expect(css).not.toContain('--mc-colors-123-DEFAULT:');
   });
 });
 
@@ -479,57 +685,215 @@ describe('mc color definition rule', () => {
 
   it('falls back to option colors when the inline hue references an option name', async () => {
     const { css } = await generate('<div class="mc-btn_primary c-mc-btn-457"></div>', { colors: { primary: 'rose' } });
-    expect(css).toContain('--mc-btn-457-color:var(--mc-primary-457-color)');
-    expect(css).toMatch(/--mc-primary-457-color:\s*oklch\(/);
+    expect(css).toContain('--mc-colors-btn-457:var(--mc-source-colors-primary-457)');
+    expect(css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
   });
 
   it('references theme color variables when the inline hue is a theme color name', async () => {
     const { css } = await generate('<div class="mc-btn_rose c-mc-btn-457"></div>');
-    expect(css).toContain('--mc-btn-457-color:var(--mc-rose-457-color)');
-    expect(css).toMatch(/--mc-rose-457-color:\s*oklch\(/);
+    expect(css).toContain('--mc-colors-btn-457:var(--mc-source-colors-rose-457)');
+    expect(css).toMatch(/--mc-source-colors-rose-457:\s*oklch\(/);
+  });
+
+  it('defines magic color variables directly from special color keywords', async () => {
+    const { css } = await generate('<div class="mc-primary_transparent c-mc-primary c-mc-primary-457 bg-mc-primary-950"></div>');
+
+    expect(css).toContain('--mc-colors-primary-DEFAULT:transparent');
+    expect(css).toContain('--mc-colors-primary-457:transparent');
+    expect(css).toContain('--mc-colors-primary-950:transparent');
+    expect(css).not.toContain('var(--mc-transparent');
+    expect(css).not.toContain('--mc-colors-transparent-457:');
+  });
+
+  it('supports local lightness-reverse definitions for theme color variables', async () => {
+    const { css } = await generate('<div class="mc-lr-btn_rose bg-mc-btn-50 bg-mc-btn-450 bg-mc-btn-500"></div>');
+    const reference = await generate('<div class="c-mc-rose-950 c-mc-rose-550 c-mc-rose-500"></div>');
+
+    expect(getCssVar(css, '--mc-colors-btn-50')).toBe(getCssVar(reference.css, '--mc-colors-rose-950'));
+    expect(getCssVar(css, '--mc-colors-btn-450')).toBe(getCssVar(reference.css, '--mc-colors-rose-550'));
+    expect(getCssVar(css, '--mc-colors-btn-500')).toBe(getCssVar(reference.css, '--mc-colors-rose-500'));
+    expect(getCssVar(css, '--mc-source-colors-rose-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
+    expect(css).not.toContain('--mc-colors-btn-50:var(--mc-colors-rose-950)');
+  });
+
+  it('resolves local lightness-reverse from configured colors through source variables', async () => {
+    const { css } = await generate('<div class="mc-lr-btn_primary bg-mc-btn-50"></div>', { colors: { primary: 'rose' } });
+    const reference = await generate('<div class="c-mc-rose-950"></div>');
+
+    expect(getCssVar(css, '--mc-colors-btn-50')).toBe('var(--mc-source-colors-primary-950)');
+    expect(getCssVar(css, '--mc-source-colors-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
+    expect(css).not.toContain('--mc-colors-btn-50:var(--mc-colors-primary-950)');
+    expect(css).not.toContain('--mc-colors-primary-950:');
+    expect(css).not.toContain('--mc-colors-primary-50:');
+  });
+
+  it('supports global lightness-reverse for configured color variables', async () => {
+    const { css } = await generate(
+      '<div class="mc-lr bg-mc-primary-50 bg-mc-primary-450 bg-mc-primary-500"></div>',
+      { colors: { primary: 'rose' } },
+    );
+    const mcLrBlock = getSelectorBlock(css, '.mc-lr');
+    const reference = await generate('<div class="c-mc-rose-950 c-mc-rose-550 c-mc-rose-500"></div>');
+
+    expect(getCssVar(mcLrBlock, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-950)');
+    expect(getCssVar(mcLrBlock, '--mc-colors-primary-450')).toBe('var(--mc-source-colors-primary-550)');
+    expect(getCssVar(css, '--mc-source-colors-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
+    expect(getCssVar(css, '--mc-source-colors-primary-550')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-550'));
+    expect(css).not.toContain('--mc-colors-primary-500:var(--mc-colors-primary-500)');
+    expect(css).not.toContain('--mc-colors-primary-50:var(--mc-colors-primary-950)');
+    expect(css).not.toContain('--mc-colors-primary-950:');
+    expect(css).not.toContain('--mc-colors-primary-550:');
+  });
+
+  it('supports global lightness-reverse for theme color variables', async () => {
+    const { css } = await generate('<div class="mc-lr bg-mc-rose-50"></div>');
+    const reference = await generate('<div class="c-mc-rose-950"></div>');
+    const mcLrBlock = getSelectorBlock(css, '.mc-lr');
+
+    expect(getCssVar(mcLrBlock, '--mc-colors-rose-50')).toBe(getCssVar(reference.css, '--mc-colors-rose-950'));
+    expect(getCssVar(css, '--mc-source-colors-rose-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
+    expect(css).not.toContain('--mc-colors-rose-50:var(--mc-colors-rose-950)');
+    expect(css).not.toContain('--mc-colors-rose-950:');
+  });
+
+  it('avoids global lightness-reverse cycles for paired arbitrary depths', async () => {
+    const { css } = await generate(
+      '<div class="mc-lr c-mc-primary-80 c-mc-primary-920"></div>',
+      { colors: { primary: 'rose' } },
+    );
+    const mcLrBlock = getSelectorBlock(css, '.mc-lr');
+    const reference = await generate('<div class="c-mc-rose-80 c-mc-rose-920"></div>');
+
+    expect(getCssVar(mcLrBlock, '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
+    expect(getCssVar(mcLrBlock, '--mc-colors-primary-920')).toBe('var(--mc-source-colors-primary-80)');
+    expect(getCssVar(css, '--mc-source-colors-primary-920')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-920'));
+    expect(getCssVar(css, '--mc-source-colors-primary-80')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-80'));
+    expect(css).not.toContain('--mc-colors-primary-80:var(--mc-colors-primary-920)');
+    expect(css).not.toContain('--mc-colors-primary-920:var(--mc-colors-primary-80)');
+  });
+
+  it('uses dark option colors for dark variant global lightness-reverse', async () => {
+    const { css } = await generate(
+      '<div class="dark:mc-lr c-mc-primary-80"></div>',
+      { colors: { primary: 'rose' }, dark: { primary: 'blue' } },
+    );
+    const darkBlock = getSelectorBlock(css, '.dark .dark\\:mc-lr');
+    const darkReference = await generate('<div class="c-mc-blue-920"></div>');
+    const lightReference = await generate('<div class="c-mc-rose-920"></div>');
+
+    expect(getCssVar(darkBlock, '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
+    expect(getCssVar(getDarkBlock(css), '--mc-source-colors-primary-920')).toBe(getCssVar(darkReference.css, '--mc-source-colors-blue-920'));
+    expect(getCssVar(getDarkBlock(css), '--mc-source-colors-primary-920')).not.toBe(getCssVar(lightReference.css, '--mc-source-colors-rose-920'));
+  });
+
+  it('uses dark option colors for dark variant local lightness-reverse', async () => {
+    const { css } = await generate(
+      '<div class="dark:mc-lr-btn_primary c-mc-btn-80"></div>',
+      { colors: { primary: 'rose' }, dark: { primary: 'blue' } },
+    );
+    const darkBlock = getSelectorBlock(css, '.dark .dark\\:mc-lr-btn_primary');
+    const darkReference = await generate('<div class="c-mc-blue-920"></div>');
+    const lightReference = await generate('<div class="c-mc-rose-920"></div>');
+
+    expect(getCssVar(darkBlock, '--mc-colors-btn-80')).toBe('var(--mc-source-colors-primary-920)');
+    expect(getCssVar(getDarkBlock(css), '--mc-source-colors-primary-920')).toBe(getCssVar(darkReference.css, '--mc-source-colors-blue-920'));
+    expect(getCssVar(getDarkBlock(css), '--mc-source-colors-primary-920')).not.toBe(getCssVar(lightReference.css, '--mc-source-colors-rose-920'));
+  });
+
+  it('avoids local lightness-reverse cycles for same-name paired arbitrary depths', async () => {
+    const { css } = await generate(
+      '<div class="mc-lr-primary_primary c-mc-primary-80 c-mc-primary-920"></div>',
+      { colors: { primary: 'rose' } },
+    );
+    const localBlock = getSelectorBlock(css, '.mc-lr-primary_primary');
+    const reference = await generate('<div class="c-mc-rose-80 c-mc-rose-920"></div>');
+
+    expect(getCssVar(localBlock, '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
+    expect(getCssVar(localBlock, '--mc-colors-primary-920')).toBe('var(--mc-source-colors-primary-80)');
+    expect(getCssVar(css, '--mc-source-colors-primary-920')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-920'));
+    expect(getCssVar(css, '--mc-source-colors-primary-80')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-80'));
+    expect(css).not.toContain('--mc-colors-primary-80:var(--mc-colors-primary-920)');
+    expect(css).not.toContain('--mc-colors-primary-920:var(--mc-colors-primary-80)');
+  });
+
+  it('resolves local lightness-reverse theme colors for paired arbitrary depths', async () => {
+    const { css } = await generate('<div class="mc-lr-btn_rose c-mc-btn-80 c-mc-btn-920"></div>');
+    const reference = await generate('<div class="c-mc-rose-80 c-mc-rose-920"></div>');
+
+    expect(getCssVar(css, '--mc-colors-btn-80')).toBe(getCssVar(reference.css, '--mc-colors-rose-920'));
+    expect(getCssVar(css, '--mc-colors-btn-920')).toBe(getCssVar(reference.css, '--mc-colors-rose-80'));
+    expect(getCssVar(css, '--mc-source-colors-rose-920')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-920'));
+    expect(getCssVar(css, '--mc-source-colors-rose-80')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-80'));
+    expect(css).not.toContain('--mc-colors-btn-80:var(--mc-colors-rose-920)');
+    expect(css).not.toContain('--mc-colors-btn-920:var(--mc-colors-rose-80)');
+  });
+
+  it('reverses local lightness-reverse literal inline depth for base variables', async () => {
+    const { css } = await generate('<div class="mc-lr-btn-[#9c1d1e]-620 c-mc-btn"></div>');
+    const reference = await generate('<div class="c-mc-[#9c1d1e]-380"></div>');
+
+    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe(getCssVar(reference.css, '--mc-colors-[#9c1d1e]-380'));
+  });
+
+  it('reverses inherited option inline depth for local lightness-reverse base variables', async () => {
+    const { css } = await generate('<div class="mc-lr-btn_primary c-mc-btn"></div>', { colors: { primary: 'rose-620' } });
+    const reference = await generate('<div class="c-mc-rose-380"></div>');
+
+    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-primary-380)');
+    expect(getCssVar(css, '--mc-source-colors-primary-380')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-380'));
+  });
+
+  it('does not reverse base variables globally', async () => {
+    const { css } = await generate('<div class="mc-lr c-mc-primary"></div>', { colors: { primary: 'rose' } });
+
+    expect(css).toContain('--mc-colors-primary-DEFAULT: var(--mc-source-colors-primary-DEFAULT);');
+    expect(css).toMatch(/--mc-source-colors-primary-DEFAULT:\s*oklch\(/);
+    expect(css).not.toContain('--mc-colors-primary-DEFAULT:var(--mc-colors-primary-500)');
+    expect(css).not.toContain('--mc-colors-primary-500:');
   });
 
   it('preserves inline source depth when referencing option color variables', async () => {
     const { css } = await generate('<div class="mc-btn_primary-620 c-mc-btn"></div>', { colors: { primary: 'rose' } });
-    expect(css).toContain('--mc-btn-color:var(--mc-primary-620-color)');
-    expect(css).toMatch(/--mc-primary-620-color:\s*oklch\(/);
+    expect(css).toContain('--mc-colors-btn-DEFAULT:var(--mc-source-colors-primary-620)');
+    expect(css).not.toContain('--mc-colors-primary-620:');
+    expect(css).toMatch(/--mc-source-colors-primary-620:\s*oklch\(/);
   });
 
   it('does not emit self-referential variables when definition and source names match', async () => {
     const { css } = await generate('<div class="mc-red_red c-mc-red c-mc-red-457"></div>');
-    expect(css).not.toContain('--mc-red-color:var(--mc-red-color)');
-    expect(css).not.toContain('--mc-red-457-color:var(--mc-red-457-color)');
-    expect(css).toMatch(/--mc-red-color:\s*oklch\(/);
-    expect(css).toMatch(/--mc-red-457-color:\s*oklch\(/);
+    expect(css).not.toContain('--mc-colors-red-DEFAULT:var(--mc-colors-red-DEFAULT)');
+    expect(css).not.toContain('--mc-colors-red-457:var(--mc-colors-red-457)');
+    expect(css).toMatch(/--mc-source-colors-red-DEFAULT:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-457:\s*oklch\(/);
   });
 
   it('allows same-name definitions to point the base variable at a source depth', async () => {
     const { css } = await generate('<div class="mc-red_red-100 c-mc-red c-mc-red-457"></div>');
-    expect(css).toContain('--mc-red-color:var(--mc-red-100-color)');
-    expect(css).not.toContain('--mc-red-457-color:var(--mc-red-457-color)');
-    expect(css).toMatch(/--mc-red-100-color:\s*oklch\(/);
-    expect(css).toMatch(/--mc-red-457-color:\s*oklch\(/);
+    expect(css).toContain('--mc-colors-red-DEFAULT:var(--mc-source-colors-red-100)');
+    expect(css).not.toContain('--mc-colors-red-457:var(--mc-colors-red-457)');
+    expect(css).toMatch(/--mc-source-colors-red-100:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-457:\s*oklch\(/);
   });
 });
 
 describe('color parsing utilities', () => {
   it('parses bracket arbitrary colors with optional depth suffixes', () => {
-    expect(resolveColorParts('[#1313aa]1200')).toEqual({ originColor: '[#1313aa]', bodyNo: '1200' });
-    expect(resolveColorParts('[rgb(12,22,33)]')).toEqual({ originColor: '[rgb(12,22,33)]', bodyNo: undefined });
-    expect(resolveColorParts('[hsl(210_60%_40%)]-300')).toEqual({ originColor: '[hsl(210_60%_40%)]', bodyNo: '300' });
-    expect(resolveColorParts('[lab(60_20_10)]-350')).toEqual({ originColor: '[lab(60_20_10)]', bodyNo: '350' });
-    expect(resolveColorParts('[lch(40_20_21.57)]-400')).toEqual({ originColor: '[lch(40_20_21.57)]', bodyNo: '400' });
-    expect(resolveColorParts('[oklch(40.1%_0.123_21.57)]-200')).toEqual({ originColor: '[oklch(40.1%_0.123_21.57)]', bodyNo: '200' });
+    expect(resolveColorParts('[#1313aa]1200')).toEqual({ originColor: '[#1313aa]', originDepth: '1200' });
+    expect(resolveColorParts('[rgb(12,22,33)]')).toEqual({ originColor: '[rgb(12,22,33)]', originDepth: undefined });
+    expect(resolveColorParts('[hsl(210_60%_40%)]-300')).toEqual({ originColor: '[hsl(210_60%_40%)]', originDepth: '300' });
+    expect(resolveColorParts('[lab(60_20_10)]-350')).toEqual({ originColor: '[lab(60_20_10)]', originDepth: '350' });
+    expect(resolveColorParts('[lch(40_20_21.57)]-400')).toEqual({ originColor: '[lch(40_20_21.57)]', originDepth: '400' });
+    expect(resolveColorParts('[oklch(40.1%_0.123_21.57)]-200')).toEqual({ originColor: '[oklch(40.1%_0.123_21.57)]', originDepth: '200' });
   });
 
   it('resolves hyphenated and compact depth names', () => {
-    expect(resolveColorParts('rose-445')).toEqual({ originColor: 'rose', bodyNo: '445' });
-    expect(resolveColorParts('grape120')).toEqual({ originColor: 'grape', bodyNo: '120' });
-    expect(resolveColorParts('rose')).toEqual({ originColor: 'rose', bodyNo: undefined });
+    expect(resolveColorParts('rose-445')).toEqual({ originColor: 'rose', originDepth: '445' });
+    expect(resolveColorParts('grape120')).toEqual({ originColor: 'grape', originDepth: '120' });
+    expect(resolveColorParts('rose')).toEqual({ originColor: 'rose', originDepth: undefined });
   });
 
   it('returns the original color when no depth is present', () => {
-    expect(resolveColorParts(undefined)).toEqual({ originColor: undefined, bodyNo: undefined });
+    expect(resolveColorParts(undefined)).toEqual({ originColor: undefined, originDepth: undefined });
   });
 
   it('keeps opacity and modifiers outside bracket arbitrary colors', () => {
@@ -538,14 +902,22 @@ describe('color parsing utilities', () => {
 
   it('resolves a token body into color parts in one step', () => {
     // Strips opacity/modifier suffixes, then resolves the depth.
-    expect(resolveBodyColor('rose-445/40:dark')).toEqual({ originColor: 'rose', bodyNo: '445' });
-    expect(resolveBodyColor('grape120')).toEqual({ originColor: 'grape', bodyNo: '120' });
-    expect(resolveBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual({ originColor: '[oklch(20.1%_0.1_20/50)]', bodyNo: '200' });
+    expect(resolveBodyColor('rose-445/40:dark')).toEqual({ originColor: 'rose', originDepth: '445' });
+    expect(resolveBodyColor('grape120')).toEqual({ originColor: 'grape', originDepth: '120' });
+    expect(resolveBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual({ originColor: '[oklch(20.1%_0.1_20/50)]', originDepth: '200' });
+  });
+
+  it('normalizes special color keywords and canonical values', () => {
+    expect(resolveSpecialColor('transparent')).toBe('transparent');
+    expect(resolveSpecialColor('current')).toBe('currentColor');
+    expect(resolveSpecialColor('currentColor')).toBe('currentColor');
+    expect(resolveSpecialColor('inherit')).toBe('inherit');
+    expect(resolveSpecialColor('rose')).toBeUndefined();
   });
 
   it('handles empty and missing token bodies', () => {
-    expect(resolveBodyColor()).toEqual({ originColor: '', bodyNo: undefined });
-    expect(resolveBodyColor('')).toEqual({ originColor: '', bodyNo: undefined });
+    expect(resolveBodyColor()).toEqual({ originColor: '', originDepth: undefined });
+    expect(resolveBodyColor('')).toEqual({ originColor: '', originDepth: undefined });
   });
 });
 
@@ -556,32 +928,51 @@ describe('updateMagicColor', () => {
 
   it('writes only defined direct color variables without oklch channel variables', () => {
     const dom = document.createElement('div');
-    dom.style.setProperty('--mc-primary-color', 'red');
-    dom.style.setProperty('--mc-primary-457-color', 'red');
+    dom.style.setProperty('--mc-colors-primary-DEFAULT', 'red');
+    dom.style.setProperty('--mc-colors-primary-457', 'red');
 
     updateMagicColor({ name: 'primary', color: '#9c1d1e-457', dom });
 
-    expect(dom.style.getPropertyValue('--mc-primary-color')).toContain('oklch(');
-    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
-    expect(dom.style.getPropertyValue('--mc-primary-50-color')).toBe('');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-457')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-50')).toBe('');
     expect(dom.style.cssText).not.toContain('-l:');
     expect(dom.style.cssText).not.toContain('calc(');
   });
 
   it('writes arbitrary depth variables defined on the target dom', () => {
     const dom = document.createElement('div');
-    dom.style.setProperty('--mc-primary-457-color', 'red');
+    dom.style.setProperty('--mc-colors-primary-457', 'red');
 
     updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
 
-    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
-    expect(dom.style.getPropertyValue('--mc-primary-color')).toBe('');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-457')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe('');
+  });
+
+  it('writes lightness-reversed arbitrary depth variables at runtime', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-colors-primary-50', 'red');
+    dom.style.setProperty('--mc-colors-primary-450', 'red');
+    dom.style.setProperty('--mc-colors-primary-500', 'red');
+    const reference = getMagicColorStyle({
+      name: 'expected',
+      color: '#9c1d1e',
+      hasBase: false,
+      depths: new Set(['950', '550', '500']),
+    });
+
+    updateMagicColor({ name: 'primary', color: '#9c1d1e', lightnessReverse: true, dom });
+
+    expect(dom.style.getPropertyValue('--mc-colors-primary-50')).toBe(reference['--mc-colors-expected-950']);
+    expect(dom.style.getPropertyValue('--mc-colors-primary-450')).toBe(reference['--mc-colors-expected-550']);
+    expect(dom.style.getPropertyValue('--mc-colors-primary-500')).toBe(reference['--mc-colors-expected-500']);
   });
 
   it('reads defined color variables from computed styles', () => {
     const style = document.createElement('style');
     const dom = document.createElement('div');
-    style.textContent = '.magic-color-scope { --mc-primary-color: red; --mc-primary-457-color: red; }';
+    style.textContent = '.magic-color-scope { --mc-colors-primary-DEFAULT: red; --mc-colors-primary-457: red; }';
     dom.className = 'magic-color-scope';
     document.head.append(style);
     document.body.append(dom);
@@ -589,8 +980,8 @@ describe('updateMagicColor', () => {
     try {
       updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
 
-      expect(dom.style.getPropertyValue('--mc-primary-color')).toContain('oklch(');
-      expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
+      expect(dom.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toContain('oklch(');
+      expect(dom.style.getPropertyValue('--mc-colors-primary-457')).toContain('oklch(');
     }
     finally {
       dom.remove();
@@ -600,24 +991,35 @@ describe('updateMagicColor', () => {
 
   it('writes multiple arbitrary depth variables defined on the target dom', () => {
     const dom = document.createElement('div');
-    dom.style.setProperty('--mc-primary-630-color', 'red');
-    dom.style.setProperty('--mc-primary-230-color', 'red');
+    dom.style.setProperty('--mc-colors-primary-630', 'red');
+    dom.style.setProperty('--mc-colors-primary-230', 'red');
 
     updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
 
-    expect(dom.style.getPropertyValue('--mc-primary-630-color')).toContain('oklch(');
-    expect(dom.style.getPropertyValue('--mc-primary-230-color')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-630')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-230')).toContain('oklch(');
+  });
+
+  it('writes special color values at runtime for base and depth variables', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-colors-primary-DEFAULT', 'red');
+    dom.style.setProperty('--mc-colors-primary-630', 'red');
+
+    updateMagicColor({ name: 'primary', color: 'transparent', dom });
+
+    expect(dom.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe('transparent');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-630')).toBe('transparent');
   });
 
   it('only writes arbitrary depth variables for the target color name', () => {
     const dom = document.createElement('div');
-    dom.style.setProperty('--mc-primary-457-color', 'red');
-    dom.style.setProperty('--mc-secondary-630-color', 'red');
+    dom.style.setProperty('--mc-colors-primary-457', 'red');
+    dom.style.setProperty('--mc-colors-secondary-630', 'red');
 
     updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
 
-    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toContain('oklch(');
-    expect(dom.style.getPropertyValue('--mc-secondary-630-color')).toBe('red');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-457')).toContain('oklch(');
+    expect(dom.style.getPropertyValue('--mc-colors-secondary-630')).toBe('red');
   });
 
   it('does not infer depth variables from classes when css variables are absent', () => {
@@ -626,26 +1028,26 @@ describe('updateMagicColor', () => {
 
     updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
 
-    expect(dom.style.getPropertyValue('--mc-primary-457-color')).toBe('');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-457')).toBe('');
   });
 
   it('ignores invalid colors when updating', () => {
     const dom = document.createElement('div');
-    dom.style.setProperty('--mc-primary-color', 'red');
+    dom.style.setProperty('--mc-colors-primary-DEFAULT', 'red');
 
     updateMagicColor({ name: 'primary', color: '123', dom });
 
     // Invalid color short-circuits to an empty css object; existing value is left untouched.
-    expect(dom.style.getPropertyValue('--mc-primary-color')).toBe('red');
+    expect(dom.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe('red');
   });
 
   it('does not emit oklch(undefined) when a theme depth is missing (M3)', () => {
     const dom = document.createElement('div');
-    dom.style.setProperty('--mc-primary-457-color', 'red');
+    dom.style.setProperty('--mc-colors-primary-457', 'red');
 
     expect(() => updateMagicColor({ name: 'primary', color: '#9c1d1e', dom })).not.toThrow();
 
-    const value = dom.style.getPropertyValue('--mc-primary-457-color');
+    const value = dom.style.getPropertyValue('--mc-colors-primary-457');
     expect(value).not.toContain('undefined');
     expect(value).not.toContain('NaN');
   });
@@ -709,7 +1111,7 @@ describe('boundary depth interpolation (L3)', () => {
       depths: new Set(['75']),
     });
 
-    const value = String(css['--mc-primary-75-color'] ?? '');
+    const value = String(css['--mc-colors-primary-75'] ?? '');
     expect(value).toMatch(/^oklch\(/);
     expect(value).not.toBe('oklch(0 0 0)');
     expect(value).not.toContain('NaN');
@@ -723,7 +1125,7 @@ describe('boundary depth interpolation (L3)', () => {
       depths: new Set(['925']),
     });
 
-    const value = String(css['--mc-primary-925-color'] ?? '');
+    const value = String(css['--mc-colors-primary-925'] ?? '');
     expect(value).toMatch(/^oklch\(/);
     expect(value).not.toBe('oklch(0 0 0)');
     expect(value).not.toContain('NaN');
@@ -735,7 +1137,7 @@ describe('mc definition guard (M3 underscore separator)', () => {
     // `mc-btnred` has no `_`; the rule must bail out rather than truncate the name to `mc-btnre`.
     const { css } = await generate('<div class="mc-btnred c-mc-btnred"></div>', { colors: { btnred: 'rose' } });
 
-    expect(css).not.toContain('--mc-btnre-color:');
+    expect(css).not.toContain('--mc-colors-btnre-DEFAULT:');
     expect(css).not.toContain('oklch(undefined');
   });
 });
@@ -754,7 +1156,7 @@ describe('helper function edge cases', () => {
   });
 
   describe('getMagicColorStyle edge cases', () => {
-    it('handles hasBase true, bodyNo exists but mc.valid returns false', () => {
+    it('handles hasBase true, originDepth exists but mc.valid returns false', () => {
       const result = getMagicColorStyle({
         name: 'test',
         color: 'invalid-color-with-no-123',
@@ -859,6 +1261,17 @@ describe('color transform utilities', () => {
     expect(roundNum(0.1234)).toBe(0.123);
     expect(roundNum(0.1235)).toBe(0.124);
   });
+
+  it('resolveThemeDepth supports lightness reverse mapping after clamping', () => {
+    expect(resolveThemeDepth({ depth: '50', lightnessReverse: true })).toBe(950);
+    expect(resolveThemeDepth({ depth: '450', lightnessReverse: true })).toBe(550);
+    expect(resolveThemeDepth({ depth: '457', lightnessReverse: true })).toBe(543);
+    expect(resolveThemeDepth({ depth: '500', lightnessReverse: true })).toBe(500);
+    expect(resolveThemeDepth({ depth: '1200', lightnessReverse: true })).toBe(-200);
+    expect(resolveThemeDepth({ depth: 'not-a-depth', lightnessReverse: true })).toBeUndefined();
+    expect(resolveThemeDepth({ depth: undefined, defaultValue: 'DEFAULT' })).toBe('DEFAULT');
+    expect(resolveThemeDepth({ depth: 'not-a-depth', defaultValue: 'DEFAULT', lightnessReverse: true })).toBe('DEFAULT');
+  });
 });
 
 describe('color utilities edge cases', () => {
@@ -870,20 +1283,6 @@ describe('color utilities edge cases', () => {
     expect(getMcThemeMetaColors('')).toEqual({});
     expect(getMcThemeMetaColors('invalid-color')).toEqual({});
     expect(getMcThemeMetaColors(undefined)).toEqual({});
-  });
-});
-
-describe('token usage tracking', () => {
-  it('handles non-existent token in getIds', () => {
-    const tokenUsage = new TokenUsage();
-
-    expect(tokenUsage.getIds('non-existent-token')).toBeUndefined();
-  });
-
-  it('handles removing token from non-existent id', () => {
-    const tokenUsage = new TokenUsage();
-
-    expect(() => tokenUsage.remove('non-existent-id', ['token'])).not.toThrow();
   });
 });
 

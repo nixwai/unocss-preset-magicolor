@@ -2,9 +2,9 @@ import type { UserConfig } from '@unocss/core';
 import { createGenerator } from '@unocss/core';
 import { presetWind4 } from '@unocss/preset-wind4';
 import { useStorage } from '@vueuse/core';
-import { presetMagicolor } from 'unocss-preset-magicolor';
 import { updateMagicColor } from 'unocss-preset-magicolor/helper';
 import { computed, nextTick, ref, watch } from 'vue';
+import { presetMagicolor } from '../../../packages/presets/src';
 import defaultConfigSource from '../../uno.config.ts?raw';
 import defaultHtml from '../template/default.html?raw';
 

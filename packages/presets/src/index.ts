@@ -5,6 +5,10 @@ import { preflights } from './preflights';
 import { createRules } from './rules';
 import { MagicColorUsage } from './usages';
 
+/**
+ * Creates the UnoCSS preset instance and wires a shared usage tracker through
+ * extractors, rules, and preflights for this generator.
+ */
 export function presetMagicolor(options: PresetMcOptions = {}): Preset {
   const usage = new MagicColorUsage();
   const context: MagicColorContext = {
