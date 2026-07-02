@@ -125,10 +125,6 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicC
   const sourceDepths: MagicColorDepthMap = new Map();
 
   for (const name of context?.usage.getColorVariableTargetNames() ?? []) {
-    const depths = context?.usage.getColorVariableTargetDepths(name);
-    if (!depths) {
-      continue;
-    }
     const sourceConfig = resolveMixtureColorConfig(
       name,
       ctx.theme,
@@ -136,6 +132,10 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context?: MagicC
       hasDarkVariant(ctx.rawSelector),
     );
     if (!sourceConfig.color) {
+      continue;
+    }
+    const depths = context?.usage.getColorVariableTargetDepths(name);
+    if (!depths) {
       continue;
     }
     const nextSourceDepths = resolveVariableLightnessReverseReferences(

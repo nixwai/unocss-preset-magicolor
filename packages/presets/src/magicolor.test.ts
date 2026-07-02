@@ -101,7 +101,7 @@ describe('presetMagicolor preset wiring', () => {
 
   it('isolates usage state between independent preset instances', async () => {
     const first = await generate('<div class="mc-btn_red c-mc-btn-200"></div>');
-    expect(first.css).toContain('--mc-colors-btn-200:var(--mc-colors-red-200)');
+    expect(first.css).toContain('--mc-colors-btn-200:var(--mc-source-colors-red-200)');
     expect(first.css).toMatch(/--mc-source-colors-red-200:\s*oklch\(/);
 
     // A fresh generator must not retain depths scanned by the previous one.
@@ -116,8 +116,8 @@ describe('magicolor usage extraction', () => {
     const { css } = await generate('<div class="mc-btn_red bg-mc-btn-640 c-mc-btn-200 c-mc-btn"></div>');
 
     expect(css).toContain('--mc-colors-btn-DEFAULT:');
-    expect(css).toContain('--mc-colors-btn-200:var(--mc-colors-red-200)');
-    expect(css).toContain('--mc-colors-btn-640:var(--mc-colors-red-640)');
+    expect(css).toContain('--mc-colors-btn-200:var(--mc-source-colors-red-200)');
+    expect(css).toContain('--mc-colors-btn-640:var(--mc-source-colors-red-640)');
     expect(css).toMatch(/--mc-source-colors-red-200:\s*oklch\(/);
     expect(css).toMatch(/--mc-source-colors-red-640:\s*oklch\(/);
     expect(css).not.toContain('--mc-btn-50-l:');
@@ -129,7 +129,7 @@ describe('magicolor usage extraction', () => {
     const { css } = await generate('<div class="mc-btn_red bg-mc-btn-640"></div>');
 
     expect(css).toContain('var(--mc-colors-btn-640)');
-    expect(css).toContain('--mc-colors-btn-640:var(--mc-colors-red-640)');
+    expect(css).toContain('--mc-colors-btn-640:var(--mc-source-colors-red-640)');
     expect(css).toMatch(/--mc-source-colors-red-640:\s*oklch\(/);
     expect(css).not.toContain('--mc-colors-btn-DEFAULT:');
     expect(css).not.toContain('--mc-btn-640-l:');
@@ -138,7 +138,7 @@ describe('magicolor usage extraction', () => {
   it('tracks custom color depths with opacity modifiers', async () => {
     const { css } = await generate('<div class="mc-btn_red bg-mc-btn-640/50"></div>');
 
-    expect(css).toContain('--mc-colors-btn-640:var(--mc-colors-red-640)');
+    expect(css).toContain('--mc-colors-btn-640:var(--mc-source-colors-red-640)');
     expect(css).toMatch(/--mc-source-colors-red-640:\s*oklch\(/);
     expect(css).toContain('var(--mc-colors-btn-640)');
     expect(css).not.toContain('calc(');
@@ -170,7 +170,7 @@ describe('magicolor usage extraction', () => {
     expect(css).toMatch(/--mc-source-colors-brand-20:\s*oklch\(/);
     expect(css).toMatch(/--mc-source-colors-grape-120:\s*oklch\(/);
     expect(css).toMatch(/--mc-source-colors-grape-123:\s*oklch\(/);
-    expect(css).toContain('--mc-colors-btn-230:var(--mc-colors-red-230)');
+    expect(css).toContain('--mc-colors-btn-230:var(--mc-source-colors-red-230)');
     expect(css).toMatch(/--mc-source-colors-red-230:\s*oklch\(/);
     expect(css).not.toContain('--mc-colors-brand20-DEFAULT:');
     expect(css).not.toContain('--mc-colors-grape120-DEFAULT:');
@@ -214,7 +214,7 @@ describe('watch-mode usage replacement', () => {
     const uno = await createUno();
 
     const first = await uno.generate('<div class="mc-btn_red c-mc-btn-200"></div>', { preflights: true, id: 'a.vue' });
-    expect(first.css).toContain('--mc-colors-btn-200:var(--mc-colors-red-200)');
+    expect(first.css).toContain('--mc-colors-btn-200:var(--mc-source-colors-red-200)');
     expect(first.css).toMatch(/--mc-source-colors-red-200:\s*oklch\(/);
 
     const second = await uno.generate('<div class="text-white"></div>', { preflights: true, id: 'a.vue' });
@@ -673,13 +673,13 @@ describe('mc color definition rule', () => {
 
   it('falls back to option colors when the inline hue references an option name', async () => {
     const { css } = await generate('<div class="mc-btn_primary c-mc-btn-457"></div>', { colors: { primary: 'rose' } });
-    expect(css).toContain('--mc-colors-btn-457:var(--mc-colors-primary-457)');
+    expect(css).toContain('--mc-colors-btn-457:var(--mc-source-colors-primary-457)');
     expect(css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
   });
 
   it('references theme color variables when the inline hue is a theme color name', async () => {
     const { css } = await generate('<div class="mc-btn_rose c-mc-btn-457"></div>');
-    expect(css).toContain('--mc-colors-btn-457:var(--mc-colors-rose-457)');
+    expect(css).toContain('--mc-colors-btn-457:var(--mc-source-colors-rose-457)');
     expect(css).toMatch(/--mc-source-colors-rose-457:\s*oklch\(/);
   });
 
@@ -842,8 +842,8 @@ describe('mc color definition rule', () => {
 
   it('preserves inline source depth when referencing option color variables', async () => {
     const { css } = await generate('<div class="mc-btn_primary-620 c-mc-btn"></div>', { colors: { primary: 'rose' } });
-    expect(css).toContain('--mc-colors-btn-DEFAULT:var(--mc-colors-primary-620)');
-    expect(css).toContain('--mc-colors-primary-620: var(--mc-source-colors-primary-620);');
+    expect(css).toContain('--mc-colors-btn-DEFAULT:var(--mc-source-colors-primary-620)');
+    expect(css).not.toContain('--mc-colors-primary-620:');
     expect(css).toMatch(/--mc-source-colors-primary-620:\s*oklch\(/);
   });
 
@@ -857,7 +857,7 @@ describe('mc color definition rule', () => {
 
   it('allows same-name definitions to point the base variable at a source depth', async () => {
     const { css } = await generate('<div class="mc-red_red-100 c-mc-red c-mc-red-457"></div>');
-    expect(css).toContain('--mc-colors-red-DEFAULT:var(--mc-colors-red-100)');
+    expect(css).toContain('--mc-colors-red-DEFAULT:var(--mc-source-colors-red-100)');
     expect(css).not.toContain('--mc-colors-red-457:var(--mc-colors-red-457)');
     expect(css).toMatch(/--mc-source-colors-red-100:\s*oklch\(/);
     expect(css).toMatch(/--mc-source-colors-red-457:\s*oklch\(/);

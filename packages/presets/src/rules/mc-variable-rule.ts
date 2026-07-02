@@ -7,6 +7,7 @@ import { resolveBodyColor, resolveThemeDepth } from '@unocss-preset-magicolor/ut
 import { isVariableColorSource } from '../utils/color-config';
 import {
   BASE_COLOR_DEPTH,
+  createSourceColorVariableName,
   createTargetColorVariableName,
   parseColorVariableDefinition,
   toVar,
@@ -35,14 +36,14 @@ function resolveMagicColorVariable(
   const sourceDepths: MagicColorDepthMap = new Map();
   for (const depth of depths) {
     // The target depth controls the variable being defined;
-    // The source depthkeeps an inline suffix such as `primary-620` for base aliases.
+    // The source depth keeps an inline suffix such as `primary-620` for base aliases.
     const sourceBodyNo = resolveThemeDepth({
       depth: depth === BASE_COLOR_DEPTH ? originDepth : depth,
       defaultValue: BASE_COLOR_DEPTH,
     });
 
     const targetVariableName = createTargetColorVariableName(name, depth);
-    const sourceVariableName = createTargetColorVariableName(originColor, sourceBodyNo);
+    const sourceVariableName = createSourceColorVariableName(originColor, sourceBodyNo);
     if (targetVariableName === sourceVariableName) {
       continue;
     }
@@ -54,7 +55,7 @@ function resolveMagicColorVariable(
     sourceDepths.set(originColor, targetDepths);
   }
 
-  context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, sourceDepths);
+  context?.usage.recordColorVariableSourceUsage(ctx.rawSelector, sourceDepths);
 
   return css;
 }
