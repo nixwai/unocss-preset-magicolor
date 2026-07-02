@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getMagicColorStyle, updateMagicColor } from './helper';
 import { presetMagicolor } from './index';
 import { MagicColorUsage } from './usages';
+import { scanUsage } from './usages/scanner';
 
 async function createUno(options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   return createGenerator({
@@ -206,6 +207,18 @@ describe('magicolor usage extraction', () => {
 
     expect(css).not.toContain('--mc-colors-btn-DEFAULT:');
     expect(css).not.toContain('--mc-colors-btn-200:');
+  });
+
+  it('ignores bare mc-prefixed definition/control tokens as usage tokens', () => {
+    const scan = scanUsage(new Set([
+      'mc-btn_red',
+      'mc-primary',
+      'mc-lr-primary',
+      'hover:mc-primary',
+      'hover:mc-lr-my-btn',
+    ]));
+
+    expect(scan.colors.size).toBe(0);
   });
 });
 
@@ -891,6 +904,20 @@ describe('mc color definition rule', () => {
     expect(getCssVar(css, '--mc-source-colors-primary-80')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-80'));
     expect(css).not.toContain('--mc-colors-primary-80:var(--mc-colors-primary-920)');
     expect(css).not.toContain('--mc-colors-primary-920:var(--mc-colors-primary-80)');
+  });
+
+  it('supports same-name shorthand for local lightness-reverse', async () => {
+    const { css } = await generate(
+      '<div class="mc-lr-primary c-mc-primary-80 c-mc-primary-920"></div>',
+      { colors: { primary: 'rose' } },
+    );
+    const localBlock = getSelectorBlock(css, '.mc-lr-primary');
+    const reference = await generate('<div class="c-mc-rose-80 c-mc-rose-920"></div>');
+
+    expect(getCssVar(localBlock, '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
+    expect(getCssVar(localBlock, '--mc-colors-primary-920')).toBe('var(--mc-source-colors-primary-80)');
+    expect(getCssVar(css, '--mc-source-colors-primary-920')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-920'));
+    expect(getCssVar(css, '--mc-source-colors-primary-80')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-80'));
   });
 
   it('resolves local lightness-reverse theme colors for paired arbitrary depths', async () => {

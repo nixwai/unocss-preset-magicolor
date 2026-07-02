@@ -11,11 +11,11 @@ export interface TokenScan {
   tokens: Set<string>
 }
 
-const colorUsagePrefixRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-/;
+const colorUsagePrefixRE = /^(?!mc-)(?:.+-)?mc-/;
 
 // Matches magic color usages such as `c-mc-my-btn-630`, `c-mc-grape120:20`, or `c-mc-qq/34:20`.
-// Definition utilities like `mc-btn_red` are intentionally excluded.
-const colorUsageTokenRE = /^(?!mc-[A-Za-z][A-Za-z0-9-]*_)(?:.+-)?mc-([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)(?:[:/].*)?$/;
+// Bare `mc-*` utilities are definitions/control utilities, not color usages.
+const colorUsageTokenRE = /^(?!mc-)(?:.+-)?mc-([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)(?:[:/].*)?$/;
 
 /** Stores the requested numeric color depth. */
 function addDepth(depths: Set<MagicColorDepth>, no: string) {
@@ -36,7 +36,6 @@ export function scanUsage(tokens = new Set<string>()): TokenScan {
 
   for (const token of tokenList) {
     const current = normalizeToken(token);
-
     const colorUsageMatch = current.match(colorUsageTokenRE);
     if (!colorUsageMatch) {
       continue;

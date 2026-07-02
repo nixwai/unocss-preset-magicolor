@@ -15,9 +15,9 @@ export function createLightnessReverseColor(context?: MagicColorContext): Rule[]
   ];
 }
 
-/** Resolves local definitions such as `mc-lr-btn_rose-600`. */
+/** Resolves local definitions such as `mc-lr-btn_rose-600` or `mc-lr-primary`. */
 function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
-  const definition = parseColorVariableDefinition(body);
+  const definition = parseLightnessReverseDefinition(body);
   if (!definition) {
     return;
   }
@@ -51,6 +51,19 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
       { lightnessReverse: true },
     );
   }
+}
+
+function parseLightnessReverseDefinition(body: string) {
+  const definition = parseColorVariableDefinition(body);
+  if (definition) {
+    return definition;
+  }
+
+  if (!body || body.includes('_')) {
+    return;
+  }
+
+  return { name: body, hue: body };
 }
 
 /** Rebuilds all currently used configured variables with reversed lightness depths. */
