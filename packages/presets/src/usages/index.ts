@@ -1,10 +1,11 @@
-import type { Extractor } from 'unocss';
+import type { Extractor, Shortcut } from 'unocss';
 import type { TokenScan } from './scanner';
-import type { MagicColorDepthMap, StaticShortcutColorVariableTargetUsage } from './types';
+import type { MagicColorDepthMap } from './types';
 import { UsageCacheStore } from './cache';
 import { mergeColorDepths, scanUsage } from './scanner';
+import { collectShortcuts } from './shortcuts';
 
-export type { MagicColorDepthMap, StaticShortcutColorVariableTargetUsage } from './types';
+export type { MagicColorDepthMap } from './types';
 
 // UnoCSS may omit an id for inline input; keep those scans under a stable bucket.
 const DEFAULT_ID = '__inline__';
@@ -55,53 +56,35 @@ export class MagicColorUsage {
     return this.cacheStore.getSourceNames();
   }
 
-  /** Records public target variable usage produced by a rule expansion, such as shortcuts or aliases. */
-  recordColorVariableTargetUsage(rawSelector: string | undefined, token: string) {
-    if (!rawSelector) {
+  private recordColorVariableUsage(
+    scans: Map<string, TokenScan>,
+    rawSelector: string | undefined,
+    colors: MagicColorDepthMap,
+  ) {
+    if (!rawSelector || !colors.size) {
       return;
     }
-    const scan = scanUsage(new Set([token]));
-    const recorded = this.ruleScans.get(rawSelector) ?? scanUsage();
-    mergeColorDepths(recorded.colors, scan.colors);
-    this.ruleScans.set(rawSelector, recorded);
+
+    const recorded = scans.get(rawSelector) ?? scanUsage();
+    mergeColorDepths(recorded.colors, colors);
+    scans.set(rawSelector, recorded);
     this.cacheStore.invalidate();
+  }
+
+  /** Records public target variable usage produced by a rule expansion, such as shortcuts or aliases. */
+  recordColorVariableTargetUsage(rawSelector: string | undefined, depths: MagicColorDepthMap) {
+    this.recordColorVariableUsage(this.ruleScans, rawSelector, depths);
   }
 
   /** Records source variable depths required by a lightness reverse rule. */
   recordColorVariableSourceUsage(rawSelector: string | undefined, sourceDepths: MagicColorDepthMap) {
-    if (!rawSelector) {
-      return;
-    }
-
-    this.lrScans.delete(rawSelector);
-    if (sourceDepths.size) {
-      const scan = scanUsage();
-      mergeColorDepths(scan.colors, sourceDepths);
-      this.lrScans.set(rawSelector, scan);
-    }
-
-    this.cacheStore.invalidate();
+    this.recordColorVariableUsage(this.lrScans, rawSelector, sourceDepths);
   }
 
   /** Records static shortcut-expanded target usages when a shortcut and a consumer token share one input file. */
-  recordShortcutColorVariableTargetUsages(shortcuts: Iterable<StaticShortcutColorVariableTargetUsage>) {
-    let changed = false;
-
-    for (const shortcut of shortcuts) {
-      const scan = scanUsage(new Set(shortcut.tokens));
-      if (!scan.colors.size) {
-        continue;
-      }
-
-      const recorded = this.ruleScans.get(shortcut.rawSelector) ?? scanUsage();
-      mergeColorDepths(recorded.colors, scan.colors);
-      this.ruleScans.set(shortcut.rawSelector, recorded);
-
-      changed = true;
-    }
-
-    if (changed) {
-      this.cacheStore.invalidate();
+  recordColorVariableTargetUsagesByShortcut<Theme extends object = object>(shortcuts: Iterable<Shortcut<Theme>>) {
+    for (const shortcut of collectShortcuts(shortcuts)) {
+      this.recordColorVariableTargetUsage(shortcut.rawSelector, shortcut.depths);
     }
   }
 }

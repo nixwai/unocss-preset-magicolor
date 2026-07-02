@@ -2,6 +2,7 @@ import type { ResolvedColorParts } from '@unocss-preset-magicolor/utils';
 import type { Theme } from '@unocss/preset-wind4';
 import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
+import type { MagicColorDepthMap } from '../usages';
 import { resolveBodyColor, resolveThemeDepth } from '@unocss-preset-magicolor/utils';
 import { isVariableColorSource } from '../utils/color-config';
 import {
@@ -31,6 +32,7 @@ function resolveMagicColorVariable(
     return css;
   }
   const { originColor, originDepth } = colorParts;
+  const sourceDepths: MagicColorDepthMap = new Map();
   for (const depth of depths) {
     // The target depth controls the variable being defined;
     // The source depthkeeps an inline suffix such as `primary-620` for base aliases.
@@ -47,9 +49,12 @@ function resolveMagicColorVariable(
 
     css[targetVariableName] = toVar(sourceVariableName);
     // Ensure the source variable itself is generated even when it only appears through an alias.
-    const bodyName = sourceBodyNo !== BASE_COLOR_DEPTH ? `mc-${originColor}-${sourceBodyNo}` : `mc-${originColor}`;
-    context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, bodyName);
+    const targetDepths = sourceDepths.get(originColor) ?? new Set();
+    targetDepths.add(sourceBodyNo);
+    sourceDepths.set(originColor, targetDepths);
   }
+
+  context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, sourceDepths);
 
   return css;
 }

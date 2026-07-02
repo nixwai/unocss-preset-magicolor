@@ -1,10 +1,15 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSValueInput, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../../typing';
+import type { MagicColorDepthMap } from '../../usages';
 import { isInvalidColor, resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
-import { createTargetColorVariableName, toVar } from '../../utils/color-variable';
+import { BASE_COLOR_DEPTH, createTargetColorVariableName, toVar } from '../../utils/color-variable';
 import { resolveThemeColorValue } from '../../utils/theme-colors';
+
+function createTargetDepthUsage(name: string, depth: string | undefined): MagicColorDepthMap {
+  return new Map([[name, new Set([depth === undefined ? BASE_COLOR_DEPTH : Number(depth)])]]);
+}
 
 /** Parses a magic color token body and records the usage needed for preflight variables. */
 export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?: MagicColorContext) {
@@ -23,7 +28,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   // Preserve UnoCSS parser metadata while replacing the color name/depth with magic-color parts.
   colorData.name = originColor;
   colorData.no = originDepth;
-  context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, `mc-${body}`);
+  context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, createTargetDepthUsage(originColor, originDepth));
 
   const specialColor = resolveSpecialColor(originColor);
   if (specialColor) {

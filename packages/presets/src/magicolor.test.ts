@@ -15,6 +15,7 @@ import { createGenerator, presetWind4, transformerDirectives } from 'unocss';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getMagicColorStyle, updateMagicColor } from './helper';
 import { presetMagicolor } from './index';
+import { MagicColorUsage } from './usages';
 
 async function createUno(options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   return createGenerator({
@@ -269,6 +270,28 @@ describe('watch-mode usage replacement', () => {
     const second = await uno.generate('<div class="c-mc-primary-80"></div>', { preflights: true, id: 'lr.vue' });
     expect(second.css).toContain('--mc-source-colors-primary-80:');
     expect(second.css).not.toContain('--mc-source-colors-primary-920:');
+  });
+
+  it('merges repeated lightness-reverse source usage for the same selector', () => {
+    const usage = new MagicColorUsage();
+
+    usage.extractor.extract?.({
+      extracted: new Set(['mc-lr-primary_primary']),
+      id: 'same-selector.vue',
+      original: '',
+      code: '',
+    });
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+      ['primary', new Set([920])],
+    ]));
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+      ['primary', new Set([80])],
+      ['secondary', new Set([880])],
+    ]));
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map());
+
+    expect(usage.getColorVariableSourceDepths('primary')).toEqual(new Set([920, 80]));
+    expect(usage.getColorVariableSourceDepths('secondary')).toEqual(new Set([880]));
   });
 
   it('tracks shortcut-expanded usage for selector-local lightness reverse', async () => {
