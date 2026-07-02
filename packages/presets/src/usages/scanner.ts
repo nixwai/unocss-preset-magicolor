@@ -29,26 +29,6 @@ function normalizeToken(token: string) {
   return colorIndex >= 0 ? parts.slice(colorIndex).join(':') : token;
 }
 
-/** Merges color-variable depths into an existing grouped usage map. */
-export function mergeColorDepths(
-  target: MagicColorDepthMap,
-  source: MagicColorDepthMap,
-) {
-  for (const [name, sourceDepths] of source.entries()) {
-    const targetDepths = target.get(name) ?? new Set<MagicColorDepth>();
-    for (const depth of sourceDepths) {
-      targetDepths.add(depth);
-    }
-    target.set(name, targetDepths);
-  }
-}
-
-export function mergeDepth(a: Set<MagicColorDepth>, b: Set<MagicColorDepth> = new Set<MagicColorDepth>()) {
-  for (const depth of b) {
-    a.add(depth);
-  }
-}
-
 /** Scans extracted tokens into color depths for one input id. */
 export function scanUsage(tokens = new Set<string>()): TokenScan {
   const tokenList = Array.from(tokens);

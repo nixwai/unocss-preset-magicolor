@@ -294,6 +294,36 @@ describe('watch-mode usage replacement', () => {
     expect(usage.getColorVariableSourceDepths('secondary')).toEqual(new Set([880]));
   });
 
+  it('keeps usage cache valid when repeated selector updates add no new depth data', () => {
+    const usage = new MagicColorUsage();
+
+    usage.extractor.extract?.({
+      extracted: new Set(['mc-lr-primary_primary']),
+      id: 'cache.vue',
+      original: '',
+      code: '',
+    });
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+      ['primary', new Set([920])],
+    ]));
+
+    const cachedDepths = usage.getColorVariableSourceDepths('primary');
+
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+      ['primary', new Set([920])],
+    ]));
+
+    expect(usage.getColorVariableSourceDepths('primary')).toBe(cachedDepths);
+
+    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+      ['primary', new Set([80])],
+    ]));
+
+    const updatedDepths = usage.getColorVariableSourceDepths('primary');
+    expect(updatedDepths).toEqual(new Set([920, 80]));
+    expect(updatedDepths).not.toBe(cachedDepths);
+  });
+
   it('tracks shortcut-expanded usage for selector-local lightness reverse', async () => {
     const uno = await createUno(
       { colors: { primary: 'rose' } },

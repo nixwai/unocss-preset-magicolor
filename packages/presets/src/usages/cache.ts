@@ -1,6 +1,6 @@
+import type { MagicColorDepth } from '../utils/color-variable';
 import type { TokenScan } from './scanner';
 import type { MagicColorDepthMap } from './types';
-import { mergeColorDepths } from './scanner';
 
 export interface UsageCache {
   targetDepths: MagicColorDepthMap
@@ -119,5 +119,11 @@ function addScanColors(
   for (const name of scan.colors.keys()) {
     names.add(name);
   }
-  mergeColorDepths(target, scan.colors);
+  for (const [name, sourceDepths] of scan.colors.entries()) {
+    const targetDepths = target.get(name) ?? new Set<MagicColorDepth>();
+    for (const depth of sourceDepths) {
+      targetDepths.add(depth);
+    }
+    target.set(name, targetDepths);
+  }
 }

@@ -2,7 +2,7 @@ import type { Extractor, Shortcut } from 'unocss';
 import type { TokenScan } from './scanner';
 import type { MagicColorDepthMap } from './types';
 import { UsageCacheStore } from './cache';
-import { mergeColorDepths, scanUsage } from './scanner';
+import { scanUsage } from './scanner';
 import { collectShortcuts } from './shortcuts';
 
 export type { MagicColorDepthMap } from './types';
@@ -56,21 +56,6 @@ export class MagicColorUsage {
     return this.cacheStore.getSourceNames();
   }
 
-  private recordColorVariableUsage(
-    scans: Map<string, TokenScan>,
-    rawSelector: string | undefined,
-    colors: MagicColorDepthMap,
-  ) {
-    if (!rawSelector || !colors.size) {
-      return;
-    }
-
-    const recorded = scans.get(rawSelector) ?? scanUsage();
-    mergeColorDepths(recorded.colors, colors);
-    scans.set(rawSelector, recorded);
-    this.cacheStore.invalidate();
-  }
-
   /** Records public target variable usage produced by a rule expansion, such as shortcuts or aliases. */
   recordColorVariableTargetUsage(rawSelector: string | undefined, depths: MagicColorDepthMap) {
     this.recordColorVariableUsage(this.ruleScans, rawSelector, depths);
@@ -87,4 +72,48 @@ export class MagicColorUsage {
       this.recordColorVariableTargetUsage(shortcut.rawSelector, shortcut.depths);
     }
   }
+
+  private recordColorVariableUsage(
+    scans: Map<string, TokenScan>,
+    rawSelector: string | undefined,
+    colors: MagicColorDepthMap,
+  ) {
+    if (!rawSelector || !colors.size) {
+      return;
+    }
+
+    const recorded = scans.get(rawSelector) ?? scanUsage();
+    const hasNewData = mergeColorDepthUsage(recorded.colors, colors);
+    if (!hasNewData) {
+      return;
+    }
+
+    scans.set(rawSelector, recorded);
+    this.cacheStore.invalidate();
+  }
+}
+
+function mergeColorDepthUsage(target: MagicColorDepthMap, source: MagicColorDepthMap) {
+  let hasNewData = false;
+
+  for (const [name, sourceDepths] of source.entries()) {
+    if (!sourceDepths.size) {
+      continue;
+    }
+
+    const previousDepths = target.get(name);
+    const targetDepths = previousDepths ?? new Set();
+    const previousSize = targetDepths.size;
+
+    for (const depth of sourceDepths) {
+      targetDepths.add(depth);
+    }
+
+    if (targetDepths.size !== previousSize) {
+      hasNewData = true;
+    }
+    target.set(name, targetDepths);
+  }
+
+  return hasNewData;
 }
