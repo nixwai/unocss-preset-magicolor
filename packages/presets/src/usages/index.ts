@@ -98,7 +98,7 @@ export class MagicColorUsage {
         }
       }
     });
-    return a;
+    return a.size ? a : undefined;
   }
 
   /** Lists all color names seen in public target variable usages across scanned inputs. */
@@ -119,8 +119,7 @@ export class MagicColorUsage {
         }
       }
     });
-    return a;
-    // return aggregateColorVariableDepths(this.sourceFileUsages.values(), name);
+    return a.size ? a : undefined;
   }
 
   /** Lists all color names seen in internal source variable usages across scanned inputs. */
