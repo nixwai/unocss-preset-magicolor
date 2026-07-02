@@ -274,6 +274,40 @@ describe('watch-mode usage replacement', () => {
     expect(second.css).not.toContain('--mc-colors-primary-630:');
   });
 
+  it('filters shortcut-expanded target usage by color name', () => {
+    const usage = new MagicColorUsage();
+
+    usage.extractor.extract?.({
+      extracted: new Set(['btn']),
+      id: 'shortcut-filter.vue',
+      original: '',
+      code: '',
+    });
+    usage.recordColorVariableTargetUsagesByShortcut([
+      ['btn', 'bg-mc-primary-333 text-mc-secondary-640'],
+    ], 'primary');
+
+    expect(usage.getColorVariableTargetDepths('primary')).toEqual(new Set([333]));
+    expect(usage.getColorVariableTargetDepths('secondary')).toBeUndefined();
+  });
+
+  it('records all shortcut-expanded target usage when no color name is provided', () => {
+    const usage = new MagicColorUsage();
+
+    usage.extractor.extract?.({
+      extracted: new Set(['btn']),
+      id: 'shortcut-all.vue',
+      original: '',
+      code: '',
+    });
+    usage.recordColorVariableTargetUsagesByShortcut([
+      ['btn', 'bg-mc-primary-333 text-mc-secondary-640'],
+    ]);
+
+    expect(usage.getColorVariableTargetDepths('primary')).toEqual(new Set([333]));
+    expect(usage.getColorVariableTargetDepths('secondary')).toEqual(new Set([640]));
+  });
+
   it('drops lightness-reverse source usage when the same input id removes the selector', async () => {
     const uno = await createUno({ colors: { primary: 'rose' } });
 
@@ -872,7 +906,7 @@ describe('mc color definition rule', () => {
   });
 
   it('reverses local lightness-reverse literal inline depth for base variables', async () => {
-    const { css } = await generate('<div class="mc-lr-btn-[#9c1d1e]-620 c-mc-btn"></div>');
+    const { css } = await generate('<div class="mc-lr-btn_[#9c1d1e]-620 c-mc-btn"></div>');
     const reference = await generate('<div class="c-mc-[#9c1d1e]-380"></div>');
 
     expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe(getCssVar(reference.css, '--mc-colors-[#9c1d1e]-380'));

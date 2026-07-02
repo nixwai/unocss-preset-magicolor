@@ -15,36 +15,15 @@ export function createLightnessReverseColor(context?: MagicColorContext): Rule[]
   ];
 }
 
-function parseLightnessReverseDefinition(body: string) {
-  const definition = parseColorVariableDefinition(body);
-  if (definition) {
-    return definition;
-  }
-
-  const arbitraryColorIndex = body.indexOf('-[');
-  if (arbitraryColorIndex < 0) {
-    return;
-  }
-
-  const name = body.substring(0, arbitraryColorIndex);
-  const hue = body.substring(arbitraryColorIndex + 1);
-  if (!name || !hue) {
-    return;
-  }
-
-  return { name, hue };
-}
-
 /** Resolves local definitions such as `mc-lr-btn_rose-600`. */
 function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
-  const definition = parseLightnessReverseDefinition(body);
+  const definition = parseColorVariableDefinition(body);
   if (!definition) {
     return;
   }
 
-  context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts);
-
   const { name, hue } = definition;
+  context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts, name);
   const colorParts = resolveBodyColor(hue);
   const sourceConfig = resolveMixtureColorConfig(colorParts.originColor, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {

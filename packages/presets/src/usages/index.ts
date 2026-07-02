@@ -67,9 +67,12 @@ export class MagicColorUsage {
   }
 
   /** Records static shortcut-expanded target usages when a shortcut and a consumer token share one input file. */
-  recordColorVariableTargetUsagesByShortcut<Theme extends object = object>(shortcuts: Iterable<Shortcut<Theme>>) {
+  recordColorVariableTargetUsagesByShortcut<Theme extends object = object>(
+    shortcuts: Iterable<Shortcut<Theme>>,
+    name?: string,
+  ) {
     for (const shortcut of collectShortcuts(shortcuts)) {
-      this.recordColorVariableTargetUsage(shortcut.rawSelector, shortcut.depths);
+      this.recordColorVariableTargetUsage(shortcut.rawSelector, pickColorDepthUsage(shortcut.depths, name));
     }
   }
 
@@ -91,6 +94,15 @@ export class MagicColorUsage {
     scans.set(rawSelector, recorded);
     this.cacheStore.invalidate();
   }
+}
+
+function pickColorDepthUsage(colors: MagicColorDepthMap, name?: string) {
+  if (name === undefined) {
+    return colors;
+  }
+
+  const depths = colors.get(name);
+  return depths ? new Map([[name, depths]]) : new Map();
 }
 
 function mergeColorDepthUsage(target: MagicColorDepthMap, source: MagicColorDepthMap) {

@@ -21,9 +21,8 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
     return;
   }
 
-  context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts);
-
   const { name, hue } = definition;
+  context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts, name);
 
   const mcColorObj = resolveBodyColor(hue);
   // Link option and theme colors through variables so aliases stay reactive.
