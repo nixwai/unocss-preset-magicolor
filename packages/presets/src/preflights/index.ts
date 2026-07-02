@@ -63,13 +63,13 @@ export function preflights(context?: MagicColorContext): Preflight[] {
       const rootTargetCss: CSSObject = {};
       const sourceDarkCss: CSSObject = {};
       const colorNames = new Set([
-        ...(context?.usage.getColorVariableTargetNames() ?? []),
-        ...(context?.usage.getColorVariableSourceNames() ?? []),
+        ...(context?.usage.getTargetNames() ?? []),
+        ...(context?.usage.getSourceNames() ?? []),
       ]);
 
       for (const name of colorNames) {
-        const targetDepths = context?.usage.getColorVariableTargetDepths(name);
-        const sourceDepths = context?.usage.getColorVariableSourceDepths(name);
+        const targetDepths = context?.usage.getTargetDepths(name);
+        const sourceDepths = context?.usage.getSourceDepths(name);
         const allDepths = new Set<MagicColorDepth>([...(targetDepths ?? []), ...(sourceDepths ?? [])]);
 
         if (!allDepths.size) {

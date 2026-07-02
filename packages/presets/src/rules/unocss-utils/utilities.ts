@@ -28,7 +28,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   // Preserve UnoCSS parser metadata while replacing the color name/depth with magic-color parts.
   colorData.name = originColor;
   colorData.no = originDepth;
-  context?.usage.recordColorVariableTargetUsage(ctx.rawSelector, createTargetDepthUsage(originColor, originDepth));
+  context?.usage.recordTargetUsage(ctx.rawSelector, createTargetDepthUsage(originColor, originDepth));
 
   const specialColor = resolveSpecialColor(originColor);
   if (specialColor) {
@@ -38,7 +38,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
 
   // Names used by `mc-*` definitions, global options, and theme colors are
   // resolved through variables emitted by the definition class or preflight.
-  const depths = context?.usage.getColorVariableTargetDepths(originColor);
+  const depths = context?.usage.getTargetDepths(originColor);
   if (depths?.size) {
     colorData.color = toVar(createTargetColorVariableName(originColor, originDepth));
   }

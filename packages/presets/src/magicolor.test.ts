@@ -283,12 +283,12 @@ describe('watch-mode usage replacement', () => {
       original: '',
       code: '',
     });
-    usage.recordColorVariableTargetUsagesByShortcut([
+    usage.recordShortcutTargetUsages([
       ['btn', 'bg-mc-primary-333 text-mc-secondary-640'],
     ], 'primary');
 
-    expect(usage.getColorVariableTargetDepths('primary')).toEqual(new Set([333]));
-    expect(usage.getColorVariableTargetDepths('secondary')).toBeUndefined();
+    expect(usage.getTargetDepths('primary')).toEqual(new Set([333]));
+    expect(usage.getTargetDepths('secondary')).toBeUndefined();
   });
 
   it('records all shortcut-expanded target usage when no color name is provided', () => {
@@ -300,12 +300,12 @@ describe('watch-mode usage replacement', () => {
       original: '',
       code: '',
     });
-    usage.recordColorVariableTargetUsagesByShortcut([
+    usage.recordShortcutTargetUsages([
       ['btn', 'bg-mc-primary-333 text-mc-secondary-640'],
     ]);
 
-    expect(usage.getColorVariableTargetDepths('primary')).toEqual(new Set([333]));
-    expect(usage.getColorVariableTargetDepths('secondary')).toEqual(new Set([640]));
+    expect(usage.getTargetDepths('primary')).toEqual(new Set([333]));
+    expect(usage.getTargetDepths('secondary')).toEqual(new Set([640]));
   });
 
   it('drops lightness-reverse source usage when the same input id removes the selector', async () => {
@@ -328,17 +328,17 @@ describe('watch-mode usage replacement', () => {
       original: '',
       code: '',
     });
-    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
       ['primary', new Set([920])],
     ]));
-    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
       ['primary', new Set([80])],
       ['secondary', new Set([880])],
     ]));
-    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map());
+    usage.recordSourceUsage('mc-lr-primary_primary', new Map());
 
-    expect(usage.getColorVariableSourceDepths('primary')).toEqual(new Set([920, 80]));
-    expect(usage.getColorVariableSourceDepths('secondary')).toEqual(new Set([880]));
+    expect(usage.getSourceDepths('primary')).toEqual(new Set([920, 80]));
+    expect(usage.getSourceDepths('secondary')).toEqual(new Set([880]));
   });
 
   it('keeps usage cache valid when repeated selector updates add no new depth data', () => {
@@ -350,23 +350,23 @@ describe('watch-mode usage replacement', () => {
       original: '',
       code: '',
     });
-    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
       ['primary', new Set([920])],
     ]));
 
-    const cachedDepths = usage.getColorVariableSourceDepths('primary');
+    const cachedDepths = usage.getSourceDepths('primary');
 
-    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
       ['primary', new Set([920])],
     ]));
 
-    expect(usage.getColorVariableSourceDepths('primary')).toBe(cachedDepths);
+    expect(usage.getSourceDepths('primary')).toBe(cachedDepths);
 
-    usage.recordColorVariableSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
       ['primary', new Set([80])],
     ]));
 
-    const updatedDepths = usage.getColorVariableSourceDepths('primary');
+    const updatedDepths = usage.getSourceDepths('primary');
     expect(updatedDepths).toEqual(new Set([920, 80]));
     expect(updatedDepths).not.toBe(cachedDepths);
   });

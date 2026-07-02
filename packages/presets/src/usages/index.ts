@@ -8,7 +8,7 @@ import { collectShortcuts } from './shortcuts';
 export type { MagicColorDepthMap } from './types';
 
 // UnoCSS may omit an id for inline input; keep those scans under a stable bucket.
-const DEFAULT_ID = '__inline__';
+const INLINE_SCAN_ID = '__inline__';
 
 /**
  * Stores the per-preset usage state shared by the extractor, rules, and preflights.
@@ -16,116 +16,115 @@ const DEFAULT_ID = '__inline__';
  */
 export class MagicColorUsage {
   /** Scans indexed by extractor input id. */
-  private readonly scansById = new Map<string, TokenScan>();
+  private readonly inputScans = new Map<string, TokenScan>();
 
   /** Scans produced by rule expansions (shortcuts/aliases), indexed by raw selector. */
-  private readonly ruleScans = new Map<string, TokenScan>();
+  private readonly targetRuleScans = new Map<string, TokenScan>();
 
   /** Source variable scans produced by lightness reverse rules, indexed by raw selector. */
-  private readonly lrScans = new Map<string, TokenScan>();
+  private readonly sourceRuleScans = new Map<string, TokenScan>();
 
-  private readonly cacheStore = new UsageCacheStore(this.scansById, this.ruleScans, this.lrScans);
+  private readonly usageCache = new UsageCacheStore(this.inputScans, this.targetRuleScans, this.sourceRuleScans);
 
   readonly extractor: Extractor = {
     name: 'magicolor-usage',
     order: 1,
-    extract: ({ extracted, id = DEFAULT_ID }) => {
+    extract: ({ extracted, id = INLINE_SCAN_ID }) => {
       const scan = scanUsage(extracted);
-      this.scansById.set(id, scan);
-      this.cacheStore.invalidate();
+      this.inputScans.set(id, scan);
+      this.usageCache.invalidate();
     },
   };
 
   /** Aggregates public target variable depths for a color name across input scans. */
-  getColorVariableTargetDepths(name: string) {
-    return this.cacheStore.getTargetDepths(name);
+  getTargetDepths(colorName: string) {
+    return this.usageCache.getTargetDepths(colorName);
   }
 
   /** Lists all color names seen in public target variable usages across scanned inputs. */
-  getColorVariableTargetNames() {
-    return this.cacheStore.getTargetNames();
+  getTargetNames() {
+    return this.usageCache.getTargetNames();
   }
 
   /** Aggregates internal source variable depths for a color name across input scans. */
-  getColorVariableSourceDepths(name: string) {
-    return this.cacheStore.getSourceDepths(name);
+  getSourceDepths(colorName: string) {
+    return this.usageCache.getSourceDepths(colorName);
   }
 
   /** Lists all color names seen in internal source variable usages across scanned inputs. */
-  getColorVariableSourceNames() {
-    return this.cacheStore.getSourceNames();
+  getSourceNames() {
+    return this.usageCache.getSourceNames();
   }
 
   /** Records public target variable usage produced by a rule expansion, such as shortcuts or aliases. */
-  recordColorVariableTargetUsage(rawSelector: string | undefined, depths: MagicColorDepthMap) {
-    this.recordColorVariableUsage(this.ruleScans, rawSelector, depths);
+  recordTargetUsage(rawSelector: string | undefined, targetDepths: MagicColorDepthMap) {
+    this.recordSelectorColors(this.targetRuleScans, rawSelector, targetDepths);
   }
 
   /** Records source variable depths required by a lightness reverse rule. */
-  recordColorVariableSourceUsage(rawSelector: string | undefined, sourceDepths: MagicColorDepthMap) {
-    this.recordColorVariableUsage(this.lrScans, rawSelector, sourceDepths);
+  recordSourceUsage(rawSelector: string | undefined, sourceDepths: MagicColorDepthMap) {
+    this.recordSelectorColors(this.sourceRuleScans, rawSelector, sourceDepths);
   }
 
   /** Records static shortcut-expanded target usages when a shortcut and a consumer token share one input file. */
-  recordColorVariableTargetUsagesByShortcut<Theme extends object = object>(
+  recordShortcutTargetUsages<Theme extends object = object>(
     shortcuts: Iterable<Shortcut<Theme>>,
-    name?: string,
+    colorName?: string,
   ) {
     for (const shortcut of collectShortcuts(shortcuts)) {
-      this.recordColorVariableTargetUsage(shortcut.rawSelector, pickColorDepthUsage(shortcut.depths, name));
+      this.recordTargetUsage(shortcut.rawSelector, pickColorUsage(shortcut.depths, colorName));
     }
   }
 
-  private recordColorVariableUsage(
-    scans: Map<string, TokenScan>,
+  private recordSelectorColors(
+    scanMap: Map<string, TokenScan>,
     rawSelector: string | undefined,
-    colors: MagicColorDepthMap,
+    colorDepths: MagicColorDepthMap,
   ) {
-    if (!rawSelector || !colors.size) {
+    if (!rawSelector || !colorDepths.size) {
       return;
     }
 
-    const recorded = scans.get(rawSelector) ?? scanUsage();
-    const hasNewData = mergeColorDepthUsage(recorded.colors, colors);
-    if (!hasNewData) {
+    const scan = scanMap.get(rawSelector) ?? scanUsage();
+    const changed = mergeColorUsage(scan.colors, colorDepths);
+    if (!changed) {
       return;
     }
 
-    scans.set(rawSelector, recorded);
-    this.cacheStore.invalidate();
+    scanMap.set(rawSelector, scan);
+    this.usageCache.invalidate();
   }
 }
 
-function pickColorDepthUsage(colors: MagicColorDepthMap, name?: string) {
-  if (name === undefined) {
-    return colors;
+function pickColorUsage(colorDepths: MagicColorDepthMap, colorName?: string) {
+  if (colorName === undefined) {
+    return colorDepths;
   }
 
-  const depths = colors.get(name);
-  return depths ? new Map([[name, depths]]) : new Map();
+  const depths = colorDepths.get(colorName);
+  return depths ? new Map([[colorName, depths]]) : new Map();
 }
 
-function mergeColorDepthUsage(target: MagicColorDepthMap, source: MagicColorDepthMap) {
-  let hasNewData = false;
+function mergeColorUsage(targetUsage: MagicColorDepthMap, sourceUsage: MagicColorDepthMap) {
+  let changed = false;
 
-  for (const [name, sourceDepths] of source.entries()) {
+  for (const [colorName, sourceDepths] of sourceUsage.entries()) {
     if (!sourceDepths.size) {
       continue;
     }
 
-    const previousDepths = target.get(name);
-    const targetDepths = previousDepths ?? new Set();
-    const previousSize = targetDepths.size;
+    const mergedDepths = targetUsage.get(colorName) ?? new Set();
+    const sizeBeforeMerge = mergedDepths.size;
 
     for (const depth of sourceDepths) {
-      targetDepths.add(depth);
+      mergedDepths.add(depth);
     }
 
-    if (targetDepths.size !== previousSize) {
-      hasNewData = true;
+    if (mergedDepths.size !== sizeBeforeMerge) {
+      changed = true;
     }
-    target.set(name, targetDepths);
+    targetUsage.set(colorName, mergedDepths);
   }
 
-  return hasNewData;
+  return changed;
 }

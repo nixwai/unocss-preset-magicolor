@@ -22,7 +22,7 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
   }
 
   const { name, hue } = definition;
-  context?.usage.recordColorVariableTargetUsagesByShortcut(ctx.generator.config.shortcuts, name);
+  context?.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name);
 
   const mcColorObj = resolveBodyColor(hue);
   // Link option and theme colors through variables so aliases stay reactive.
@@ -31,11 +31,11 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
     const { css, depthMap } = resolveColorReferences({
       name,
       colorParts: mcColorObj,
-      depths: context?.usage.getColorVariableTargetDepths(name),
+      depths: context?.usage.getTargetDepths(name),
     });
-    context?.usage.recordColorVariableSourceUsage(ctx.rawSelector, depthMap);
+    context?.usage.recordSourceUsage(ctx.rawSelector, depthMap);
     return css;
   }
   // Arbitrary or literal colors are resolved directly rather than linked through variables.
-  return resolveThemeColorCss(name, mcColorObj, theme, context?.usage.getColorVariableTargetDepths(name));
+  return resolveThemeColorCss(name, mcColorObj, theme, context?.usage.getTargetDepths(name));
 };
