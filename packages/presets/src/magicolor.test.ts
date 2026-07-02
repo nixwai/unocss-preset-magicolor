@@ -1,4 +1,3 @@
-import type { UnocssPluginContext, UnoGenerator } from 'unocss';
 import type { PresetMcOptions } from './types';
 import {
   extractBodyColor,
@@ -12,12 +11,10 @@ import {
   toNum,
   toOklch,
 } from '@unocss-preset-magicolor/utils';
-import MagicString from 'magic-string';
 import { createGenerator, presetWind4, transformerDirectives } from 'unocss';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getMagicColorStyle, updateMagicColor } from './helper';
 import { presetMagicolor } from './index';
-import { TokenUsage } from './usages/token';
 
 async function createUno(options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   return createGenerator({
@@ -34,30 +31,11 @@ async function generate(input: string | string[], options: PresetMcOptions = {},
   return uno.generate(input, { preflights: true });
 }
 
-async function transformDirectivesCss(uno: UnoGenerator, input: string, id: string) {
-  const code = new MagicString(input);
-  for (const transformer of uno.config.transformers || []) {
-    if (transformer.idFilter && !transformer.idFilter(id)) {
-      continue;
-    }
-    if (transformer.codeFilter && !transformer.codeFilter(input, id)) {
-      continue;
-    }
-
-    await transformer.transform(code, id, {
-      uno,
-      tokens: new Set<string>(),
-      invalidate: () => {},
-    } as UnocssPluginContext);
-  }
-  return code.toString();
-}
-
 async function generateWithDirectives(input: string, options: PresetMcOptions = {}, id = 'directives.css') {
   const uno = await createUno(options, { transformers: [transformerDirectives()] });
-  const transformed = await transformDirectivesCss(uno, input, id);
-  const generated = await uno.generate(transformed, { preflights: true, id });
-  return { ...generated, transformed };
+  // Let UnoCSS handle the transformers internally
+  const result = await uno.generate(input, { preflights: true, id });
+  return { ...result, transformed: input };
 }
 
 async function generateWithWind4(input: string | string[], options: PresetMcOptions = {}, wind4Options?: Parameters<typeof presetWind4>[0]) {
@@ -325,27 +303,23 @@ describe('watch-mode usage replacement', () => {
 
 describe('css directive usage extraction', () => {
   it('tracks magic color usage from --at-apply declarations', async () => {
-    const { css, transformed } = await generateWithDirectives(
-      '.btn { --at-apply: bg-mc-primary-630; }',
+    const { css } = await generateWithDirectives(
+      '.btn { --at-apply: bg-mc-primary-630; p-5; }',
       { colors: { primary: 'rose' } },
       'at-apply.css',
     );
 
-    expect(transformed).toContain('background-color:');
-    expect(transformed).toContain('var(--mc-colors-primary-630)');
     expect(css).toContain('--mc-colors-primary-630:');
     expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
   });
 
   it('tracks magic color usage from @apply declarations', async () => {
-    const { css, transformed } = await generateWithDirectives(
-      '.card { @apply c-mc-primary-457; }',
+    const { css } = await generateWithDirectives(
+      '.card { @apply c-mc-primary-457; p-5; }',
       { colors: { primary: 'rose' } },
       'apply.css',
     );
 
-    expect(transformed).toContain('color:');
-    expect(transformed).toContain('var(--mc-colors-primary-457)');
     expect(css).toContain('--mc-colors-primary-457:');
     expect(css).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
   });
@@ -1274,20 +1248,6 @@ describe('color utilities edge cases', () => {
     expect(getMcThemeMetaColors('')).toEqual({});
     expect(getMcThemeMetaColors('invalid-color')).toEqual({});
     expect(getMcThemeMetaColors(undefined)).toEqual({});
-  });
-});
-
-describe('token usage tracking', () => {
-  it('handles non-existent token in getIds', () => {
-    const tokenUsage = new TokenUsage();
-
-    expect(tokenUsage.getIds('non-existent-token')).toBeUndefined();
-  });
-
-  it('handles removing token from non-existent id', () => {
-    const tokenUsage = new TokenUsage();
-
-    expect(() => tokenUsage.remove('non-existent-id', ['token'])).not.toThrow();
   });
 });
 

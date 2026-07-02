@@ -1,7 +1,7 @@
 import type { Extractor } from 'unocss';
 import type { MagicColorDepth } from '../utils/color-variable';
 import type { FileUsage } from './scanner';
-import { mergeColorDepths, scanUsage } from './scanner';
+import { mergeColorDepths, mergeDepth, scanUsage } from './scanner';
 // UnoCSS may omit an id for inline input; keep those scans under a stable bucket.
 const DEFAULT_ID = '__inline__';
 
@@ -20,10 +20,8 @@ export interface LightnessReverseIntent {
 
 function aggregateColorVariableDepths(files: Iterable<FileUsage>, name: string) {
   const depths = new Set<MagicColorDepth>();
-  let hasFiles = false;
 
   for (const fileUsage of files) {
-    hasFiles = true;
     const colorDepths = fileUsage.colors.get(name);
     if (!colorDepths) {
       continue;
@@ -34,7 +32,7 @@ function aggregateColorVariableDepths(files: Iterable<FileUsage>, name: string) 
     }
   }
 
-  return hasFiles && depths.size > 0 ? depths : undefined;
+  return depths;
 }
 
 function aggregateColorVariableNames(files: Iterable<FileUsage>) {
@@ -80,10 +78,10 @@ export class MagicColorUsage {
     for (const intent of this.lightnessReverseIntentUsage.values()) {
       const sourceDepths = intent.refresh();
       if (!sourceDepths.size) {
-        return;
+        continue;
       }
 
-      const recordedUsage = this.tokenFileUsages.get(intent.rawSelector) ?? scanUsage([]);
+      const recordedUsage = this.tokenFileUsages.get(intent.rawSelector) ?? scanUsage();
       mergeColorDepths(recordedUsage.colors, sourceDepths);
       this.sourceFileUsages.set(intent.rawSelector, recordedUsage);
     }
@@ -92,8 +90,15 @@ export class MagicColorUsage {
   /** Aggregates public target variable usages for a color name across input files. */
   getColorVariableTargetDepths(name: string) {
     const a = aggregateColorVariableDepths(this.idFileUsages.values(), name);
-    const b = aggregateColorVariableDepths(this.tokenFileUsages.values(), name);
-    return new Set<MagicColorDepth>([...(a ?? []), ...(b ?? [])]);
+    this.tokenFileUsages.forEach((fileUsage, token) => {
+      for (const [_, usage] of this.idFileUsages) {
+        if (usage.tokens.has(token)) {
+          mergeDepth(a, fileUsage.colors.get(name));
+          return;
+        }
+      }
+    });
+    return a;
   }
 
   /** Lists all color names seen in public target variable usages across scanned inputs. */
@@ -105,7 +110,17 @@ export class MagicColorUsage {
 
   /** Aggregates internal source variable usages for a color name across input files. */
   getColorVariableSourceDepths(name: string) {
-    return aggregateColorVariableDepths(this.sourceFileUsages.values(), name);
+    const a = new Set<MagicColorDepth>();
+    this.sourceFileUsages.forEach((fileUsage, token) => {
+      for (const [_, usage] of this.idFileUsages) {
+        if (usage.tokens.has(token)) {
+          mergeDepth(a, fileUsage.colors.get(name));
+          return;
+        }
+      }
+    });
+    return a;
+    // return aggregateColorVariableDepths(this.sourceFileUsages.values(), name);
   }
 
   /** Lists all color names seen in internal source variable usages across scanned inputs. */
@@ -118,8 +133,8 @@ export class MagicColorUsage {
     if (!rawSelector) {
       return;
     }
-    const usage = scanUsage([token]);
-    const recordedUsage = this.tokenFileUsages.get(rawSelector) ?? scanUsage([]);
+    const usage = scanUsage(new Set([token]));
+    const recordedUsage = this.tokenFileUsages.get(rawSelector) ?? scanUsage();
     mergeColorDepths(recordedUsage.colors, usage.colors);
     this.tokenFileUsages.set(rawSelector, recordedUsage);
     this.refreshLightnessReverseIntents();
@@ -130,12 +145,12 @@ export class MagicColorUsage {
     let changed = false;
 
     for (const shortcut of shortcuts) {
-      const usage = scanUsage(shortcut.tokens);
+      const usage = scanUsage(new Set(shortcut.tokens));
       if (!usage.colors.size) {
         continue;
       }
 
-      const recordedUsage = this.tokenFileUsages.get(shortcut.rawSelector) ?? scanUsage([]);
+      const recordedUsage = this.tokenFileUsages.get(shortcut.rawSelector) ?? scanUsage();
       mergeColorDepths(recordedUsage.colors, usage.colors);
       this.tokenFileUsages.set(shortcut.rawSelector, recordedUsage);
 

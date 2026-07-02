@@ -34,7 +34,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   // Names used by `mc-*` definitions, global options, and theme colors are
   // resolved through variables emitted by the definition class or preflight.
   const usage = context?.usage.getColorVariableTargetDepths(originColor);
-  if (usage) {
+  if (usage?.size) {
     colorData.color = toVar(createTargetColorVariableName(originColor, originDepth));
   }
   // If UnoCSS already resolved the token, keep its parsed value and metadata.

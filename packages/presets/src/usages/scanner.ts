@@ -42,8 +42,14 @@ export function mergeColorDepths(
   }
 }
 
+export function mergeDepth(a: Set<MagicColorDepth>, b: Set<MagicColorDepth> = new Set<MagicColorDepth>()) {
+  for (const depth of b) {
+    a.add(depth);
+  }
+}
+
 /** Scans extracted tokens into color usages for one input id. */
-export function scanUsage(tokens: Iterable<string>): FileUsage {
+export function scanUsage(tokens = new Set<string>()): FileUsage {
   const tokenList = Array.from(tokens);
   const colors = new Map<string, Set<MagicColorDepth>>();
 
@@ -59,7 +65,6 @@ export function scanUsage(tokens: Iterable<string>): FileUsage {
     if (!body) {
       continue;
     }
-
     const { originColor: name, originDepth: no } = resolveBodyColor(body);
     if (!name) {
       continue;
@@ -76,5 +81,5 @@ export function scanUsage(tokens: Iterable<string>): FileUsage {
     colors.set(name, depths);
   }
 
-  return { colors, tokens: new Set(tokenList) };
+  return { colors, tokens };
 }
