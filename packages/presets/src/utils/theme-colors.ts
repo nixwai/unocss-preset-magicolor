@@ -4,7 +4,7 @@ import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from '../typing';
 import type { MagicColorDepth } from './color-variable';
-import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
+import { getMcThemeMetaColors, getThemeDepthColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { BASE_COLOR_DEPTH, createTargetColorVariableName } from './color-variable';
 
@@ -61,7 +61,7 @@ function getBaseColor(
   options: ThemeDepthOptions = {},
 ) {
   const { originColor, originDepth } = colorParts;
-  if (!originColor || isInvalidColor(originColor)) {
+  if (!originColor) {
     return;
   }
 
@@ -109,7 +109,7 @@ export function resolveThemeColorCss(
   const { originColor } = colorParts;
 
   // Early exit if the source color is invalid.
-  if (!originColor || isInvalidColor(originColor)) {
+  if (!originColor) {
     return css;
   }
 

@@ -25,6 +25,9 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
   const { name, hue } = definition;
   context?.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name);
   const colorParts = resolveBodyColor(hue);
+  if (!colorParts.originColor) {
+    return;
+  }
   const sourceConfig = resolveMixtureColorConfig(colorParts.originColor, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
     const sourceColorParts = resolveBodyColor(sourceConfig.color);

@@ -25,6 +25,9 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
   context?.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name);
 
   const mcColorObj = resolveBodyColor(hue);
+  if (!mcColorObj.originColor) {
+    return;
+  }
   // Link option and theme colors through variables so aliases stay reactive.
   const sourceConfig = resolveMixtureColorConfig(mcColorObj.originColor, theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {

@@ -1,5 +1,5 @@
 import type { CSSObject } from 'unocss';
-import { getMcThemeMetaColors, getThemeDepthColor, isInvalidColor, resolveColorParts, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
+import { getMcThemeMetaColors, getThemeDepthColor, resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { mc } from 'magic-color';
 import { createTargetColorVariableDeclaration } from './utils/color-variable';
 
@@ -68,8 +68,8 @@ function collectDefinedColorVariables(name: string, dom: HTMLElement): ColorVari
  */
 export function getMagicColorStyle(params: MagicColorStyleParams): CSSObject {
   const { name, color, hasBase, depths, lightnessReverse } = params;
-  const { originColor, originDepth } = resolveColorParts(color);
-  if (isInvalidColor(originColor)) {
+  const { originColor, originDepth } = resolveBodyColor(color);
+  if (!originColor) {
     return {};
   }
 

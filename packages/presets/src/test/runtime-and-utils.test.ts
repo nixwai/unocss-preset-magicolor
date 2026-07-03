@@ -1,9 +1,6 @@
 import {
-  extractBodyColor,
   getMcThemeMetaColors,
-  isInvalidColor,
   resolveBodyColor,
-  resolveColorParts,
   resolveSpecialColor,
   resolveThemeDepth,
   roundNum,
@@ -184,28 +181,40 @@ describe('getMagicColorStyle helper', () => {
 });
 
 describe('color parsing utilities', () => {
-  it('parses bracket arbitrary colors with optional depth suffixes', () => {
-    expect(resolveColorParts('[#1313aa]1200')).toEqual({ originColor: '[#1313aa]', originDepth: '1200' });
-    expect(resolveColorParts('[rgb(12,22,33)]')).toEqual({ originColor: '[rgb(12,22,33)]', originDepth: undefined });
-    expect(resolveColorParts('[hsl(210_60%_40%)]-300')).toEqual({ originColor: '[hsl(210_60%_40%)]', originDepth: '300' });
-    expect(resolveColorParts('[lab(60_20_10)]-350')).toEqual({ originColor: '[lab(60_20_10)]', originDepth: '350' });
-    expect(resolveColorParts('[lch(40_20_21.57)]-400')).toEqual({ originColor: '[lch(40_20_21.57)]', originDepth: '400' });
-    expect(resolveColorParts('[oklch(40.1%_0.123_21.57)]-200')).toEqual({ originColor: '[oklch(40.1%_0.123_21.57)]', originDepth: '200' });
-  });
+  it('resolves token bodies into source color and optional depth', () => {
+    const cases: Array<[string | undefined, ReturnType<typeof resolveBodyColor>]> = [
+      ['red100', { originColor: 'red', originDepth: '100' }],
+      ['red-50', { originColor: 'red', originDepth: '50' }],
+      ['red', { originColor: 'red', originDepth: undefined }],
+      ['red-10:50', { originColor: 'red', originDepth: '10' }],
+      ['red-20/30', { originColor: 'red', originDepth: '20' }],
+      ['red50:30:oklch', { originColor: 'red', originDepth: '50' }],
+      ['red-30/oklch', { originColor: 'red', originDepth: '30' }],
+      ['red:22', { originColor: 'red', originDepth: undefined }],
+      ['red/22', { originColor: 'red', originDepth: undefined }],
+      ['[#666]-30', { originColor: '#666', originDepth: '30' }],
+      ['rgb(10_10_10)-233', { originColor: 'rgb(10_10_10)', originDepth: '233' }],
+      ['[rgb(10_10_10)]-233', { originColor: 'rgb(10_10_10)', originDepth: '233' }],
+      ['#666-899', { originColor: '#666', originDepth: '899' }],
+      ['[#777]600', { originColor: '#777', originDepth: '600' }],
+      ['#777600', { originColor: '#777600', originDepth: undefined }],
+      ['#aaa111', { originColor: '#aaa111', originDepth: undefined }],
+      ['oklch(50%_0.66_1.66)888', { originColor: 'oklch(50%_0.66_1.66)', originDepth: '888' }],
+      ['#777777:600', { originColor: '#777777', originDepth: undefined }],
+      ['666:777', { originColor: undefined, originDepth: undefined }],
+      ['666', { originColor: undefined, originDepth: undefined }],
+      [undefined, { originColor: undefined, originDepth: undefined }],
+      ['[oklch(20.1%_0.1_20/50)]-200/40:dark', { originColor: 'oklch(20.1%_0.1_20/50)', originDepth: '200' }],
+      ['[rgb(12,22,33)]:dark', { originColor: 'rgb(12,22,33)', originDepth: undefined }],
+      ['[hsl(210_60%_40%)]-300', { originColor: 'hsl(210_60%_40%)', originDepth: '300' }],
+      ['[lab(60_20_10)]-350', { originColor: 'lab(60_20_10)', originDepth: '350' }],
+      ['[lch(40_20_21.57)]-400', { originColor: 'lch(40_20_21.57)', originDepth: '400' }],
+      ['[oklch(40.1%_0.123_21.57)]-200', { originColor: 'oklch(40.1%_0.123_21.57)', originDepth: '200' }],
+    ];
 
-  it('resolves hyphenated and compact depth names', () => {
-    expect(resolveColorParts('rose-445')).toEqual({ originColor: 'rose', originDepth: '445' });
-    expect(resolveColorParts('grape120')).toEqual({ originColor: 'grape', originDepth: '120' });
-    expect(resolveColorParts('rose')).toEqual({ originColor: 'rose', originDepth: undefined });
-    expect(resolveColorParts(undefined)).toEqual({ originColor: undefined, originDepth: undefined });
-  });
-
-  it('strips opacity and modifiers outside bracket arbitrary colors', () => {
-    expect(extractBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toBe('[oklch(20.1%_0.1_20/50)]-200');
-    expect(extractBodyColor('[rgb(12,22,33)]:dark')).toBe('[rgb(12,22,33)]');
-    expect(resolveBodyColor('rose-445/40:dark')).toEqual({ originColor: 'rose', originDepth: '445' });
-    expect(resolveBodyColor('grape120')).toEqual({ originColor: 'grape', originDepth: '120' });
-    expect(resolveBodyColor('[oklch(20.1%_0.1_20/50)]-200/40:dark')).toEqual({ originColor: '[oklch(20.1%_0.1_20/50)]', originDepth: '200' });
+    for (const [body, expected] of cases) {
+      expect(resolveBodyColor(body), body).toEqual(expected);
+    }
   });
 
   it('normalizes special color keywords and handles empty token bodies', () => {
@@ -214,24 +223,14 @@ describe('color parsing utilities', () => {
     expect(resolveSpecialColor('currentColor')).toBe('currentColor');
     expect(resolveSpecialColor('inherit')).toBe('inherit');
     expect(resolveSpecialColor('rose')).toBeUndefined();
-    expect(resolveBodyColor()).toEqual({ originColor: '', originDepth: undefined });
+    expect(resolveBodyColor()).toEqual({ originColor: undefined, originDepth: undefined });
   });
 });
 
 describe('color transform utilities', () => {
-  it('keeps invalid color predicates quiet and deterministic', () => {
-    expect(isInvalidColor('')).toBe(true);
-    expect(isInvalidColor(undefined)).toBe(true);
-    expect(isInvalidColor('123')).toBe(true);
-    expect(isInvalidColor('rose')).toBe(false);
-    expect(isInvalidColor('#9c1d1e')).toBe(false);
-  });
-
-  it('does not log from isInvalidColor or invalid CSS generation', async () => {
+  it('does not log from invalid numeric color generation', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    isInvalidColor('123');
-    isInvalidColor(undefined);
     await generate('<div class="c-mc-123 c-mc-456 c-mc-789"></div>');
 
     expect(errorSpy).not.toHaveBeenCalled();

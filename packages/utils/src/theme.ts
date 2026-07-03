@@ -17,13 +17,6 @@ export interface DepthOptions<TDefault = undefined> extends ThemeDepthOptions {
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
 /**
- * Pure predicate: a color is invalid when it is empty/undefined or a bare number.
- */
-export function isInvalidColor(color?: string) {
-  return !color || !Number.isNaN(Number(color));
-}
-
-/**
  * Build the hex-based themeMeta color map for a valid color string using
  * `magic-color`'s theme generator. Returns whatever metas could be resolved;
  * an invalid color or a `mc.theme` failure yields an empty map (no logging).
@@ -33,7 +26,7 @@ export function isInvalidColor(color?: string) {
 export function getMcThemeMetaColors(originColor?: string): Partial<Record<ThemeKey, CSSColorValue>> {
   const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
 
-  if (!originColor || isInvalidColor(originColor) || !mc.valid(originColor)) {
+  if (!originColor || !mc.valid(originColor)) {
     return themeMetaColors;
   }
 

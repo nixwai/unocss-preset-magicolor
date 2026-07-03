@@ -12,48 +12,20 @@ const specialColorValueMap = new Map<string, string>(
   ]),
 );
 
-const hyphenColorDepthRE = /^(.*)-(\d+)$/;
-const compactColorNameRE = /^[a-z][a-z0-9-]*$/i;
-const trailingDigitsRE = /\d+$/;
-const bracketColorDepthRE = /^-?(\d+)$/;
+const depthColorRE = /^(?:(.*)-|(.+\D))(\d+)$/;
+const bracketColorRE = /^\[(.*)\]$/;
+const numericBodyRE = /^-?\d+$/;
 
-/**
- * Extracts the body color from a token, dropping any opacity (`/`) or
- * modifier (`:`) suffixes that appear outside bracketed arbitrary colors.
- */
-export function extractBodyColor(color: string): string {
-  let bodyColor = '';
+function emptyColorParts(): ResolvedColorParts {
+  return { originColor: undefined, originDepth: undefined };
+}
+
+function getBodyColorEnd(color: string) {
   let bracketDepth = 0;
-
-  for (const char of color) {
-    if (char === '[') {
-      bracketDepth++;
-    }
-    else if (char === ']') {
-      bracketDepth = Math.max(bracketDepth - 1, 0);
-    }
-
-    if ((char === ':' || char === '/') && bracketDepth === 0) {
-      break;
-    }
-
-    bodyColor += char;
-  }
-
-  return bodyColor;
-}
-
-function normalizeDepthNo(no: string) {
-  return Number(no).toString();
-}
-
-function getBracketColorEnd(color: string) {
-  if (!color.startsWith('[')) {
-    return -1;
-  }
-
+  let parenDepth = 0;
   let escaped = false;
-  for (let i = 1; i < color.length; i++) {
+
+  for (let i = 0; i < color.length; i++) {
     const char = color[i];
     if (escaped) {
       escaped = false;
@@ -63,53 +35,60 @@ function getBracketColorEnd(color: string) {
       escaped = true;
       continue;
     }
-    if (char === ']') {
+    if (char === '[') {
+      bracketDepth++;
+    }
+    else if (char === ']') {
+      bracketDepth = Math.max(bracketDepth - 1, 0);
+    }
+    else if (char === '(' && bracketDepth === 0) {
+      parenDepth++;
+    }
+    else if (char === ')' && bracketDepth === 0) {
+      parenDepth = Math.max(parenDepth - 1, 0);
+    }
+
+    if ((char === ':' || char === '/') && bracketDepth === 0 && parenDepth === 0) {
       return i;
     }
   }
 
-  return -1;
+  return color.length;
 }
 
-export function resolveColorParts(color: string): ResolvedColorParts & { originColor: string };
-export function resolveColorParts(color?: string): ResolvedColorParts;
-export function resolveColorParts(color?: string): ResolvedColorParts {
-  if (!color) {
+function resolveBodyColorDepth(color: string): ResolvedColorParts {
+  if (color.startsWith('#') && !color.includes('-')) {
     return { originColor: color, originDepth: undefined };
   }
 
-  const bracketColorEnd = getBracketColorEnd(color);
-  if (bracketColorEnd >= 0) {
-    const originColor = color.slice(0, bracketColorEnd + 1);
-    const suffix = color.slice(bracketColorEnd + 1);
-    const depthMatch = suffix.match(bracketColorDepthRE);
-    return {
-      originColor,
-      originDepth: depthMatch ? normalizeDepthNo(depthMatch[1]) : undefined,
-    };
+  const depthMatch = color.match(depthColorRE);
+  const rawOriginColor = depthMatch?.[1] ?? depthMatch?.[2] ?? color;
+  const originDepth = depthMatch?.[3];
+  const originColor = rawOriginColor.match(bracketColorRE)?.[1] ?? rawOriginColor;
+
+  if (!originColor || numericBodyRE.test(originColor)) {
+    return emptyColorParts();
   }
 
-  const hyphenMatch = color.match(hyphenColorDepthRE);
-  if (hyphenMatch?.[1]) {
-    return { originColor: hyphenMatch[1], originDepth: normalizeDepthNo(hyphenMatch[2]) };
-  }
-
-  if (compactColorNameRE.test(color)) {
-    const bodyNo = color.match(trailingDigitsRE)?.[0];
-    if (bodyNo !== undefined) {
-      return { originColor: color.slice(0, -bodyNo.length), originDepth: normalizeDepthNo(bodyNo) };
-    }
-  }
-
-  return { originColor: color, originDepth: undefined };
+  return { originColor, originDepth };
 }
 
 /**
- * Resolves a token body into its color parts, stripping any opacity (`/`) or
- * modifier (`:`) suffixes before parsing the depth.
+ * Resolves a token body into its source color and optional depth,
+ * ignoring opacity (`/`) and modifier (`:`) suffixes outside brackets/functions.
  */
-export function resolveBodyColor(body = ''): ResolvedColorParts & { originColor: string } {
-  return resolveColorParts(extractBodyColor(body));
+export function resolveBodyColor(body?: string): ResolvedColorParts {
+  if (!body) {
+    return emptyColorParts();
+  }
+
+  const color = body.trim();
+  const bodyColor = color.slice(0, getBodyColorEnd(color));
+  if (!bodyColor || numericBodyRE.test(bodyColor)) {
+    return emptyColorParts();
+  }
+
+  return resolveBodyColorDepth(bodyColor);
 }
 
 export function resolveSpecialColor(color?: string) {

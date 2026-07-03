@@ -27,10 +27,10 @@ describe('mc custom color definition rules', () => {
   it('links arbitrary bracket definition hues through source variables', async () => {
     const { css } = await generate('<div class="mc-brand_[#9c1d1e] c-mc-brand c-mc-brand-630"></div>');
 
-    expect(css).toContain('--mc-colors-brand-DEFAULT:var(--mc-source-colors-[#9c1d1e]-DEFAULT)');
-    expect(css).toContain('--mc-colors-brand-630:var(--mc-source-colors-[#9c1d1e]-630)');
-    expect(css).toContain('--mc-source-colors-[#9c1d1e]-DEFAULT: #9c1d1e;');
-    expect(css).toMatch(/--mc-source-colors-\[#9c1d1e\]-630:\s*oklch\(/);
+    expect(css).toContain('--mc-colors-brand-DEFAULT:var(--mc-source-colors-#9c1d1e-DEFAULT)');
+    expect(css).toContain('--mc-colors-brand-630:var(--mc-source-colors-#9c1d1e-630)');
+    expect(css).toContain('--mc-source-colors-#9c1d1e-DEFAULT: #9c1d1e;');
+    expect(css).toMatch(/--mc-source-colors-#9c1d1e-630:\s*oklch\(/);
     expect(css).not.toContain('oklch(undefined');
   });
 
@@ -120,8 +120,8 @@ describe('local lightness reverse color definitions', () => {
   it('reverses literal inline depths for base variables', async () => {
     const { css } = await generate('<div class="mc-lr-btn_[#9c1d1e]-620 c-mc-btn"></div>');
 
-    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-[#9c1d1e]-380)');
-    expect(getCssVar(css, '--mc-source-colors-[#9c1d1e]-380')).toMatch(/^oklch\(/);
+    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-#9c1d1e-380)');
+    expect(getCssVar(css, '--mc-source-colors-#9c1d1e-380')).toMatch(/^oklch\(/);
   });
 
   it('reverses inherited option inline depths for local base variables', async () => {

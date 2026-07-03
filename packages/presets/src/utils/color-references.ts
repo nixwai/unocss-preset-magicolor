@@ -6,7 +6,7 @@ import { BASE_COLOR_DEPTH, createSourceColorVariableName, createTargetColorVaria
 
 interface ResolveColorVariableReferencesOptions {
   name: string
-  colorParts: ResolvedColorParts & { originColor: string }
+  colorParts: ResolvedColorParts
   depths?: Set<MagicColorDepth>
   lightnessReverse?: boolean
 }
@@ -23,7 +23,7 @@ export function resolveColorReferences(options: ResolveColorVariableReferencesOp
   const { originColor, originDepth } = colorParts;
   const css: Record<string, string> = {};
   const depthMap: MagicColorDepthMap = new Map();
-  if (!depths?.size) {
+  if (!depths?.size || !originColor) {
     return { css, depthMap };
   }
 
