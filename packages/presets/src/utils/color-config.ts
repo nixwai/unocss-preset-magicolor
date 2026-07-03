@@ -3,6 +3,7 @@ import type { PresetMcColorValue } from '../types';
 import type { MagicColorContext } from '../typing';
 import { resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
+import { isLiteralColor } from './color-variable';
 
 export interface ResolvedColorConfig {
   color?: string
@@ -33,7 +34,7 @@ export function resolveMixtureColorConfig(
   context?: MagicColorContext,
   preferDark?: boolean,
 ): ResolvedColorConfig {
-  if (resolveSpecialColor(name)) {
+  if (resolveSpecialColor(name) || isLiteralColor(name)) {
     return { color: undefined, lightnessReverse: false };
   }
 

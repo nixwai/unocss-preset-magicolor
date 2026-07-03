@@ -116,6 +116,7 @@ function addScanColors(
   names: Set<string>,
   scan: TokenScan,
 ) {
+  // aggregating depths from multiple scans into a shared cache
   for (const name of scan.colors.keys()) {
     names.add(name);
   }

@@ -21,6 +21,8 @@ function escapeRegExp(value: string) {
 
 /** Collects the base and depth variables already present in one style object. */
 function collectStyleVariables(name: string, style: CSSStyleDeclaration, usage: ColorVariableUsage) {
+  // Matches CSS variables like --mc-colors-{name}-DEFAULT or --mc-colors-{name}-{depth}
+  // where {depth} is a numeric value
   const colorVariableRE = new RegExp(`^--mc-colors-${escapeRegExp(name)}-(${BASE_COLOR_DEPTH}|\\d+)$`);
 
   for (let i = 0; i < style.length; i++) {

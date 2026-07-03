@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getMagicColorStyle } from '../helper';
 import { generate, getCssVar, getDarkBlock, getSelectorBlock } from './helpers';
 
 describe('mc custom color definition rules', () => {
@@ -24,13 +25,19 @@ describe('mc custom color definition rules', () => {
     expect(css).toMatch(/--mc-source-colors-rose-457:\s*oklch\(/);
   });
 
-  it('links arbitrary bracket definition hues through source variables', async () => {
+  it('defines arbitrary bracket hues directly as usable color variables', async () => {
     const { css } = await generate('<div class="mc-brand_[#9c1d1e] c-mc-brand c-mc-brand-630"></div>');
+    const expected = getMagicColorStyle({
+      name: 'brand',
+      color: '#9c1d1e',
+      hasBase: false,
+      depths: new Set(['630']),
+    });
 
-    expect(css).toContain('--mc-colors-brand-DEFAULT:var(--mc-source-colors-#9c1d1e-DEFAULT)');
-    expect(css).toContain('--mc-colors-brand-630:var(--mc-source-colors-#9c1d1e-630)');
-    expect(css).toContain('--mc-source-colors-#9c1d1e-DEFAULT: #9c1d1e;');
-    expect(css).toMatch(/--mc-source-colors-#9c1d1e-630:\s*oklch\(/);
+    expect(getCssVar(css, '--mc-colors-brand-DEFAULT')).toBe('#9c1d1e');
+    expect(getCssVar(css, '--mc-colors-brand-630')).toBe(expected['--mc-colors-brand-630']);
+    expect(css).not.toContain('--mc-source-colors-#9c1d1e');
+    expect(css).not.toContain('var(--mc-source-colors-#9c1d1e');
     expect(css).not.toContain('oklch(undefined');
   });
 
@@ -134,9 +141,33 @@ describe('local lightness reverse color definitions', () => {
 
   it('reverses literal inline depths for base variables', async () => {
     const { css } = await generate('<div class="mc-lr-btn_[#9c1d1e]-620 c-mc-btn"></div>');
+    const expected = getMagicColorStyle({
+      name: 'btn',
+      color: '#9c1d1e-620',
+      hasBase: true,
+      depths: new Set(),
+      lightnessReverse: true,
+    });
 
-    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-#9c1d1e-380)');
-    expect(getCssVar(css, '--mc-source-colors-#9c1d1e-380')).toMatch(/^oklch\(/);
+    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe(expected['--mc-colors-btn-DEFAULT']);
+    expect(css).not.toContain('--mc-source-colors-#9c1d1e');
+    expect(css).not.toContain('var(--mc-source-colors-#9c1d1e');
+  });
+
+  it('reverses arbitrary bracket hues directly as usable color variables', async () => {
+    const { css } = await generate('<div class="mc-lr-brand_[#9c1d1e] c-mc-brand c-mc-brand-630"></div>');
+    const expected = getMagicColorStyle({
+      name: 'brand',
+      color: '#9c1d1e',
+      hasBase: false,
+      depths: new Set(['630']),
+      lightnessReverse: true,
+    });
+
+    expect(getCssVar(css, '--mc-colors-brand-DEFAULT')).toBe('#9c1d1e');
+    expect(getCssVar(css, '--mc-colors-brand-630')).toBe(expected['--mc-colors-brand-630']);
+    expect(css).not.toContain('--mc-source-colors-#9c1d1e');
+    expect(css).not.toContain('var(--mc-source-colors-#9c1d1e');
   });
 
   it('reverses inherited option inline depths for local base variables', async () => {
