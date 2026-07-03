@@ -119,9 +119,9 @@ describe('local lightness reverse color definitions', () => {
 
   it('reverses literal inline depths for base variables', async () => {
     const { css } = await generate('<div class="mc-lr-btn_[#9c1d1e]-620 c-mc-btn"></div>');
-    const reference = await generate('<div class="c-mc-[#9c1d1e]-380"></div>');
 
-    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe(getCssVar(reference.css, '--mc-colors-[#9c1d1e]-380'));
+    expect(getCssVar(css, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-[#9c1d1e]-380)');
+    expect(getCssVar(css, '--mc-source-colors-[#9c1d1e]-380')).toMatch(/^oklch\(/);
   });
 
   it('reverses inherited option inline depths for local base variables', async () => {

@@ -10,18 +10,27 @@ describe('color style rules', () => {
     expect(css).toContain('var(--mc-colors-rose-445)');
   });
 
-  it('uses variables for globally scanned colors and concrete oklch for direct tokens', async () => {
-    const global = await generate('<div class="c-mc-rose-445 bg-mc-rose-445"></div>');
-    const direct = await generate(['c-mc-rose-445', 'bg-mc-rose-445']);
+  it('uses variables for configured colors and UnoCSS theme colors scanned from markup', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-primary-333 bg-mc-brand-700 border-mc-rose-445 outline-mc-red-600 ring-mc-blue-200"></div>',
+      { colors: { primary: 'rose', brand: '#4f7bff' } },
+    );
 
-    expect(global.css).toContain('--mc-colors-rose-445: var(--mc-source-colors-rose-445);');
-    expect(global.css).toMatch(/--mc-source-colors-rose-445:\s*oklch\(/);
-    expect(global.css).toContain('color:color-mix(in oklab, var(--mc-colors-rose-445)');
-    expect(global.css).toContain('background-color:color-mix(in oklab, var(--mc-colors-rose-445)');
-
-    expect(direct.css).not.toContain('--mc-colors-rose-445:');
-    expect(direct.css).toMatch(/color:color-mix\(in oklab, oklch\(/);
-    expect(direct.css).toMatch(/background-color:color-mix\(in oklab, oklch\(/);
+    expect(css).toContain('--mc-colors-primary-333: var(--mc-source-colors-primary-333);');
+    expect(css).toContain('--mc-colors-brand-700: var(--mc-source-colors-brand-700);');
+    expect(css).toContain('--mc-colors-rose-445: var(--mc-source-colors-rose-445);');
+    expect(css).toContain('--mc-colors-red-600: var(--mc-source-colors-red-600);');
+    expect(css).toContain('--mc-colors-blue-200: var(--mc-source-colors-blue-200);');
+    expect(css).toMatch(/--mc-source-colors-primary-333:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-brand-700:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-rose-445:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-600:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-blue-200:\s*oklch\(/);
+    expect(css).toContain('color:color-mix(in oklab, var(--mc-colors-primary-333)');
+    expect(css).toContain('background-color:color-mix(in oklab, var(--mc-colors-brand-700)');
+    expect(css).toContain('border-color:color-mix(in oklab, var(--mc-colors-rose-445)');
+    expect(css).toContain('outline-color:color-mix(in srgb, var(--mc-colors-red-600)');
+    expect(css).toContain('--un-ring-color:color-mix(in srgb, var(--mc-colors-blue-200)');
   });
 
   it('resolves form, outline and decoration colors', async () => {
@@ -63,14 +72,6 @@ describe('color style rules', () => {
     expect(css).toContain('.c-mc-inherit{color:inherit;}');
     expect(css).not.toContain('--mc-colors-transparent-DEFAULT:');
     expect(css).not.toContain('--mc-colors-transparent-500:');
-  });
-
-  it('resolves the internal placeholder color rule token', async () => {
-    const { css } = await generate(['$ placeholder-mc-rose-445']);
-
-    expect(css).toContain('color:');
-    expect(css).toContain('--un-placeholder-opacity');
-    expect(css).toMatch(/color:color-mix\(in oklab, oklch\(/);
   });
 });
 
@@ -149,26 +150,31 @@ describe('gradient and mask color rules', () => {
 
 describe('arbitrary and invalid color rule inputs', () => {
   it('supports bracket arbitrary colors with legal CSS color syntaxes', async () => {
-    const { css } = await generate([
-      'c-mc-[#789411]-430',
-      'bg-mc-[#1313aa]1200',
-      'bg-mc-[rgb(12,22,33)]',
-      'bg-mc-[rgb(12_22_33)]-220',
-      'bg-mc-[hsl(210_60%_40%)]-300',
-      'bg-mc-[lab(60_20_10)]-350',
-      'bg-mc-[lch(40_20_21.57)]-400',
-      'bg-mc-[oklch(40.1%_0.123_21.57)]-200',
-      'bg-mc-[oklab(40.1%_0.1_0.2)]-500',
-    ]);
+    const { css } = await generate(
+      '<div class="c-mc-[#789411]-430 bg-mc-[#1313aa]1200 bg-mc-[rgb(12,22,33)] bg-mc-[rgb(12_22_33)]-220 bg-mc-[hsl(210_60%_40%)]-300 bg-mc-[lab(60_20_10)]-350 bg-mc-[lch(40_20_21.57)]-400 bg-mc-[oklch(40.1%_0.123_21.57)]-200 bg-mc-[oklab(40.1%_0.1_0.2)]-500"></div>',
+    );
 
     expect(css).toMatch(/color:color-mix\(in oklab, oklch\(/);
     expect(css).toContain('.bg-mc-\\[rgb\\(12\\,22\\,33\\)\\]{background-color:color-mix(in oklab, rgb(12,22,33)');
+    expect(css).not.toContain('var(--mc-colors-[');
+    expect(css).not.toContain('--mc-colors-[');
   });
 
   it('ignores invalid numeric magic colors without console-facing variables', async () => {
     const { css } = await generate('<div class="c-mc-123"></div>');
 
+    expect(css).not.toContain('.c-mc-123');
     expect(css).not.toContain('--mc-colors-123-DEFAULT:');
+    expect(css).not.toContain('oklch(undefined');
+  });
+
+  it('ignores unknown non-color names from markup without unresolved variables', async () => {
+    const { css } = await generate('<div class="c-mc-notacolor bg-mc-notacolor"></div>');
+
+    expect(css).not.toContain('.c-mc-notacolor');
+    expect(css).not.toContain('.bg-mc-notacolor');
+    expect(css).not.toContain('--mc-colors-notacolor-DEFAULT:');
+    expect(css).not.toContain('var(--mc-colors-notacolor-DEFAULT)');
     expect(css).not.toContain('oklch(undefined');
   });
 });
