@@ -1,7 +1,7 @@
 import type { CSSObject } from 'unocss';
 import { getMcThemeMetaColors, getThemeDepthColor, resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { mc } from 'magic-color';
-import { createTargetColorVariableDeclaration } from './utils/color-variable';
+import { BASE_COLOR_DEPTH, createTargetColorVariableDeclaration } from './utils/color-variable';
 
 interface ColorVariableUsage {
   hasBase: boolean
@@ -21,7 +21,7 @@ function escapeRegExp(value: string) {
 
 /** Collects the base and depth variables already present in one style object. */
 function collectStyleVariables(name: string, style: CSSStyleDeclaration, usage: ColorVariableUsage) {
-  const colorVariableRE = new RegExp(`^--mc-colors-${escapeRegExp(name)}-(DEFAULT|\\d+)$`);
+  const colorVariableRE = new RegExp(`^--mc-colors-${escapeRegExp(name)}-(${BASE_COLOR_DEPTH}|\\d+)$`);
 
   for (let i = 0; i < style.length; i++) {
     const variable = style.item(i);
@@ -31,7 +31,7 @@ function collectStyleVariables(name: string, style: CSSStyleDeclaration, usage: 
     }
 
     const [, depth] = match;
-    if (depth === 'DEFAULT') {
+    if (depth === BASE_COLOR_DEPTH) {
       usage.hasBase = true;
     }
     else if (depth) {

@@ -50,6 +50,102 @@ describe('runtime updateMagicColor helper', () => {
     expect(dom.style.getPropertyValue('--mc-colors-primary-230')).toContain('oklch(');
   });
 
+  it('updates different color variables independently on the same target element', () => {
+    const dom = document.createElement('div');
+    dom.style.setProperty('--mc-colors-primary-DEFAULT', 'red');
+    dom.style.setProperty('--mc-colors-primary-457', 'red');
+    dom.style.setProperty('--mc-colors-accent-630', 'red');
+
+    const expectedPrimary = getMagicColorStyle({
+      name: 'primary',
+      color: '#9c1d1e',
+      hasBase: true,
+      depths: new Set(['457']),
+    });
+
+    updateMagicColor({ name: 'primary', color: '#9c1d1e', dom });
+
+    expect(dom.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe(expectedPrimary['--mc-colors-primary-DEFAULT']);
+    expect(dom.style.getPropertyValue('--mc-colors-primary-457')).toBe(expectedPrimary['--mc-colors-primary-457']);
+    expect(dom.style.getPropertyValue('--mc-colors-accent-630')).toBe('red');
+
+    updateMagicColor({ name: 'accent', color: 'transparent', dom });
+
+    expect(dom.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe(expectedPrimary['--mc-colors-primary-DEFAULT']);
+    expect(dom.style.getPropertyValue('--mc-colors-primary-457')).toBe(expectedPrimary['--mc-colors-primary-457']);
+    expect(dom.style.getPropertyValue('--mc-colors-accent-630')).toBe('transparent');
+  });
+
+  it('updates global color variables declared on the document root', () => {
+    const style = document.createElement('style');
+    const root = document.documentElement;
+    style.textContent = ':root { --mc-colors-primary-DEFAULT: red; --mc-colors-primary-630: red; --mc-colors-accent-630: red; }';
+    document.head.append(style);
+
+    try {
+      const expected = getMagicColorStyle({
+        name: 'primary',
+        color: '#9c1d1e',
+        hasBase: true,
+        depths: new Set(['630']),
+      });
+
+      updateMagicColor({ name: 'primary', color: '#9c1d1e', dom: root });
+
+      expect(root.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe(expected['--mc-colors-primary-DEFAULT']);
+      expect(root.style.getPropertyValue('--mc-colors-primary-630')).toBe(expected['--mc-colors-primary-630']);
+      expect(root.style.getPropertyValue('--mc-colors-accent-630')).toBe('');
+    }
+    finally {
+      root.style.removeProperty('--mc-colors-primary-DEFAULT');
+      root.style.removeProperty('--mc-colors-primary-630');
+      style.remove();
+    }
+  });
+
+  it('updates local color variables without mutating global color variables', () => {
+    const style = document.createElement('style');
+    const root = document.documentElement;
+    const local = document.createElement('section');
+    style.textContent = '.magic-color-local { --mc-colors-primary-457: red; }';
+    local.className = 'magic-color-local';
+    root.style.setProperty('--mc-colors-primary-DEFAULT', 'red');
+    document.head.append(style);
+    document.body.append(local);
+
+    try {
+      const expectedLocal = getMagicColorStyle({
+        name: 'primary',
+        color: '#9c1d1e',
+        hasBase: false,
+        depths: new Set(['457']),
+      });
+
+      updateMagicColor({ name: 'primary', color: '#9c1d1e', dom: local });
+
+      expect(local.style.getPropertyValue('--mc-colors-primary-457')).toBe(expectedLocal['--mc-colors-primary-457']);
+      expect(root.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe('red');
+
+      const localValue = local.style.getPropertyValue('--mc-colors-primary-457');
+      const expectedGlobal = getMagicColorStyle({
+        name: 'primary',
+        color: '#2563eb',
+        hasBase: true,
+        depths: new Set(),
+      });
+
+      updateMagicColor({ name: 'primary', color: '#2563eb', dom: root });
+
+      expect(root.style.getPropertyValue('--mc-colors-primary-DEFAULT')).toBe(expectedGlobal['--mc-colors-primary-DEFAULT']);
+      expect(local.style.getPropertyValue('--mc-colors-primary-457')).toBe(localValue);
+    }
+    finally {
+      root.style.removeProperty('--mc-colors-primary-DEFAULT');
+      local.remove();
+      style.remove();
+    }
+  });
+
   it('reads variable definitions from computed styles', () => {
     const style = document.createElement('style');
     const dom = document.createElement('div');
