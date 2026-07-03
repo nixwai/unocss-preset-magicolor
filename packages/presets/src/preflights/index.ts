@@ -56,20 +56,20 @@ function createDarkCss(css: CSSObject, presets: readonly Preset[]) {
 }
 
 /** Emits only the color variables that were discovered by the usage extractor. */
-export function preflights(context?: MagicColorContext): Preflight[] {
+export function preflights(context: MagicColorContext): Preflight[] {
   return [{
     getCSS: ({ theme, generator }) => {
       const rootSourceCss: CSSObject = {};
       const rootTargetCss: CSSObject = {};
       const sourceDarkCss: CSSObject = {};
       const colorNames = new Set([
-        ...(context?.usage.getTargetNames() ?? []),
-        ...(context?.usage.getSourceNames() ?? []),
+        ...context.usage.getTargetNames(),
+        ...context.usage.getSourceNames(),
       ]);
 
       for (const name of colorNames) {
-        const targetDepths = context?.usage.getTargetDepths(name);
-        const sourceDepths = context?.usage.getSourceDepths(name);
+        const targetDepths = context.usage.getTargetDepths(name);
+        const sourceDepths = context.usage.getSourceDepths(name);
         const allDepths = new Set<MagicColorDepth>([...(targetDepths ?? []), ...(sourceDepths ?? [])]);
 
         if (!allDepths.size) {
@@ -89,7 +89,7 @@ export function preflights(context?: MagicColorContext): Preflight[] {
         }
 
         // Dark variables are emitted only for explicit dark aliases.
-        const darkColor = resolveColorConfig(context?.options.dark?.[name]);
+        const darkColor = resolveColorConfig(context.options.dark?.[name]);
         if (darkColor.color) {
           Object.assign(sourceDarkCss, resolveThemeColorCss(
             name,

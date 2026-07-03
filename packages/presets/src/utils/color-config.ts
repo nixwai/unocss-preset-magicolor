@@ -31,7 +31,7 @@ export function resolveColorConfig(config?: PresetMcColorValue): ResolvedColorCo
 export function resolveMixtureColorConfig(
   name: string,
   theme: Theme,
-  context?: MagicColorContext,
+  context: MagicColorContext,
   preferDark?: boolean,
 ): ResolvedColorConfig {
   if (resolveSpecialColor(name) || isLiteralColor(name)) {
@@ -40,13 +40,13 @@ export function resolveMixtureColorConfig(
 
   if (preferDark) {
     // Dark aliases only win when the selector is being generated for a dark variant.
-    const darkColor = resolveColorConfig(context?.options.dark?.[name]);
+    const darkColor = resolveColorConfig(context.options.dark?.[name]);
     if (darkColor.color) {
       return darkColor;
     }
   }
 
-  const optionColor = resolveColorConfig(context?.options.colors?.[name]);
+  const optionColor = resolveColorConfig(context.options.colors?.[name]);
   if (optionColor.color) {
     return optionColor;
   }

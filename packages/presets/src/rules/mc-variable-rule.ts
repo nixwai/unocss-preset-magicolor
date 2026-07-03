@@ -8,13 +8,13 @@ import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
 /** Creates `mc-name_source` rules that define reusable magic color variables. */
-export function createColorVariable(context?: MagicColorContext): Rule[] {
+export function createColorVariable(context: MagicColorContext): Rule[] {
   return [
     [/^mc-(?!lr(?:-|$))(.+)$/, (match, ctx) => resolveMagicColor(match, ctx, context)],
   ];
 }
 
-function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?: MagicColorContext) {
+function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context: MagicColorContext) {
   const { theme } = ctx;
   const definition = parseColorVariableDefinition(body);
   if (!definition) {
@@ -22,7 +22,7 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
   }
 
   const { name, hue } = definition;
-  context?.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name);
+  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name);
 
   const mcColorObj = resolveBodyColor(hue);
   if (!mcColorObj.originColor) {
@@ -34,11 +34,11 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context?
     const { css, depthMap } = resolveColorReferences({
       name,
       colorParts: mcColorObj,
-      depths: context?.usage.getTargetDepths(name),
+      depths: context.usage.getTargetDepths(name),
     });
-    context?.usage.recordSourceUsage(ctx.rawSelector, depthMap);
+    context.usage.recordSourceUsage(ctx.rawSelector, depthMap);
     return css;
   }
   // Arbitrary or literal colors are resolved directly rather than linked through variables.
-  return resolveThemeColorCss(name, mcColorObj, theme, context?.usage.getTargetDepths(name));
+  return resolveThemeColorCss(name, mcColorObj, theme, context.usage.getTargetDepths(name));
 };

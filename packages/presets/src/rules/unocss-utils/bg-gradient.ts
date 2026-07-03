@@ -23,7 +23,7 @@ const properties = {
 };
 
 // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/background.ts#L41
-export function mcBgGradientColorResolver(context?: MagicColorContext) {
+export function mcBgGradientColorResolver(context: MagicColorContext) {
   return function* ([, position, body]: string[], ctx: RuleContext<Theme>) {
     const { theme } = ctx;
     const css: CSSObject = {};

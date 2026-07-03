@@ -12,7 +12,7 @@ function createTargetDepthUsage(name: string, depth: string | undefined): MagicC
 }
 
 /** Parses a magic color token body and records the usage needed for preflight variables. */
-export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?: MagicColorContext) {
+export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context: MagicColorContext) {
   const colorData = parseColor(body, ctx.theme);
   if (!colorData) {
     return;
@@ -36,12 +36,12 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
   }
 
   if (!isLiteralColor(originColor)) {
-    context?.usage.recordTargetUsage(ctx.rawSelector, createTargetDepthUsage(originColor, originDepth));
+    context.usage.recordTargetUsage(ctx.rawSelector, createTargetDepthUsage(originColor, originDepth));
   }
 
   // Names used by `mc-*` definitions, global options, and theme colors are
   // resolved through variables emitted by the definition class or preflight.
-  const depths = context?.usage.getTargetDepths(originColor);
+  const depths = context.usage.getTargetDepths(originColor);
   if (depths?.size) {
     colorData.color = toVar(createTargetColorVariableName(originColor, originDepth));
   }
@@ -56,7 +56,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context?:
 }
 
 /** Creates a rule resolver that pipes magic-color parsing into UnoCSS color CSS output. */
-export function mcColorResolver(property: string, varName: string, context?: MagicColorContext) {
+export function mcColorResolver(property: string, varName: string, context: MagicColorContext) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
     const colorData = parseMagicColor(body ?? '', ctx, context);
     if (colorData?.color) {
