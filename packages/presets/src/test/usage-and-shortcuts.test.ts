@@ -66,6 +66,41 @@ describe('shortcut usage extraction', () => {
     expect(css).toContain('var(--mc-colors-btn-333)');
   });
 
+  it('supports mixed inline and shortcut magic-color definitions on the same element', async () => {
+    const uno = await createUno(
+      {},
+      { shortcuts: [['btn', 'mc-btn_blue-200 bg-mc-btn c-mc-btn-600']] },
+    );
+
+    const { css } = await uno.generate('<button class="mc-btn_red-100 btn"></button>', { preflights: true, id: 'mixed-shortcut-definition.vue' });
+    const inlineDefinitionBlock = getSelectorBlock(css, '.mc-btn_red-100');
+    const shortcutBlock = getSelectorBlock(css, '.btn');
+
+    expect(getCssVar(inlineDefinitionBlock, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-red-100)');
+    expect(getCssVar(inlineDefinitionBlock, '--mc-colors-btn-600')).toBe('var(--mc-source-colors-red-600)');
+    expect(getCssVar(shortcutBlock, '--mc-colors-btn-DEFAULT')).toBe('var(--mc-source-colors-blue-200)');
+    expect(getCssVar(shortcutBlock, '--mc-colors-btn-600')).toBe('var(--mc-source-colors-blue-600)');
+    expect(shortcutBlock).toContain('var(--mc-colors-btn-DEFAULT)');
+    expect(shortcutBlock).toContain('var(--mc-colors-btn-600)');
+    expect(css).toMatch(/--mc-source-colors-red-100:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-600:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-blue-200:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-blue-600:\s*oklch\(/);
+  });
+
+  it('ignores configured shortcut target usage when the shortcut selector is not used', async () => {
+    const uno = await createUno(
+      { colors: { primary: 'rose' } },
+      { shortcuts: [['unused-btn', 'bg-mc-primary-630 text-white']] },
+    );
+
+    const { css } = await uno.generate('<button class="mc-btn_red"></button>', { preflights: true, id: 'unused-shortcut.vue' });
+
+    expect(css).not.toContain('--mc-colors-primary-630:');
+    expect(css).not.toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
+    expect(css).not.toContain('var(--mc-colors-primary-630)');
+  });
+
   it('drops shortcut-expanded usage when the same input no longer uses the shortcut', async () => {
     const uno = await createUno(
       { colors: { primary: 'rose' } },

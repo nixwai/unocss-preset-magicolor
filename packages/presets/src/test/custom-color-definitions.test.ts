@@ -117,6 +117,21 @@ describe('local lightness reverse color definitions', () => {
     expect(getCssVar(css, '--mc-source-colors-primary-80')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-80'));
   });
 
+  it('reverses only the matching color name when mixed with another definition on the same element', async () => {
+    const { css } = await generate('<div class="mc-lr-blue mc-btn_blue bg-mc-blue-230 c-mc-btn-880"></div>');
+    const localBlock = getSelectorBlock(css, '.mc-lr-blue');
+    const definitionBlock = getSelectorBlock(css, '.mc-btn_blue');
+    const blueUtilityBlock = getSelectorBlock(css, '.bg-mc-blue-230');
+    const btnUtilityBlock = getSelectorBlock(css, '.c-mc-btn-880');
+
+    expect(getCssVar(localBlock, '--mc-colors-blue-230')).toBe('var(--mc-source-colors-blue-770)');
+    expect(getCssVar(definitionBlock, '--mc-colors-btn-880')).toBe('var(--mc-source-colors-blue-880)');
+    expect(blueUtilityBlock).toContain('var(--mc-colors-blue-230)');
+    expect(btnUtilityBlock).toContain('var(--mc-colors-btn-880)');
+    expect(css).toMatch(/--mc-source-colors-blue-770:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-blue-880:\s*oklch\(/);
+  });
+
   it('reverses literal inline depths for base variables', async () => {
     const { css } = await generate('<div class="mc-lr-btn_[#9c1d1e]-620 c-mc-btn"></div>');
 
@@ -189,6 +204,22 @@ describe('global lightness reverse color definitions', () => {
     expect(getCssVar(css, '--mc-source-colors-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
     expect(getCssVar(css, '--mc-source-colors-primary-550')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-550'));
     expect(css).not.toContain('--mc-colors-primary-50:var(--mc-colors-primary-950)');
+  });
+
+  it('reverses direct color usage globally while leaving same-element local definitions unchanged', async () => {
+    const { css } = await generate('<div class="mc-lr mc-btn_blue bg-mc-blue-230 c-mc-btn-880"></div>');
+    const mcLrBlock = getSelectorBlock(css, '.mc-lr');
+    const definitionBlock = getSelectorBlock(css, '.mc-btn_blue');
+    const blueUtilityBlock = getSelectorBlock(css, '.bg-mc-blue-230');
+    const btnUtilityBlock = getSelectorBlock(css, '.c-mc-btn-880');
+
+    expect(getCssVar(mcLrBlock, '--mc-colors-blue-230')).toBe('var(--mc-source-colors-blue-770)');
+    expect(getCssVar(mcLrBlock, '--mc-colors-btn-880')).toBeUndefined();
+    expect(getCssVar(definitionBlock, '--mc-colors-btn-880')).toBe('var(--mc-source-colors-blue-880)');
+    expect(blueUtilityBlock).toContain('var(--mc-colors-blue-230)');
+    expect(btnUtilityBlock).toContain('var(--mc-colors-btn-880)');
+    expect(css).toMatch(/--mc-source-colors-blue-770:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-blue-880:\s*oklch\(/);
   });
 
   it('reverses theme color variables globally', async () => {
