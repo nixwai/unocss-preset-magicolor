@@ -1,7 +1,7 @@
 import type { MagicColorDepth } from '../utils/color-variable';
 import type { MagicColorDepthMap } from './types';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
-import { BASE_COLOR_DEPTH } from '../utils/color-variable';
+import { BASE_COLOR_DEPTH, isLiteralColor } from '../utils/color-variable';
 
 /** Token scan result from one UnoCSS extractor input. */
 export interface TokenScan {
@@ -11,22 +11,17 @@ export interface TokenScan {
   tokens: Set<string>
 }
 
-const colorUsagePrefixRE = /^(?!mc-)(?:.+-)?mc-/;
-
-// Matches magic color usages such as `c-mc-my-btn-630`, `c-mc-grape120:20`, or `c-mc-qq/34:20`.
-// Bare `mc-*` utilities are definitions/control utilities, not color usages.
-const colorUsageTokenRE = /^(?!mc-)(?:.+-)?mc-([A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*)(?:[:/].*)?$/;
-
 /** Stores the requested numeric color depth. */
 function addDepth(depths: Set<MagicColorDepth>, no: string) {
   depths.add(Number(no));
 }
 
-/** Removes UnoCSS variants while preserving magic color opacity/modifier suffixes. */
+/** find the original token with magic color name. */
 function normalizeToken(token: string) {
   const parts = token.split(':');
-  const colorIndex = parts.findIndex(part => colorUsagePrefixRE.test(part));
-  return colorIndex >= 0 ? parts.slice(colorIndex).join(':') : token;
+  const colorIndex = parts.findIndex(part => part.includes('mc-') && !part.startsWith('mc-'));
+  const current = colorIndex >= 0 ? parts.slice(colorIndex).join(':') : '';
+  return current.match(/mc-(.+)$/)?.[1] ?? '';
 }
 
 /** Scans extracted tokens into color depths for one input id. */
@@ -35,30 +30,26 @@ export function scanUsage(tokens = new Set<string>()): TokenScan {
   const colors: MagicColorDepthMap = new Map();
 
   for (const token of tokenList) {
-    const current = normalizeToken(token);
-    const colorUsageMatch = current.match(colorUsageTokenRE);
-    if (!colorUsageMatch) {
-      continue;
-    }
-
-    const [, body] = colorUsageMatch;
+    const body = normalizeToken(token);
     if (!body) {
       continue;
     }
-    const { originColor: name, originDepth: no } = resolveBodyColor(body);
-    if (!name) {
+    const { originColor, originDepth } = resolveBodyColor(body);
+    if (!originColor) {
       continue;
     }
-
+    if (isLiteralColor(originColor)) {
+      continue;
+    }
     // Merge repeated tokens for the same color name within this input.
-    const depths = colors.get(name) ?? new Set<MagicColorDepth>();
-    if (no !== undefined) {
-      addDepth(depths, no);
+    const depths = colors.get(originColor) ?? new Set<MagicColorDepth>();
+    if (originDepth !== undefined) {
+      addDepth(depths, originDepth);
     }
     else {
       depths.add(BASE_COLOR_DEPTH);
     }
-    colors.set(name, depths);
+    colors.set(originColor, depths);
   }
 
   return { colors, tokens };

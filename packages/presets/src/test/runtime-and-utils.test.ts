@@ -210,6 +210,10 @@ describe('color parsing utilities', () => {
       ['[lab(60_20_10)]-350', { originColor: 'lab(60_20_10)', originDepth: '350' }],
       ['[lch(40_20_21.57)]-400', { originColor: 'lch(40_20_21.57)', originDepth: '400' }],
       ['[oklch(40.1%_0.123_21.57)]-200', { originColor: 'oklch(40.1%_0.123_21.57)', originDepth: '200' }],
+      ['var(--a-b)', { originColor: 'var(--a-b)', originDepth: undefined }],
+      ['var(--a-b)500', { originColor: 'var(--a-b)', originDepth: '500' }],
+      ['var(--a-b):500', { originColor: 'var(--a-b)', originDepth: undefined }],
+      ['var(--a-b)-500', { originColor: 'var(--a-b)', originDepth: '500' }],
     ];
 
     for (const [body, expected] of cases) {

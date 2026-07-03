@@ -35,3 +35,8 @@ export function parseColorVariableDefinition(body: string) {
   }
   return { name, hue };
 }
+
+/** is a literal color? */
+export function isLiteralColor(color: string) {
+  return color.startsWith('#') || /^[a-z][\w-]*\(/i.test(color);
+}

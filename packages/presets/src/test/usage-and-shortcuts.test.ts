@@ -191,6 +191,26 @@ describe('usage scanner and cache bookkeeping', () => {
     expect(scan.colors.get('secondary')).toEqual(new Set([640]));
     expect(scan.colors.has('primary_rose')).toBe(false);
   });
+
+  it('ignores literal and function colors in usage scans', () => {
+    const scan = scanUsage(new Set([
+      'bg-mc-primary-333',
+      'c-mc-[#123456]-500',
+      'bg-mc-[rgb(12,22,33)]',
+      'bg-mc-[hsl(210_60%_40%)]-300',
+      'bg-mc-[hsb(210_60%_40%)]-300',
+      'bg-mc-[lab(60_20_10)]-350',
+      'bg-mc-[lch(40_20_21.57)]-400',
+      'bg-mc-[oklch(40.1%_0.123_21.57)]-200',
+      'bg-mc-[oklab(40.1%_0.1_0.2)]-500',
+      'bg-mc-[var(--brand-color)]',
+      'bg-mc-[calc(var(--brand-depth)_*_1%)]',
+    ]));
+
+    expect(scan.colors).toEqual(new Map([
+      ['primary', new Set([333])],
+    ]));
+  });
 });
 
 describe('directive and safelist usage extraction', () => {

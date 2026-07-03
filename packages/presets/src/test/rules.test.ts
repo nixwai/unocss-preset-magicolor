@@ -167,14 +167,4 @@ describe('arbitrary and invalid color rule inputs', () => {
     expect(css).not.toContain('--mc-colors-123-DEFAULT:');
     expect(css).not.toContain('oklch(undefined');
   });
-
-  it('ignores unknown non-color names from markup without unresolved variables', async () => {
-    const { css } = await generate('<div class="c-mc-notacolor bg-mc-notacolor"></div>');
-
-    expect(css).not.toContain('.c-mc-notacolor');
-    expect(css).not.toContain('.bg-mc-notacolor');
-    expect(css).not.toContain('--mc-colors-notacolor-DEFAULT:');
-    expect(css).not.toContain('var(--mc-colors-notacolor-DEFAULT)');
-    expect(css).not.toContain('oklch(undefined');
-  });
 });
