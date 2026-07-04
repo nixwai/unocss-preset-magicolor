@@ -91,6 +91,7 @@ export function resolveBodyColor(body?: string): ResolvedColorParts {
   return resolveBodyColorDepth(bodyColor);
 }
 
+/** Resolves UnoCSS special color keywords to their canonical CSS values. */
 export function resolveSpecialColor(color?: string) {
   if (!color) {
     return;
@@ -98,7 +99,7 @@ export function resolveSpecialColor(color?: string) {
   return specialColorValueMap.get(color.trim().toLowerCase());
 }
 
-/** use dark modal */
+/** Checks whether a raw selector contains the `dark:` variant. */
 export function hasDarkVariant(rawSelector?: string) {
   return rawSelector?.split(':').includes('dark') === true;
 }

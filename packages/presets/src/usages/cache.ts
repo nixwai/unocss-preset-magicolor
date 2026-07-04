@@ -1,6 +1,7 @@
 import type { MagicColorDepth } from '../utils/color-variable';
 import type { TokenScan } from './scanner';
 import type { MagicColorDepthMap } from './types';
+import { stripDevCacheToken } from '../utils/dev-cache-token';
 
 export interface UsageCache {
   targetDepths: MagicColorDepthMap
@@ -9,6 +10,7 @@ export interface UsageCache {
   sourceNames: string[]
 }
 
+/** Lazily aggregates usage scans into target and source color-depth caches. */
 export class UsageCacheStore {
   private readonly scansById: ReadonlyMap<string, TokenScan>;
   private readonly ruleScans: ReadonlyMap<string, TokenScan>;
@@ -27,28 +29,33 @@ export class UsageCacheStore {
     this.lrScans = lrScans;
   }
 
+  /** Marks the aggregated usage cache stale after scans change. */
   invalidate() {
     this.cacheValid = false;
     this.cache = undefined;
   }
 
+  /** Gets requested public target variable depths for one color name. */
   getTargetDepths(name: string) {
     this.ensureCacheValid();
     const depths = this.cache?.targetDepths.get(name);
     return depths && depths.size ? depths : undefined;
   }
 
+  /** Lists all color names with public target variable usage. */
   getTargetNames() {
     this.ensureCacheValid();
     return this.cache?.targetNames ?? [];
   }
 
+  /** Gets requested internal source variable depths for one color name. */
   getSourceDepths(name: string) {
     this.ensureCacheValid();
     const depths = this.cache?.sourceDepths.get(name);
     return depths && depths.size ? depths : undefined;
   }
 
+  /** Lists all color names with internal source variable usage. */
   getSourceNames() {
     this.ensureCacheValid();
     return this.cache?.sourceNames ?? [];
@@ -104,7 +111,9 @@ function collectReferencedSelectors(scansById: ReadonlyMap<string, TokenScan>) {
 
   for (const scan of scansById.values()) {
     for (const token of scan.tokens) {
-      referencedSelectors.add(token);
+      // Input tokens may carry a dev suffix, while rule scans are keyed by the stable selector.
+      // Normalize here so stale rule scans are ignored by reference.
+      referencedSelectors.add(stripDevCacheToken(token));
     }
   }
 

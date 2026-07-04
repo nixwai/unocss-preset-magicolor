@@ -13,4 +13,12 @@ export interface PresetMcOptions {
   colors?: Record<string, PresetMcColorValue>
   /** Dark-mode color aliases emitted with the configured UnoCSS dark selector. */
   dark?: Record<string, PresetMcColorValue>
+  /**
+   * Enables the dev cache token used to force UnoCSS to reparse magic-color
+   * definition selectors after watch-mode updates. This is disabled by default
+   * and should be enabled explicitly only for dev server usage.
+   *
+   * @default false
+   */
+  devCacheToken?: boolean
 }

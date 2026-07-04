@@ -4,6 +4,7 @@ import type { MagicColorContext } from '../typing';
 import { notLastChildSelectorVariant } from '@unocss/preset-wind4/rules';
 import { handleImage, handlerBorderColor, handleShadow, mcBgGradientColorResolver, mcColorResolver } from './unocss-utils';
 
+/** Creates the UnoCSS color utility rules that understand `mc-*` color tokens. */
 export function createColorStyle(context: MagicColorContext): Rule<Theme>[] {
   return [
     // common style colors

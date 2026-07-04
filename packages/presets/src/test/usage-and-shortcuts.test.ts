@@ -36,6 +36,68 @@ describe('watch-mode usage replacement', () => {
     expect(second.css).toContain('--mc-source-colors-primary-80:');
     expect(second.css).not.toContain('--mc-source-colors-primary-920:');
   });
+
+  it('updates dev cached custom definition output when target depths change', async () => {
+    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+
+    const first = await uno.generate('<div class="mc-btn_red c-mc-btn-80"></div>', { preflights: true, id: 'definition.vue' });
+    expect(getCssVar(getSelectorBlock(first.css, '.mc-btn_red'), '--mc-colors-btn-80')).toBe('var(--mc-source-colors-red-80)');
+
+    const second = await uno.generate('<div class="mc-btn_red c-mc-btn-100"></div>', { preflights: true, id: 'definition.vue' });
+    const definitionBlock = getSelectorBlock(second.css, '.mc-btn_red');
+
+    expect(getCssVar(definitionBlock, '--mc-colors-btn-100')).toBe('var(--mc-source-colors-red-100)');
+    expect(getCssVar(definitionBlock, '--mc-colors-btn-80')).toBeUndefined();
+    expect(second.css).toContain('var(--mc-colors-btn-100)');
+    expect(second.css).not.toContain('mc-dev');
+  });
+
+  it('keeps dev token out when target usage is removed', async () => {
+    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+
+    const first = await uno.generate('<div class="mc-btn_red c-mc-btn-80"></div>', { preflights: true, id: 'definition-remove.vue' });
+    expect(getCssVar(getSelectorBlock(first.css, '.mc-btn_red'), '--mc-colors-btn-80')).toBe('var(--mc-source-colors-red-80)');
+
+    const second = await uno.generate('<div class="mc-btn_red"></div>', { preflights: true, id: 'definition-remove.vue' });
+
+    expect(getSelectorBlock(second.css, '.mc-btn_red')).not.toContain('--mc-colors-btn-80');
+    expect(second.css).not.toContain('mc-dev');
+  });
+
+  it('updates dev cached global lightness-reverse output when target depths change', async () => {
+    const uno = await createUno({ colors: { primary: 'rose' }, devCacheToken: true }, { envMode: 'dev' });
+
+    const first = await uno.generate('<div class="mc-lr c-mc-primary-80"></div>', { preflights: true, id: 'global-lr.vue' });
+    expect(getCssVar(getSelectorBlock(first.css, '.mc-lr'), '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
+
+    const second = await uno.generate('<div class="mc-lr c-mc-primary-100"></div>', { preflights: true, id: 'global-lr.vue' });
+    const lrBlock = getSelectorBlock(second.css, '.mc-lr');
+
+    expect(getCssVar(lrBlock, '--mc-colors-primary-100')).toBe('var(--mc-source-colors-primary-900)');
+    expect(getCssVar(lrBlock, '--mc-colors-primary-80')).toBeUndefined();
+    expect(second.css).toContain('var(--mc-colors-primary-100)');
+    expect(second.css).not.toContain('mc-dev');
+  });
+
+  it('keeps dev token out of variant definition selectors', async () => {
+    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+
+    const { css } = await uno.generate('<div class="hover:mc-btn_red c-mc-btn-100"></div>', { preflights: true, id: 'variant-definition.vue' });
+    const hoverBlock = getSelectorBlock(css, '.hover\\:mc-btn_red:hover');
+
+    expect(getCssVar(hoverBlock, '--mc-colors-btn-100')).toBe('var(--mc-source-colors-red-100)');
+    expect(css).not.toContain('mc-dev');
+  });
+
+  it('keeps dev token out of arbitrary color definition selectors', async () => {
+    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+
+    const { css } = await uno.generate('<div class="mc-brand_[#9c1d1e] c-mc-brand"></div>', { preflights: true, id: 'arbitrary-definition.vue' });
+    const definitionBlock = getSelectorBlock(css, '.mc-brand_\\[\\#9c1d1e\\]');
+
+    expect(getCssVar(definitionBlock, '--mc-colors-brand-DEFAULT')).toBe('#9c1d1e');
+    expect(css).not.toContain('mc-dev');
+  });
 });
 
 describe('shortcut usage extraction', () => {
@@ -131,6 +193,34 @@ describe('shortcut usage extraction', () => {
 });
 
 describe('usage scanner and cache bookkeeping', () => {
+  it('adds dev cache tokens only when explicitly enabled', () => {
+    const disabledUsage = new MagicColorUsage();
+    const disabledExtracted = new Set(['mc-btn_red']);
+
+    disabledUsage.extractor.extract?.({
+      extracted: disabledExtracted,
+      id: 'dev-cache-disabled.vue',
+      original: '',
+      code: '',
+      envMode: 'dev',
+    });
+
+    expect(disabledExtracted).toEqual(new Set(['mc-btn_red']));
+
+    const enabledUsage = new MagicColorUsage({ devCacheToken: true });
+    const enabledExtracted = new Set(['mc-btn_red']);
+
+    enabledUsage.extractor.extract?.({
+      extracted: enabledExtracted,
+      id: 'dev-cache-enabled.vue',
+      original: '',
+      code: '',
+      envMode: 'dev',
+    });
+
+    expect(Array.from(enabledExtracted)).toEqual(['mc-btn_red:mc-dev-1']);
+  });
+
   it('filters shortcut target usage by color name when requested', () => {
     const usage = new MagicColorUsage();
 
@@ -282,5 +372,19 @@ describe('directive and safelist usage extraction', () => {
     expect(css).toContain('--mc-colors-primary-630:');
     expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
     expect(css).toContain('var(--mc-colors-primary-630)');
+  });
+
+  it('tracks ownerless magic color usage from safelist rules in dev mode', async () => {
+    const uno = await createUno(
+      { colors: { primary: 'rose' } },
+      { envMode: 'dev', safelist: ['bg-mc-primary-630'] },
+    );
+
+    const { css } = await uno.generate('<div class="text-white"></div>', { preflights: true, id: 'safelist-dev.vue' });
+
+    expect(css).toContain('--mc-colors-primary-630:');
+    expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-primary-630)');
+    expect(css).not.toContain('mc-dev');
   });
 });

@@ -29,4 +29,5 @@ export default defineConfig({
   shortcuts: [
     ['btn', 'p-5 bg-mc-primary-333 text-white cursor-pointer hover:mc-lr-primary_primary'],
   ],
+  envMode: 'build',
 });

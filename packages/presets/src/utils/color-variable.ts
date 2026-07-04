@@ -36,7 +36,7 @@ export function parseColorVariableDefinition(body: string) {
   return { name, hue };
 }
 
-/** is a literal color? */
+/** Checks whether a color body is a literal CSS color instead of a theme alias. */
 export function isLiteralColor(color: string) {
   return color.startsWith('#') || /^[a-z][\w-]*\(/i.test(color);
 }

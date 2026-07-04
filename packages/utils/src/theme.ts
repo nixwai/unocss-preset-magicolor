@@ -17,11 +17,9 @@ export interface DepthOptions<TDefault = undefined> extends ThemeDepthOptions {
 export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
 
 /**
- * Build the hex-based themeMeta color map for a valid color string using
- * `magic-color`'s theme generator. Returns whatever metas could be resolved;
- * an invalid color or a `mc.theme` failure yields an empty map (no logging).
- * @param originColor a color string (e.g. `#9c1d1e`, `red`)
- * @returns themeMeta → oklch CSSColorValue map (partial)
+ * Builds a partial theme-depth color map from a valid source color.
+ *
+ * Invalid colors return an empty map so generation can continue safely.
  */
 export function getMcThemeMetaColors(originColor?: string): Partial<Record<ThemeKey, CSSColorValue>> {
   const themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>> = {};
@@ -63,6 +61,7 @@ function stringifyOklchColor(cssColor?: CSSColorValue) {
   return `oklch(${components.join(' ')}${alpha})`;
 }
 
+/** Resolves a numeric theme depth, optionally reversing it for lightness lookup. */
 export function resolveThemeDepth<TDefault>(options: DepthOptions<TDefault> & { defaultValue: TDefault }): number | TDefault;
 export function resolveThemeDepth(options?: DepthOptions): number | undefined;
 export function resolveThemeDepth<TDefault>(options: DepthOptions<TDefault> = {}) {
@@ -94,6 +93,7 @@ function resolveDepth(no: string | number, options: ThemeDepthOptions = {}) {
   return { originDepth, beforeDepth, afterDepth };
 }
 
+/** Resolves or interpolates the OKLCH color for a requested theme depth. */
 export function getThemeDepthColor(
   themeMetaColors: Partial<Record<ThemeKey, CSSColorValue>>,
   no: string | number,

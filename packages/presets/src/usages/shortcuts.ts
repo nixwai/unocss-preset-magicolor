@@ -5,6 +5,7 @@ function splitShortcutBody(body: string) {
   return body.split(/\s+/).filter(Boolean);
 }
 
+/** Extracts magic-color usage from static string shortcuts. */
 export function collectShortcuts<Theme extends object = object>(shortcuts: Iterable<Shortcut<Theme>> = []) {
   const usages = [];
 
