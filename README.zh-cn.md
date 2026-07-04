@@ -131,6 +131,20 @@ export default defineConfig({
 </template>
 ```
 
+也可以在不重新指定颜色来源的情况下反转已有颜色名。如：`mc-lr-primary` 只反转 `primary`，相当`mc-lr-primary_primary`。
+
+也可裸写 `mc-lr` 可以会反转当前选择器中已使用的全局配置色或 theme 色名，使用 class 定义的颜色不会被反转。
+
+```vue
+<template>
+  <section class="mc-lr">
+    <button class="bg-mc-primary-80 c-white ring ring-mc-rose-230">
+      Inverted depth scale
+    </button>
+  </section>
+</template>
+```
+
 ### 全局颜色
 
 如果项目里有稳定的语义色，可以通过 `presetMagicolor({ colors })` 定义全局别名。别名会在 `:root` 中输出为 `--mc-colors-<name>-DEFAULT` 或 `--mc-colors-<name>-<depth>`，但同样只会为实际用到的色阶生成变量。
@@ -168,6 +182,21 @@ export default defineConfig({
 
 全局 `colors` 和 `dark` 条目既可以写字符串，也可以写对象。使用 `{ color, lightnessReverse: true }` 可以只为这个别名启用数字亮度反转。基础变量例如 `--mc-colors-primary-DEFAULT` 不会被隐式当成 `500`，只有显式数字色阶会反转。
 
+完整的预设选项如下：
+
+```ts
+interface PresetMcOptions {
+  colors?: Record<string, string | { color: string, lightnessReverse?: boolean }>
+  dark?: Record<string, string | { color: string, lightnessReverse?: boolean }>
+  /**
+   * 开发模式 watch 场景下，用于 `mc-*` 定义选择器的缓存刷新辅助选项。
+   *
+   * @default false
+   */
+  devCacheToken?: boolean
+}
+```
+
 `dark` 选项可以为同一组语义色定义全局暗色模式颜色。存在 `presetWind4` 时，暗色颜色表会跟随它的 `dark` 配置（`'class'`、`'media'` 或自定义选择器）。如果 Magicolor 无法读取到 `presetWind4` 的 dark 配置，则默认使用 `.dark`。生成的暗色块会覆盖同名 `--mc-colors-*` 变量，不依赖 `dark:mc-*` 工具类是否成功生成。
 
 同一个语义色仍然可以通过变体在局部组件中重新定义。例如使用 `mc-primary_<color>` 定义亮色主题，再用 `dark:mc-primary_<color>` 在暗黑模式下覆盖颜色；所有读取 `primary` 的工具类都会跟随当前主题变化。
@@ -181,6 +210,30 @@ export default defineConfig({
   </main>
 </template>
 ```
+
+### dev cache token
+
+`devCacheToken` 是一个默认关闭的开发模式缓存刷新辅助选项，用来处理 dev server 中比较隐蔽的缓存边界情况。UnoCSS Vite dev 模式下，提取到的 token 集合可能是累积式的：新 token 会加入，但从当前文件里删掉的旧 token 有时会留在 UnoCSS 内部，直到更完整的重新扫描发生。对于 Magicolor 来说，`mc-btn_red` 这类定义选择器的输出依赖当前已经扫描到的目标色阶，因此这个问题会表现为变量色阶没有及时刷新。
+
+当 `devCacheToken: true` 且 UnoCSS generator 的 `envMode` 为 `dev` 时，Magicolor 会给 `mc-*` 定义/控制 token 临时追加类似 `:mc-dev-1` 的内部后缀。这个后缀会改变 UnoCSS 的原始缓存 key，让 `mc-btn_red`、`mc-lr-btn_rose` 这类规则在 watch 更新后重新解析。生成 CSS 前后缀会被剥离，所以最终选择器仍然是用户写的选择器，CSS 中不应该出现 `mc-dev`。
+
+只有在开发服务器或 watch 配置中，遇到修改 magic-color 定义或目标色阶后变量仍然陈旧时，才建议开启：
+
+```ts
+import { defineConfig, presetWind4 } from 'unocss';
+import { presetMagicolor } from 'unocss-preset-magicolor';
+
+export default defineConfig({
+  presets: [
+    presetWind4(),
+    presetMagicolor({
+      devCacheToken: true,
+    }),
+  ],
+});
+```
+
+这个选项不会改变颜色解析、生产构建 CSS、运行时 `updateMagicColor` 或公开 class 语法。不要手写 `mc-dev-*` token，它们只是内部缓存 key。
 
 ### JS 运行时换色
 

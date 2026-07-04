@@ -131,6 +131,18 @@ Use `mc-lr-<name>_<color>` when a local definition should reverse numeric lightn
 </template>
 ```
 
+You can also reverse an existing color name without redefining its source. `mc-lr-primary` reverses only `primary`, while bare `mc-lr` reverses the currently used configured or theme color names in that selector.
+
+```vue
+<template>
+  <section class="mc-lr">
+    <button class="bg-mc-primary-80 c-white ring ring-mc-rose-230">
+      Inverted depth scale
+    </button>
+  </section>
+</template>
+```
+
 ### global color
 
 For stable semantic colors, use `presetMagicolor({ colors })` to define global aliases. Aliases are emitted under `:root` as `--mc-colors-<name>-DEFAULT` for no-depth usage or `--mc-colors-<name>-<depth>` for numeric depths, but only for the depths that are actually used.
@@ -168,6 +180,21 @@ This adds a semantic layer on top of the original UnoCSS `theme.colors`: busines
 
 Global `colors` and `dark` entries can be either a string or an object. Use `{ color, lightnessReverse: true }` to reverse only numeric lightness depths for that alias. Base variables such as `--mc-colors-primary-DEFAULT` are not treated as `500`; only explicit numeric depths are reversed.
 
+The full preset options are:
+
+```ts
+interface PresetMcOptions {
+  colors?: Record<string, string | { color: string, lightnessReverse?: boolean }>
+  dark?: Record<string, string | { color: string, lightnessReverse?: boolean }>
+  /**
+   * Dev-only cache-busting helper for `mc-*` definition selectors in watch mode.
+   *
+   * @default false
+   */
+  devCacheToken?: boolean
+}
+```
+
 The `dark` option defines global dark-mode aliases for the same semantic names. When `presetWind4` is present, the dark color map follows its `dark` mode (`'class'`, `'media'`, or custom selectors). If Magicolor cannot read a `presetWind4` dark mode, it falls back to `.dark`. The generated dark block overrides the same `--mc-colors-*` variables without relying on `dark:mc-*` utilities being generated.
 
 The same semantic color can still be redefined by variants for local component overrides. For example, define the light theme with `mc-primary_<color>` and override it in dark mode with `dark:mc-primary_<color>`; all utilities that read `primary` will follow the active theme.
@@ -181,6 +208,30 @@ The same semantic color can still be redefined by variants for local component o
   </main>
 </template>
 ```
+
+### dev cache token
+
+`devCacheToken` is an opt-in workaround for a development-server cache edge case. In UnoCSS Vite dev mode, the extracted token set can be cumulative: newly seen tokens are added, but tokens removed from the edited file may stay in UnoCSS internals until a fuller rescan. That is especially noticeable for Magicolor definition selectors because their generated variables depend on the currently scanned target depths.
+
+When `devCacheToken: true` and the generator `envMode` is `dev`, Magicolor adds an internal suffix such as `:mc-dev-1` to `mc-*` definition/control tokens before UnoCSS caches them. The suffix changes the raw cache key so rules like `mc-btn_red` and `mc-lr-btn_rose` are reparsed after watch-mode updates. The suffix is stripped before CSS is emitted, so generated selectors stay user-facing and should not contain `mc-dev`.
+
+Use it only for dev/watch configs when you see stale variables after changing magic-color definitions or target depths:
+
+```ts
+import { defineConfig, presetWind4 } from 'unocss';
+import { presetMagicolor } from 'unocss-preset-magicolor';
+
+export default defineConfig({
+  presets: [
+    presetWind4(),
+    presetMagicolor({
+      devCacheToken: true,
+    }),
+  ],
+});
+```
+
+This option does not change color resolution, generated production CSS, runtime `updateMagicColor`, or the public class syntax. Do not write  `mc-dev-*` tokens manually; they are internal cache keys.
 
 ### js change color
 
@@ -210,7 +261,6 @@ function toggleColor() {
 `updateMagicColor` reads existing variables on the target element, such as `--mc-colors-primary-DEFAULT` and `--mc-colors-primary-457`, and updates only those defined variables. It does not infer new variables from DOM classes alone, so you must first let UnoCSS generate them with classes such as `c-mc-primary` or `bg-mc-primary-457`.
 
 Pass `lightnessReverse: true` to update existing numeric depth variables with the same reversed lightness mapping used by `mc-lr-*` and global color objects.
-
 ## Credits
 
 - [UnoCSS](https://github.com/unocss/unocss)
