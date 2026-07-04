@@ -40,7 +40,7 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
   }
 
   const { name, hue } = definition;
-  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name);
+  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name, ctx);
   const colorParts = resolveBodyColor(hue);
   if (!colorParts.originColor) {
     return;
@@ -70,7 +70,7 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
 
 /** Rebuilds all currently used configured variables with reversed lightness depths. */
 function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context: MagicColorContext) {
-  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts);
+  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, undefined, ctx);
   const css: CSSObject = {};
   for (const name of context.usage.getTargetNames()) {
     const sourceConfig = resolveMixtureColorConfig(name, ctx.theme, context, hasDarkVariant(ctx.rawSelector));

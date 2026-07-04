@@ -1,4 +1,4 @@
-import type { Extractor, Shortcut } from 'unocss';
+import type { Extractor, RuleContext, Shortcut } from 'unocss';
 import type { PresetMcOptions } from '../types';
 import type { TokenScan } from './scanner';
 import type { MagicColorDepthMap } from './types';
@@ -83,10 +83,21 @@ export class MagicColorUsage {
   recordShortcutTargetUsages<Theme extends object = object>(
     shortcuts: Iterable<Shortcut<Theme>>,
     colorName?: string,
+    context?: RuleContext<Theme>,
   ) {
-    for (const shortcut of collectShortcuts(shortcuts)) {
+    for (const shortcut of collectShortcuts(shortcuts, this.getInputTokens(), context)) {
       this.recordTargetUsage(shortcut.rawSelector, pickColorUsage(shortcut.depths, colorName));
     }
+  }
+
+  private getInputTokens() {
+    const tokens = new Set<string>();
+    for (const scan of this.inputScans.values()) {
+      for (const token of scan.tokens) {
+        tokens.add(stripDevCacheToken(token));
+      }
+    }
+    return tokens;
   }
 
   private recordSelectorColors(

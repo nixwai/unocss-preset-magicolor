@@ -190,6 +190,20 @@ describe('shortcut usage extraction', () => {
     expect(getCssVar(css, '--mc-colors-primary-333')).toBe('var(--mc-source-colors-primary-333)');
     expect(css).toContain('var(--mc-colors-primary-333)');
   });
+
+  it('uses dynamic shortcut-declared depths when resolving magic color definitions', async () => {
+    const uno = await createUno(
+      {},
+      { shortcuts: [[/^btn$/, () => 'bg-mc-btn-333 text-white']] },
+    );
+
+    const { css } = await uno.generate('<button class="btn mc-btn_red"></button>', { preflights: true, id: 'dynamic-shortcut-definition.vue' });
+    const definitionBlock = getSelectorBlock(css, '.mc-btn_red');
+
+    expect(getCssVar(definitionBlock, '--mc-colors-btn-333')).toBe('var(--mc-source-colors-red-333)');
+    expect(getCssVar(css, '--mc-source-colors-red-333')).toMatch(/^oklch\(/);
+    expect(css).toContain('var(--mc-colors-btn-333)');
+  });
 });
 
 describe('usage scanner and cache bookkeeping', () => {

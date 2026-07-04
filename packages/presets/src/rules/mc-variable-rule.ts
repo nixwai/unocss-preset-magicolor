@@ -27,7 +27,7 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
   }
 
   const { name, hue } = definition;
-  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name);
+  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name, ctx);
 
   const mcColorObj = resolveBodyColor(hue);
   if (!mcColorObj.originColor) {

@@ -9,9 +9,15 @@ export type PresetMcColorValue = string | PresetMcColorOptions;
 
 /** User-facing options accepted by `presetMagicolor`. */
 export interface PresetMcOptions {
-  /** Global color aliases emitted into `:root` when matching usages are scanned. */
+  /**
+   * Global color aliases emitted into `:root` when matching usages are scanned.
+   * Alias names should not end with digits because trailing digits are parsed as compact depth syntax.
+   */
   colors?: Record<string, PresetMcColorValue>
-  /** Dark-mode color aliases emitted with the configured UnoCSS dark selector. */
+  /**
+   * Dark-mode color aliases emitted with the configured UnoCSS dark selector.
+   * Alias names should not end with digits because trailing digits are parsed as compact depth syntax.
+   */
   dark?: Record<string, PresetMcColorValue>
   /**
    * Enables the dev cache token used to force UnoCSS to reparse magic-color
