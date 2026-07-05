@@ -27,7 +27,7 @@ const directionMap: Record<string, string[]> = {
 };
 
 // from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/rules/border.ts#L78
-export function handlerBorderColor(context?: MagicColorContext) {
+export function handlerBorderColor(context: MagicColorContext) {
   return ([, a = '', b]: string[], ctx: RuleContext<Theme>): CSSEntries | (CSSValueInput | string)[] | undefined => {
     if (a in directionMap) {
       const bracketColor = h.bracketOfColor(b, ctx.theme);

@@ -14,7 +14,7 @@ export default defineConfig({
       dark: {
         primary: 'blue',
         brand: '#8ab4ff',
-        live: '#ff8a4f',
+        live: { color: '#ff8a4f', lightnessReverse: true },
         surface: '#111827',
       },
     }),
@@ -26,4 +26,8 @@ export default defineConfig({
       wine: { red: '#9c1d1e' },
     },
   },
+  shortcuts: [
+    ['btn', 'p-5 bg-mc-primary-333 text-white cursor-pointer hover:mc-lr-primary_primary'],
+  ],
+  envMode: 'build',
 });

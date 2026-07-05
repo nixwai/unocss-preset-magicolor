@@ -1,0 +1,139 @@
+import type { MagicColorDepth } from '../utils/color-variable';
+import type { TokenScan } from './scanner';
+import type { MagicColorDepthMap } from './types';
+import { stripDevCacheToken } from '../utils/dev-cache-token';
+
+export interface UsageCache {
+  targetDepths: MagicColorDepthMap
+  targetNames: string[]
+  sourceDepths: MagicColorDepthMap
+  sourceNames: string[]
+}
+
+/** Lazily aggregates usage scans into target and source color-depth caches. */
+export class UsageCacheStore {
+  private readonly scansById: ReadonlyMap<string, TokenScan>;
+  private readonly ruleScans: ReadonlyMap<string, TokenScan>;
+  private readonly lrScans: ReadonlyMap<string, TokenScan>;
+
+  private cacheValid = false;
+  private cache: UsageCache | undefined;
+
+  constructor(
+    scansById: ReadonlyMap<string, TokenScan>,
+    ruleScans: ReadonlyMap<string, TokenScan>,
+    lrScans: ReadonlyMap<string, TokenScan>,
+  ) {
+    this.scansById = scansById;
+    this.ruleScans = ruleScans;
+    this.lrScans = lrScans;
+  }
+
+  /** Marks the aggregated usage cache stale after scans change. */
+  invalidate() {
+    this.cacheValid = false;
+    this.cache = undefined;
+  }
+
+  /** Gets requested public target variable depths for one color name. */
+  getTargetDepths(name: string) {
+    this.ensureCacheValid();
+    const depths = this.cache?.targetDepths.get(name);
+    return depths && depths.size ? depths : undefined;
+  }
+
+  /** Lists all color names with public target variable usage. */
+  getTargetNames() {
+    this.ensureCacheValid();
+    return this.cache?.targetNames ?? [];
+  }
+
+  /** Gets requested internal source variable depths for one color name. */
+  getSourceDepths(name: string) {
+    this.ensureCacheValid();
+    const depths = this.cache?.sourceDepths.get(name);
+    return depths && depths.size ? depths : undefined;
+  }
+
+  /** Lists all color names with internal source variable usage. */
+  getSourceNames() {
+    this.ensureCacheValid();
+    return this.cache?.sourceNames ?? [];
+  }
+
+  private ensureCacheValid() {
+    if (this.cacheValid) {
+      return;
+    }
+
+    this.cache = this.buildCache();
+    this.cacheValid = true;
+  }
+
+  private buildCache(): UsageCache {
+    const referencedSelectors = collectReferencedSelectors(this.scansById);
+
+    const targetDepths: MagicColorDepthMap = new Map();
+    const targetNames = new Set<string>();
+
+    for (const scan of this.scansById.values()) {
+      addScanColors(targetDepths, targetNames, scan);
+    }
+
+    for (const [selector, scan] of this.ruleScans) {
+      if (!referencedSelectors.has(selector)) {
+        continue;
+      }
+      addScanColors(targetDepths, targetNames, scan);
+    }
+
+    const sourceDepths: MagicColorDepthMap = new Map();
+    const sourceNames = new Set<string>();
+
+    for (const [selector, scan] of this.lrScans) {
+      if (!referencedSelectors.has(selector)) {
+        continue;
+      }
+      addScanColors(sourceDepths, sourceNames, scan);
+    }
+
+    return {
+      targetDepths,
+      targetNames: Array.from(targetNames),
+      sourceDepths,
+      sourceNames: Array.from(sourceNames),
+    };
+  }
+}
+
+function collectReferencedSelectors(scansById: ReadonlyMap<string, TokenScan>) {
+  const referencedSelectors = new Set<string>();
+
+  for (const scan of scansById.values()) {
+    for (const token of scan.tokens) {
+      // Input tokens may carry a dev suffix, while rule scans are keyed by the stable selector.
+      // Normalize here so stale rule scans are ignored by reference.
+      referencedSelectors.add(stripDevCacheToken(token));
+    }
+  }
+
+  return referencedSelectors;
+}
+
+function addScanColors(
+  target: MagicColorDepthMap,
+  names: Set<string>,
+  scan: TokenScan,
+) {
+  // aggregating depths from multiple scans into a shared cache
+  for (const name of scan.colors.keys()) {
+    names.add(name);
+  }
+  for (const [name, sourceDepths] of scan.colors.entries()) {
+    const targetDepths = target.get(name) ?? new Set<MagicColorDepth>();
+    for (const depth of sourceDepths) {
+      targetDepths.add(depth);
+    }
+    target.set(name, targetDepths);
+  }
+}

@@ -2,13 +2,13 @@ import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { Colors, RgbColor } from 'magic-color';
 import { mc } from 'magic-color';
 
-/** to number */
+/** Converts a string or number to a numeric value, falling back to 0. */
 export function toNum(value?: string | number) {
   if (!value) { return 0; }
   return Number.parseFloat(value.toString()) || 0;
 }
 
-/** to oklch color */
+/** Normalizes a parsed CSS color into numeric OKLCH components. */
 export function toOklch(cssColor?: CSSColorValue) {
   if (!cssColor) { return undefined; }
 
@@ -46,11 +46,12 @@ export function toOklch(cssColor?: CSSColorValue) {
   };
 }
 
-/** Math.round(num * 1000) / 1000 */
+/** Rounds a number to three decimal places. */
 export function roundNum(num: number) {
   return Math.round(num * 1000) / 1000;
 }
 
+/** Narrows away null and undefined values in array filters. */
 export function notNull<T>(value: T | null | undefined): value is T {
   return value != null;
 }

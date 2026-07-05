@@ -1,0 +1,66 @@
+import type { Theme } from '@unocss/preset-wind4';
+import type { CSSValueInput, RuleContext } from 'unocss';
+import type { MagicColorContext } from '../../typing';
+import type { MagicColorDepthMap } from '../../usages';
+import { resolveBodyColor, resolveSpecialColor } from '@unocss-preset-magicolor/utils';
+import { colorCSSGenerator, parseColor } from '@unocss/preset-wind4/utils';
+import { BASE_COLOR_DEPTH, createTargetColorVariableName, isLiteralColor, toVar } from '../../utils/color-variable';
+import { resolveThemeColorValue } from '../../utils/theme-colors';
+
+function createTargetDepthUsage(name: string, depth: string | undefined): MagicColorDepthMap {
+  return new Map([[name, new Set([depth === undefined ? BASE_COLOR_DEPTH : Number(depth)])]]);
+}
+
+/** Parses a magic color token body and records the usage needed for preflight variables. */
+export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context: MagicColorContext) {
+  const colorData = parseColor(body, ctx.theme);
+  if (!colorData) {
+    return;
+  }
+
+  const colorParts = resolveBodyColor(body);
+  const { originColor, originDepth } = colorParts;
+
+  // invalid color
+  if (!originColor) {
+    return;
+  }
+  // Preserve UnoCSS parser metadata while replacing the color name/depth with magic-color parts.
+  colorData.name = originColor;
+  colorData.no = originDepth;
+
+  const specialColor = resolveSpecialColor(originColor);
+  if (specialColor) {
+    colorData.color = specialColor;
+    return colorData;
+  }
+
+  if (!isLiteralColor(originColor)) {
+    context.usage.recordTargetUsage(ctx.rawSelector, createTargetDepthUsage(originColor, originDepth));
+  }
+
+  // Names used by `mc-*` definitions, global options, and theme colors are
+  // resolved through variables emitted by the definition class or preflight.
+  const depths = context.usage.getTargetDepths(originColor);
+  if (depths?.size) {
+    colorData.color = toVar(createTargetColorVariableName(originColor, originDepth));
+  }
+  // If UnoCSS already resolved the token, keep its parsed value and metadata.
+  if (colorData.color) {
+    return colorData;
+  }
+  // Fall back to a generated theme depth when the token was not a standard theme color.
+  colorData.color = resolveThemeColorValue(colorParts, ctx.theme) ?? '';
+
+  return colorData;
+}
+
+/** Creates a rule resolver that pipes magic-color parsing into UnoCSS color CSS output. */
+export function mcColorResolver(property: string, varName: string, context: MagicColorContext) {
+  return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
+    const colorData = parseMagicColor(body ?? '', ctx, context);
+    if (colorData?.color) {
+      return colorCSSGenerator(colorData, property, varName, ctx);
+    }
+  };
+};

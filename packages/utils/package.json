@@ -2,6 +2,7 @@
   "name": "@unocss-preset-magicolor/utils",
   "type": "module",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "@unocss/preset-wind4": "~66.7.3",
     "magic-color": "^2.2.5"
