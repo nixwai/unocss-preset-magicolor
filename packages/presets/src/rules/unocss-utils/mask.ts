@@ -83,6 +83,15 @@ export function handleImage(context: MagicColorContext) {
           Object.assign(css, c);
           props.push(...p);
         }
+        else {
+          if (numberResolver(val) != null) {
+            themeTracking('spacing');
+            css[`--un-mask-${gradient}-${direction}-position`] = `calc(var(--spacing) * ${h.bracket.cssvar.fraction.number(val, ctx.theme)})`;
+          }
+          else {
+            css[`--un-mask-${gradient}-${direction}-position`] = h.bracket.cssvar.fraction.rem(val, ctx.theme);
+          }
+        }
       }
 
       if (gradient === 'radial') {

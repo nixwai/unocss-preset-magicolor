@@ -2,7 +2,7 @@ import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, Rule } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import { notLastChildSelectorVariant } from '@unocss/preset-wind4/rules';
-import { handleImage, handlerBorderColor, handleShadow, mcBgGradientColorResolver, mcColorResolver } from './unocss-utils';
+import { handleDropShadow, handleImage, handlerBorderColor, handleShadow, mcBgGradientColorResolver, mcColorResolver } from './unocss-utils';
 
 /** Creates the UnoCSS color utility rules that understand `mc-*` color tokens. */
 export function createColorStyle(context: MagicColorContext): Rule<Theme>[] {
@@ -36,6 +36,14 @@ export function createColorStyle(context: MagicColorContext): Rule<Theme>[] {
       };
       yield result[1];
     }, { autocomplete: 'divide-mc-$colors' }],
+    [/^(?:filter-)?drop-shadow-mc-(.+)$/, handleDropShadow(context), {
+      autocomplete: [
+        'drop-shadow-mc-$colors',
+        'filter-drop-shadow-mc-$colors',
+        'drop-shadow-color-$colors',
+        'filter-drop-shadow-color-$colors',
+      ],
+    }],
     [/^(?:filter-)?drop-shadow-color-mc-(.+)$/, mcColorResolver('--un-drop-shadow-color', 'drop-shadow', context)],
     // The prefix `$ ` is intentional. This rule is not to be matched directly from user-generated token.
     [/^\$ placeholder-mc-(.+)$/, mcColorResolver('color', 'placeholder', context), { autocomplete: 'placeholder-mc-$colors' }],

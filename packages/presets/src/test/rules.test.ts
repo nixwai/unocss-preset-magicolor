@@ -64,6 +64,24 @@ describe('color style rules', () => {
     expect(css).toContain('--un-drop-shadow-color:');
   });
 
+  it('resolves direct drop-shadow color aliases like Wind4 color shadows', async () => {
+    const { css } = await generate('<div class="drop-shadow-mc-rose-445 filter-drop-shadow-mc-rose-445"></div>');
+
+    expect(css).toContain('.drop-shadow-mc-rose-445');
+    expect(css).toContain('.filter-drop-shadow-mc-rose-445');
+    expect(css).toContain('--un-drop-shadow-color:');
+    expect(css).toContain('var(--mc-colors-rose-445)');
+  });
+
+  it('resolves direct placeholder color aliases through the placeholder selector', async () => {
+    const { css } = await generate('<input class="placeholder-mc-rose-445 placeholder-mc-rose-445/50">');
+
+    expect(css).toContain('.placeholder-mc-rose-445::placeholder');
+    expect(css).toContain('.placeholder-mc-rose-445\\/50::placeholder');
+    expect(css).toContain('--un-placeholder-opacity');
+    expect(css).toContain('var(--mc-colors-rose-445)');
+  });
+
   it('resolves special color keywords directly without generated variables', async () => {
     const { css } = await generate('<div class="c-mc-transparent c-mc-transparent-500 c-mc-current c-mc-inherit"></div>');
 
@@ -166,5 +184,14 @@ describe('arbitrary and invalid color rule inputs', () => {
     expect(css).not.toContain('.c-mc-123');
     expect(css).not.toContain('--mc-colors-123-DEFAULT:');
     expect(css).not.toContain('oklch(undefined');
+  });
+
+  it('keeps unresolved magic color names as target variables', async () => {
+    const { css } = await generate('<div class="c-mc-notacolor bg-mc-notacolor"></div>');
+
+    expect(css).toContain('.c-mc-notacolor');
+    expect(css).toContain('.bg-mc-notacolor');
+    expect(css).toContain('var(--mc-colors-notacolor-DEFAULT)');
+    expect(css).not.toContain('--mc-colors-notacolor-DEFAULT:');
   });
 });

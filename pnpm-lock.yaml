@@ -91,6 +91,9 @@ importers:
       '@unocss/preset-wind4':
         specifier: ~66.7.3
         version: 66.7.3
+      '@unocss/rule-utils':
+        specifier: ~66.7.3
+        version: 66.7.3
       magic-color:
         specifier: ^2.2.5
         version: 2.2.5
