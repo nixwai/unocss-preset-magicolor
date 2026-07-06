@@ -27,12 +27,13 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
   }
 
   const { name, hue } = definition;
-  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name, ctx);
 
   const mcColorObj = resolveBodyColor(hue);
   if (!mcColorObj.originColor) {
     return;
   }
+  context.usage.recordShortcutTargetUsages(ctx);
+  const targetDepths = context.usage.getTargetDepths(name);
   const cssData: CSSObject = {};
   // Link option and theme colors through variables so aliases stay reactive.
   const sourceConfig = resolveMixtureColorConfig(mcColorObj.originColor, theme, context, hasDarkVariant(ctx.rawSelector));
@@ -40,14 +41,14 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
     const { css, depthMap } = resolveColorReferences({
       name,
       colorParts: mcColorObj,
-      depths: context.usage.getTargetDepths(name),
+      depths: targetDepths,
     });
     context.usage.recordSourceUsage(ctx.rawSelector, depthMap);
     Object.assign(cssData, css);
   }
   else {
     // Arbitrary or literal colors are resolved directly rather than linked through variables.
-    Object.assign(cssData, resolveThemeColorCss(name, mcColorObj, theme, context.usage.getTargetDepths(name)));
+    Object.assign(cssData, resolveThemeColorCss(name, mcColorObj, theme, targetDepths));
   }
   return {
     ...createDevCacheTokenSelectorRedirect(ctx, context.options),

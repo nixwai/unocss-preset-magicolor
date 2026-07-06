@@ -1,4 +1,4 @@
-import type { CSSObject, RuleContext, Variant } from 'unocss';
+import type { CSSObject, RuleContext } from 'unocss';
 import type { PresetMcOptions } from '../types';
 
 export const MC_DEV_CACHE_TOKEN_NAME = 'mc-dev';
@@ -6,16 +6,6 @@ export const MC_DEV_CACHE_TOKEN_PREFIX = `:${MC_DEV_CACHE_TOKEN_NAME}-`;
 export const MC_DEV_CACHE_TOKEN_PATTERN = `${MC_DEV_CACHE_TOKEN_NAME}-[\\w-]+`;
 
 const DEV_CACHE_TOKEN_RE = new RegExp(`\\\\?:${MC_DEV_CACHE_TOKEN_PATTERN}`, 'g');
-const DEV_CACHE_TOKEN_VARIANT_RE = new RegExp(`^(.*):${MC_DEV_CACHE_TOKEN_PATTERN}$`);
-
-// UnoCSS treats the dev cache token as a trailing variant: it changes the raw
-// token cache key, then strips itself before regular mc-* rules run.
-export const devCacheTokenVariant: Variant = {
-  name: 'magicolor-dev-token',
-  match(matcher) {
-    return matcher.match(DEV_CACHE_TOKEN_VARIANT_RE)?.[1];
-  },
-};
 
 function collectMcDefinitionTokens(tokens: Iterable<string>) {
   const definitions = new Set<string>();

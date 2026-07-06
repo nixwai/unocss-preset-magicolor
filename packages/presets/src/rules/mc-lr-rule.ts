@@ -40,11 +40,12 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
   }
 
   const { name, hue } = definition;
-  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, name, ctx);
   const colorParts = resolveBodyColor(hue);
   if (!colorParts.originColor) {
     return;
   }
+  context.usage.recordShortcutTargetUsages(ctx);
+  const targetDepths = context.usage.getTargetDepths(name);
   const sourceConfig = resolveMixtureColorConfig(colorParts.originColor, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
     const sourceColorParts = resolveBodyColor(sourceConfig.color);
@@ -55,22 +56,21 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
         originColor: colorParts.originColor,
         originDepth: sourceBodyNo,
       },
-      depths: context.usage.getTargetDepths(name),
+      depths: targetDepths,
       lightnessReverse: true,
     });
     context.usage.recordSourceUsage(ctx.rawSelector, depthMap);
     return withDevCacheTokenSelectorRedirect(css, ctx, context);
   }
   else {
-    const depths = context.usage.getTargetDepths(name);
-    const css = resolveThemeColorCss(name, colorParts, ctx.theme, depths, { lightnessReverse: true });
+    const css = resolveThemeColorCss(name, colorParts, ctx.theme, targetDepths, { lightnessReverse: true });
     return withDevCacheTokenSelectorRedirect(css, ctx, context);
   }
 }
 
 /** Rebuilds all currently used configured variables with reversed lightness depths. */
 function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context: MagicColorContext) {
-  context.usage.recordShortcutTargetUsages(ctx.generator.config.shortcuts, undefined, ctx);
+  context.usage.recordShortcutTargetUsages(ctx);
   const css: CSSObject = {};
   for (const name of context.usage.getTargetNames()) {
     const sourceConfig = resolveMixtureColorConfig(name, ctx.theme, context, hasDarkVariant(ctx.rawSelector));

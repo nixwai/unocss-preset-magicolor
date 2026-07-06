@@ -1,7 +1,12 @@
+import type { RuleContext, Shortcut } from 'unocss';
 import { describe, expect, it } from 'vitest';
 import { MagicColorUsage } from '../usages';
 import { scanUsage } from '../usages/scanner';
 import { createUno, generateWithDirectives, getCssVar, getSelectorBlock } from './helpers';
+
+function createShortcutRuleContext(shortcuts: Shortcut[]): RuleContext {
+  return { generator: { config: { shortcuts } } } as unknown as RuleContext;
+}
 
 describe('watch-mode usage replacement', () => {
   it('drops stale custom color usage when the same input id is rescanned', async () => {
@@ -113,6 +118,26 @@ describe('shortcut usage extraction', () => {
     expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
     expect(css).toContain('var(--mc-colors-primary-DEFAULT)');
     expect(css).toContain('var(--mc-colors-primary-630)');
+  });
+
+  it('uses shortcut grouped-variant depths when resolving external magic color definitions', async () => {
+    const uno = await createUno(
+      {},
+      { shortcuts: [['btn', 'p-5 bg-mc-custom-777 hover:(bg-mc-custom-888 c-mc-custom-333)']] },
+    );
+
+    const { css } = await uno.generate('<button class="mc-custom_red btn"></button>', { preflights: true, id: 'grouped-variant-shortcut-definition.vue' });
+    const definitionBlock = getSelectorBlock(css, '.mc-custom_red');
+
+    expect(getCssVar(definitionBlock, '--mc-colors-custom-777')).toBe('var(--mc-source-colors-red-777)');
+    expect(getCssVar(definitionBlock, '--mc-colors-custom-888')).toBe('var(--mc-source-colors-red-888)');
+    expect(getCssVar(definitionBlock, '--mc-colors-custom-333')).toBe('var(--mc-source-colors-red-333)');
+    expect(css).toMatch(/--mc-source-colors-red-777:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-888:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-333:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-custom-777)');
+    expect(css).toContain('var(--mc-colors-custom-888)');
+    expect(css).toContain('var(--mc-colors-custom-333)');
   });
 
   it('uses shortcut-declared depths when resolving magic color definitions', async () => {
@@ -235,25 +260,11 @@ describe('usage scanner and cache bookkeeping', () => {
     expect(Array.from(enabledExtracted)).toEqual(['mc-btn_red:mc-dev-1']);
   });
 
-  it('filters shortcut target usage by color name when requested', () => {
+  it('records all shortcut-expanded target usage when explicitly requested', () => {
     const usage = new MagicColorUsage();
-
-    usage.extractor.extract?.({
-      extracted: new Set(['btn']),
-      id: 'shortcut-filter.vue',
-      original: '',
-      code: '',
-    });
-    usage.recordShortcutTargetUsages([
+    const context = createShortcutRuleContext([
       ['btn', 'bg-mc-primary-333 text-mc-secondary-640'],
-    ], 'primary');
-
-    expect(usage.getTargetDepths('primary')).toEqual(new Set([333]));
-    expect(usage.getTargetDepths('secondary')).toBeUndefined();
-  });
-
-  it('records all shortcut-expanded target usage when no color name is provided', () => {
-    const usage = new MagicColorUsage();
+    ]);
 
     usage.extractor.extract?.({
       extracted: new Set(['btn']),
@@ -261,12 +272,39 @@ describe('usage scanner and cache bookkeeping', () => {
       original: '',
       code: '',
     });
-    usage.recordShortcutTargetUsages([
-      ['btn', 'bg-mc-primary-333 text-mc-secondary-640'],
-    ]);
+
+    expect(usage.getTargetDepths('primary')).toBeUndefined();
+
+    usage.recordShortcutTargetUsages(context);
 
     expect(usage.getTargetDepths('primary')).toEqual(new Set([333]));
     expect(usage.getTargetDepths('secondary')).toEqual(new Set([640]));
+  });
+
+  it('scans shortcut target usage once per extractor version', () => {
+    const usage = new MagicColorUsage();
+    let resolveCount = 0;
+    const context = createShortcutRuleContext([
+      [/^btn$/, () => {
+        resolveCount += 1;
+        return 'bg-mc-primary-333 text-mc-secondary-640';
+      }],
+    ]);
+
+    usage.extractor.extract?.({
+      extracted: new Set(['btn']),
+      id: 'shortcut-once.vue',
+      original: '',
+      code: '',
+    });
+
+    usage.recordShortcutTargetUsages(context);
+    usage.recordShortcutTargetUsages(context);
+
+    expect(usage.getTargetDepths('primary')).toEqual(new Set([333]));
+    expect(usage.getTargetDepths('secondary')).toEqual(new Set([640]));
+    expect(usage.getTargetNames()).toEqual(expect.arrayContaining(['primary', 'secondary']));
+    expect(resolveCount).toBe(1);
   });
 
   it('merges repeated lightness-reverse source usage for the same selector', () => {
