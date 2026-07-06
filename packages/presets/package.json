@@ -12,11 +12,13 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./helper": {
       "types": "./dist/types/helper.d.ts",
-      "import": "./dist/helper.js"
+      "import": "./dist/helper.js",
+      "default": "./dist/helper.js"
     }
   },
   "main": "dist/index.js",
