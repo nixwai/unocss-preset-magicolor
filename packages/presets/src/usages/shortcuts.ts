@@ -1,8 +1,73 @@
 import type { RuleContext, Shortcut } from 'unocss';
 import { scanUsage } from './scanner';
 
+function splitTopLevelTokens(body: string) {
+  const tokens: string[] = [];
+  let current = '';
+  let bracketDepth = 0;
+  let parenDepth = 0;
+  let escaped = false;
+
+  for (const char of body) {
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      current += char;
+      escaped = true;
+      continue;
+    }
+
+    if (char === '[') {
+      bracketDepth++;
+    }
+    else if (char === ']') {
+      bracketDepth = Math.max(bracketDepth - 1, 0);
+    }
+    else if (char === '(' && bracketDepth === 0) {
+      parenDepth++;
+    }
+    else if (char === ')' && bracketDepth === 0) {
+      parenDepth = Math.max(parenDepth - 1, 0);
+    }
+
+    if (/\s/.test(char) && bracketDepth === 0 && parenDepth === 0) {
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
+      continue;
+    }
+    current += char;
+  }
+
+  if (current) {
+    tokens.push(current);
+  }
+  return tokens;
+}
+
+function expandVariantGroup(token: string): string[] {
+  const openIndex = token.indexOf(':(');
+  const closeIndex = token.lastIndexOf(')');
+  if (openIndex < 0 || closeIndex < openIndex + 2) {
+    return [token];
+  }
+
+  const prefix = token.slice(0, openIndex + 1);
+  if (!prefix || /[\s()[\]]/.test(prefix)) {
+    return [token];
+  }
+  const inner = token.slice(openIndex + 2, closeIndex);
+  const suffix = token.slice(closeIndex + 1);
+
+  return splitShortcutBody(inner).map(item => `${prefix}${item}${suffix}`);
+}
+
 function splitShortcutBody(body: string) {
-  return body.split(/\s+/).filter(Boolean);
+  return splitTopLevelTokens(body).flatMap(expandVariantGroup);
 }
 
 function getShortcutTokens(value: unknown) {

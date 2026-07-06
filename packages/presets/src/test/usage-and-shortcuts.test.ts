@@ -115,6 +115,26 @@ describe('shortcut usage extraction', () => {
     expect(css).toContain('var(--mc-colors-primary-630)');
   });
 
+  it('uses shortcut grouped-variant depths when resolving external magic color definitions', async () => {
+    const uno = await createUno(
+      {},
+      { shortcuts: [['btn', 'p-5 bg-mc-custom-777 hover:(bg-mc-custom-888 c-mc-custom-333)']] },
+    );
+
+    const { css } = await uno.generate('<button class="mc-custom_red btn"></button>', { preflights: true, id: 'grouped-variant-shortcut-definition.vue' });
+    const definitionBlock = getSelectorBlock(css, '.mc-custom_red');
+
+    expect(getCssVar(definitionBlock, '--mc-colors-custom-777')).toBe('var(--mc-source-colors-red-777)');
+    expect(getCssVar(definitionBlock, '--mc-colors-custom-888')).toBe('var(--mc-source-colors-red-888)');
+    expect(getCssVar(definitionBlock, '--mc-colors-custom-333')).toBe('var(--mc-source-colors-red-333)');
+    expect(css).toMatch(/--mc-source-colors-red-777:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-888:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-red-333:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-custom-777)');
+    expect(css).toContain('var(--mc-colors-custom-888)');
+    expect(css).toContain('var(--mc-colors-custom-333)');
+  });
+
   it('uses shortcut-declared depths when resolving magic color definitions', async () => {
     const uno = await createUno(
       {},
