@@ -26,7 +26,8 @@ export class MagicColorUsage {
   /** Source variable scans produced by lightness reverse rules, indexed by raw selector. */
   private readonly sourceRuleScans = new Map<string, TokenScan>();
 
-  private devCacheVersion = 0;
+  private inputVersion = 0;
+  private shortcutUsageVersion = -1;
 
   private readonly usageCache = new UsageCacheStore(this.inputScans, this.targetRuleScans, this.sourceRuleScans);
 
@@ -40,11 +41,11 @@ export class MagicColorUsage {
       // UnoCSS adds newly seen tokens to it, but does not remove tokens that disappeared from a file until a full config reload/rescan.
       const scan = scanUsage(extracted);
       this.inputScans.set(id, scan);
+      this.inputVersion += 1;
       this.usageCache.invalidate();
       if (envMode === 'dev' && this.options.devCacheToken) {
         // Version mc-* definitions so UnoCSS reparses them in watch mode without changing magicolor usage keys.
-        this.devCacheVersion += 1;
-        applyDevCacheTokenToExtracted(extracted, this.devCacheVersion.toString());
+        applyDevCacheTokenToExtracted(extracted, this.inputVersion.toString());
       }
     },
   };
@@ -79,14 +80,16 @@ export class MagicColorUsage {
     this.recordSelectorColors(this.sourceRuleScans, rawSelector, sourceDepths);
   }
 
-  /** Records static shortcut-expanded target usages when a shortcut and a consumer token share one input file. */
-  recordShortcutTargetUsages<Theme extends object = object>(
-    shortcuts: Iterable<Shortcut<Theme>>,
-    colorName?: string,
-    context?: RuleContext<Theme>,
-  ) {
+  /** Records shortcut-expanded target usages once per extractor scan generation. */
+  recordShortcutTargetUsages<Theme extends object = object>(context: RuleContext<Theme>) {
+    if (this.shortcutUsageVersion === this.inputVersion) {
+      return;
+    }
+
+    this.shortcutUsageVersion = this.inputVersion;
+    const shortcuts = context.generator.config.shortcuts as Iterable<Shortcut<Theme>>;
     for (const shortcut of collectShortcuts(shortcuts, this.getInputTokens(), context)) {
-      this.recordTargetUsage(shortcut.rawSelector, pickColorUsage(shortcut.depths, colorName));
+      this.recordTargetUsage(shortcut.rawSelector, shortcut.depths);
     }
   }
 
@@ -120,15 +123,6 @@ export class MagicColorUsage {
     scanMap.set(selector, scan);
     this.usageCache.invalidate();
   }
-}
-
-function pickColorUsage(colorDepths: MagicColorDepthMap, colorName?: string) {
-  if (colorName === undefined) {
-    return colorDepths;
-  }
-
-  const depths = colorDepths.get(colorName);
-  return depths ? new Map([[colorName, depths]]) : new Map();
 }
 
 function mergeColorUsage(targetUsage: MagicColorDepthMap, sourceUsage: MagicColorDepthMap) {
