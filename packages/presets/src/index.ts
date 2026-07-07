@@ -4,6 +4,7 @@ import type { MagicColorContext } from './typing';
 import { preflights } from './preflights';
 import { createRules } from './rules';
 import { MagicColorUsage } from './usages';
+import { normalizePresetMcOptions } from './utils/color-config';
 import { variants } from './variants';
 
 /**
@@ -11,9 +12,10 @@ import { variants } from './variants';
  * extractors, rules, and preflights for this generator.
  */
 export function presetMagicolor(options: PresetMcOptions = {}): Preset {
-  const usage = new MagicColorUsage(options);
+  const normalizedOptions = normalizePresetMcOptions(options);
+  const usage = new MagicColorUsage(normalizedOptions);
   const context: MagicColorContext = {
-    options,
+    options: normalizedOptions,
     usage,
   };
 

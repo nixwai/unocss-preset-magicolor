@@ -1,5 +1,5 @@
 import type { Theme } from '@unocss/preset-wind4';
-import type { PresetMcColorValue } from '../types';
+import type { PresetMcColorValue, PresetMcOptions } from '../types';
 import type { MagicColorContext } from '../typing';
 import { resolveSpecialColor } from '@unocss-preset-magicolor/utils';
 import { hasParseableColor } from '@unocss/preset-wind4/utils';
@@ -8,6 +8,41 @@ import { isLiteralColor } from './color-variable';
 export interface ResolvedColorConfig {
   color?: string
   lightnessReverse: boolean
+}
+
+function kebabCaseColorName(name: string) {
+  return name
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase();
+}
+
+function addKebabCaseAliases(colors?: Record<string, PresetMcColorValue>) {
+  if (!colors) {
+    return;
+  }
+
+  const normalized = { ...colors };
+  for (const [name, value] of Object.entries(colors)) {
+    if (resolveSpecialColor(name)) {
+      continue;
+    }
+
+    const alias = kebabCaseColorName(name);
+    if (alias !== name && !(alias in normalized)) {
+      normalized[alias] = value;
+    }
+  }
+  return normalized;
+}
+
+/** Adds kebab-case aliases for camelCase color option keys without mutating user options. */
+export function normalizePresetMcOptions(options: PresetMcOptions = {}): PresetMcOptions {
+  return {
+    ...options,
+    colors: addKebabCaseAliases(options.colors),
+    dark: addKebabCaseAliases(options.dark),
+  };
 }
 
 /** Normalizes string and object color options into one internal shape. */
