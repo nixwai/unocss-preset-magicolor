@@ -3,7 +3,7 @@ import type { CSSObject, Preflight, Preset } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import type { MagicColorDepth } from '../utils/color-variable';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
-import { resolveColorConfig, resolveMixtureColorConfig } from '../utils/color-config';
+import { resolveMixtureColorConfig } from '../utils/color-config';
 import { createSourceColorVariableName, createTargetColorVariableName, toVar } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
@@ -89,8 +89,8 @@ export function preflights(context: MagicColorContext): Preflight[] {
         }
 
         // Dark variables are emitted only for explicit dark aliases.
-        const darkColor = resolveColorConfig(context.options.dark?.[name]);
-        if (darkColor.color) {
+        const darkColor = context.options.dark?.[name];
+        if (darkColor?.color) {
           Object.assign(sourceDarkCss, resolveThemeColorCss(
             name,
             resolveBodyColor(darkColor.color),
@@ -101,7 +101,7 @@ export function preflights(context: MagicColorContext): Preflight[] {
           ));
         }
 
-        if ((optionColor.color || darkColor.color) && targetDepths) {
+        if ((optionColor.color || darkColor?.color) && targetDepths) {
           for (const depth of targetDepths) {
             rootTargetCss[createTargetColorVariableName(name, depth)] = toVar(createSourceColorVariableName(name, depth));
           }

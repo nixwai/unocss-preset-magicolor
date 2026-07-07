@@ -34,6 +34,57 @@ describe('preset options color configuration', () => {
     expect(getCssVar(css, '--mc-source-colors-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-50'));
   });
 
+  it('supports kebab-case classes for camelCase configured colors', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-brand-primary-457 bg-mc-brand-rgb-color-630"></div>',
+      { colors: { brandPrimary: 'rose', brandRGBColor: 'blue' } },
+    );
+
+    expect(css).toContain('--mc-colors-brand-primary-457: var(--mc-source-colors-brand-primary-457);');
+    expect(css).toContain('--mc-colors-brand-rgb-color-630: var(--mc-source-colors-brand-rgb-color-630);');
+    expect(css).toMatch(/--mc-source-colors-brand-primary-457:\s*oklch\(/);
+    expect(css).toMatch(/--mc-source-colors-brand-rgb-color-630:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-brand-primary-457)');
+    expect(css).toContain('var(--mc-colors-brand-rgb-color-630)');
+  });
+
+  it('keeps exact camelCase color classes working', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-brandPrimary-457"></div>',
+      { colors: { brandPrimary: 'rose' } },
+    );
+
+    expect(css).toContain('--mc-colors-brandPrimary-457: var(--mc-source-colors-brandPrimary-457);');
+    expect(css).toMatch(/--mc-source-colors-brandPrimary-457:\s*oklch\(/);
+    expect(css).toContain('var(--mc-colors-brandPrimary-457)');
+  });
+
+  it('keeps explicit kebab-case color options ahead of generated aliases', async () => {
+    const { css } = await generate(
+      '<div class="c-mc-brand-primary-457 c-mc-brandPrimary-457"></div>',
+      { colors: { 'brandPrimary': 'rose', 'brand-primary': 'blue' } },
+    );
+    const roseReference = await generate('<div class="c-mc-rose-457"></div>');
+    const blueReference = await generate('<div class="c-mc-blue-457"></div>');
+
+    expect(getCssVar(css, '--mc-source-colors-brand-primary-457')).toBe(getCssVar(blueReference.css, '--mc-source-colors-blue-457'));
+    expect(getCssVar(css, '--mc-source-colors-brandPrimary-457')).toBe(getCssVar(roseReference.css, '--mc-source-colors-rose-457'));
+  });
+
+  it('uses kebab-case aliases in color definitions and lightness reverse rules', async () => {
+    const { css } = await generate(
+      '<div class="mc-card_brand-primary bg-mc-card-457 mc-lr-brand-primary bg-mc-brand-primary-50"></div>',
+      { colors: { brandPrimary: 'rose' } },
+    );
+    const reference = await generate('<div class="c-mc-rose-950"></div>');
+    const lrBlock = getSelectorBlock(css, '.mc-lr-brand-primary');
+
+    expect(getCssVar(css, '--mc-colors-card-457')).toBe('var(--mc-source-colors-brand-primary-457)');
+    expect(getCssVar(css, '--mc-source-colors-brand-primary-457')).toMatch(/^oklch\(/);
+    expect(getCssVar(lrBlock, '--mc-colors-brand-primary-50')).toBe('var(--mc-source-colors-brand-primary-950)');
+    expect(getCssVar(css, '--mc-source-colors-brand-primary-950')).toBe(getCssVar(reference.css, '--mc-source-colors-rose-950'));
+  });
+
   it('maps special configured values to each requested depth', async () => {
     const { css } = await generate(
       '<div class="c-mc-primary c-mc-primary-457 bg-mc-primary-950"></div>',
@@ -95,6 +146,21 @@ describe('preset options dark color configuration', () => {
     expect(css).toMatch(/:root\s*\{[\s\S]*--mc-colors-primary-457:\s*var\(--mc-source-colors-primary-457\);/);
     expect(darkBlock).toMatch(/--mc-source-colors-primary-457:\s*oklch\(/);
     expect(darkBlock).not.toContain('--mc-colors-primary-457:');
+  });
+
+  it('supports kebab-case classes for camelCase dark color options', async () => {
+    const { css } = await generate(
+      '<div class="bg-mc-brand-primary-457"></div>',
+      { colors: { brandPrimary: 'rose' }, dark: { brandPrimary: 'blue' } },
+    );
+    const lightReference = await generate('<div class="c-mc-rose-457"></div>');
+    const darkReference = await generate('<div class="c-mc-blue-457"></div>');
+    const darkBlock = getDarkBlock(css);
+
+    expect(getCssVar(css, '--mc-source-colors-brand-primary-457')).toBe(getCssVar(lightReference.css, '--mc-source-colors-rose-457'));
+    expect(getCssVar(darkBlock, '--mc-source-colors-brand-primary-457')).toBe(getCssVar(darkReference.css, '--mc-source-colors-blue-457'));
+    expect(css).toContain('--mc-colors-brand-primary-457: var(--mc-source-colors-brand-primary-457);');
+    expect(darkBlock).not.toContain('--mc-colors-brand-primary-457:');
   });
 
   it('reverses dark color depths independently from light variables', async () => {
