@@ -27,29 +27,6 @@ export default defineConfig({
 });
 ```
 
-### Layer 顺序
-
-默认情况下，本预设会把自身工具类输出到名为 `unocss-preset-magicolor` 的 UnoCSS 内部 layer，并将排序设置为 `-100`。UnoCSS 会把排序值更高的 layer 更靠后输出，因此 `mc-*` 工具类默认会早于普通 `default` 层输出。当同一个元素上同时使用 `mc-*` 工具类和 UnoCSS 原生工具类，并且它们设置了同一个 CSS 属性时，原生工具类默认可以覆盖 `mc-*` 工具类。
-
-如果希望 Magicolor 工具类默认拥有更高优先级，可以在 UnoCSS 配置顶层覆盖同名 layer 的排序：
-
-```ts
-import { defineConfig, presetWind4 } from 'unocss';
-import { presetMagicolor } from 'unocss-preset-magicolor';
-
-export default defineConfig({
-  presets: [
-    presetWind4(),
-    presetMagicolor(),
-  ],
-  layers: {
-    'unocss-preset-magicolor': 1,
-  },
-});
-```
-
-layer 名称由预设固定，通常只需要按项目需要调整这个数字排序值。
-
 `unocss-preset-magicolor` 不替换 UnoCSS 原本的颜色系统，而是在原有 `theme.colors`、默认色板和颜色工具类之上增加一层 `mc-` 能力：
 
 - 原本只能使用 `rose-500`、`blue-600` 这类固定色阶，现在可以写 `rose-445`、`primary-457`、`brand-630` 这类任意数字色阶。
@@ -263,6 +240,29 @@ function toggleColor() {
 `updateMagicColor` 会读取目标元素上已经存在的 `--mc-colors-primary-DEFAULT`、`--mc-colors-primary-457` 等变量，并只更新这些已定义变量。它不会单纯根据 DOM 里的 class 反推新变量，因此需要先通过 `c-mc-primary`、`bg-mc-primary-457` 等 class 让 UnoCSS 生成对应变量。
 
 传入 `lightnessReverse: true` 时，运行时更新会使用和 `mc-lr-*`、全局颜色对象相同的反向亮度映射。
+
+### Layer 顺序
+
+默认情况下，本预设会把自身工具类输出到名为 `unocss-preset-magicolor` 的 UnoCSS 内部 layer，并将排序设置为 `-100`。UnoCSS 会把排序值更高的 layer 更靠后输出，因此 `mc-*` 工具类默认会早于普通 `default` 层输出。当同一个元素上同时使用 `mc-*` 工具类和 UnoCSS 原生工具类，并且它们设置了同一个 CSS 属性时，原生工具类默认可以覆盖 `mc-*` 工具类。
+
+如果希望 Magicolor 工具类默认拥有更高优先级，可以在 UnoCSS 配置顶层覆盖同名 layer 的排序：
+
+```ts
+import { defineConfig, presetWind4 } from 'unocss';
+import { presetMagicolor } from 'unocss-preset-magicolor';
+
+export default defineConfig({
+  presets: [
+    presetWind4(),
+    presetMagicolor(),
+  ],
+  layers: {
+    'unocss-preset-magicolor': 1,
+  },
+});
+```
+
+layer 名称由预设固定，通常只需要按项目需要调整这个数字排序值。
 
 ## 鸣谢
 
