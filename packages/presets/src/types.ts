@@ -7,6 +7,11 @@ export interface PresetMcColorOptions {
 
 export type PresetMcColorValue = string | PresetMcColorOptions;
 
+export interface MagicColorOptions extends Omit<PresetMcOptions, 'colors' | 'dark'> {
+  colors?: Record<string, PresetMcColorOptions>
+  dark?: Record<string, PresetMcColorOptions>
+}
+
 /** User-facing options accepted by `presetMagicolor`. */
 export interface PresetMcOptions {
   /**
