@@ -1,5 +1,6 @@
 import type { UserConfig } from '@unocss/core';
 import { createGenerator } from '@unocss/core';
+import { presetAttributify } from '@unocss/preset-attributify';
 import { presetWind4 } from '@unocss/preset-wind4';
 import { useStorage } from '@vueuse/core';
 import { presetMagicolor } from 'unocss-preset-magicolor';
@@ -38,9 +39,14 @@ const playgroundModules: Record<string, PlaygroundModule> = {
     default: presetWind4,
     presetWind4,
   },
+  '@unocss/preset-attributify': {
+    default: presetAttributify,
+    presetAttributify,
+  },
   'unocss': {
     defineConfig,
     presetWind4,
+    presetAttributify,
   },
   'unocss-preset-magicolor': {
     default: presetMagicolor,
