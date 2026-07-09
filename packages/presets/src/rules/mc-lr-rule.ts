@@ -5,7 +5,7 @@ import { hasDarkVariant, resolveBodyColor } from '@unocss-preset-magicolor/utils
 import { resolveMixtureColorConfig } from '../utils/color-config';
 import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
-import { createDevCacheTokenSelectorRedirect, MC_DEV_CACHE_TOKEN_PATTERN } from '../utils/dev-cache-token';
+import { MC_DEV_CACHE_TOKEN_PATTERN } from '../utils/dev-cache-token';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
 // Keep the optional dev suffix outside captured bodies so lightness parsing
@@ -60,11 +60,10 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
       lightnessReverse: true,
     });
     context.usage.recordSourceUsage(ctx.rawSelector, depthMap);
-    return withDevCacheTokenSelectorRedirect(css, ctx, context);
+    return css;
   }
   else {
-    const css = resolveThemeColorCss(name, colorParts, ctx.theme, targetDepths, { lightnessReverse: true });
-    return withDevCacheTokenSelectorRedirect(css, ctx, context);
+    return resolveThemeColorCss(name, colorParts, ctx.theme, targetDepths, { lightnessReverse: true });
   }
 }
 
@@ -94,12 +93,5 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context: MagicCo
     Object.assign(css, result.css);
     context.usage.recordSourceUsage(ctx.rawSelector, result.depthMap);
   }
-  return withDevCacheTokenSelectorRedirect(css, ctx, context);
-}
-
-function withDevCacheTokenSelectorRedirect(css: CSSObject, ctx: RuleContext<Theme>, context: MagicColorContext) {
-  return {
-    ...createDevCacheTokenSelectorRedirect(ctx, context.options),
-    ...css,
-  };
+  return css;
 }

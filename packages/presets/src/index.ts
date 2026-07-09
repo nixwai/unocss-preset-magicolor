@@ -24,7 +24,7 @@ export function presetMagicolor(options: PresetMcOptions = {}): Preset {
     layer: 'unocss-preset-magicolor',
     layers: { 'unocss-preset-magicolor': -100 },
     extractors: [usage.extractor],
-    variants: variants(),
+    variants: variants(context),
     rules: createRules(context),
     preflights: preflights(context),
   };

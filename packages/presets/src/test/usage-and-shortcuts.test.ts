@@ -103,6 +103,16 @@ describe('watch-mode usage replacement', () => {
     expect(getCssVar(definitionBlock, '--mc-colors-brand-DEFAULT')).toBe('#9c1d1e');
     expect(css).not.toContain('mc-dev');
   });
+
+  it('strips trailing dev cache tokens before matching variants and utilities', async () => {
+    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+
+    const { css } = await uno.generate('<div class="hover:p-1:mc-dev-1"></div>', { preflights: true, id: 'utility-dev-token.vue' });
+
+    expect(css).toContain('.hover\\:p-1:hover');
+    expect(css).toContain('padding:calc(var(--spacing) * 1)');
+    expect(css).not.toContain('mc-dev');
+  });
 });
 
 describe('shortcut usage extraction', () => {
@@ -247,7 +257,12 @@ describe('usage scanner and cache bookkeeping', () => {
     expect(disabledExtracted).toEqual(new Set(['mc-btn_red']));
 
     const enabledUsage = new MagicColorUsage({ devCacheToken: true });
-    const enabledExtracted = new Set(['mc-btn_red']);
+    const enabledExtracted = new Set([
+      'mc-btn_red',
+      '[mc-definition=""]',
+      '[mc~="lr"]',
+      '[un-mc-brand_rose=""]',
+    ]);
 
     enabledUsage.extractor.extract?.({
       extracted: enabledExtracted,
@@ -257,7 +272,12 @@ describe('usage scanner and cache bookkeeping', () => {
       envMode: 'dev',
     });
 
-    expect(Array.from(enabledExtracted)).toEqual(['mc-btn_red:mc-dev-1']);
+    expect(enabledExtracted).toEqual(new Set([
+      '[mc-definition=""]',
+      '[mc~="lr"]:mc-dev-1',
+      'mc-btn_red:mc-dev-1',
+      '[un-mc-brand_rose=""]:mc-dev-1',
+    ]));
   });
 
   it('records all shortcut-expanded target usage when explicitly requested', () => {
@@ -542,6 +562,39 @@ describe('attributify usage extraction', () => {
     expect(css).toContain('var(--mc-colors-primary-333)');
     expect(css).toContain('var(--mc-colors-secondary-640)');
     expect(css).toContain('--mc-colors-definition-DEFAULT:');
+  });
+
+  it('keeps dev cache tokens internal for Attributify mc-* definition attributes', async () => {
+    const { css } = await generateWithAttributify(
+      '<div mc-definition="" un-mc-brand_rose="" c-mc-brand="true" c-mc-definition-320="true"></div>',
+      {
+        colors: { definition: 'cyan' },
+        devCacheToken: true,
+      },
+      { trueToNonValued: true },
+      { envMode: 'dev' },
+    );
+
+    expect(css).toContain('--mc-colors-definition-320:');
+    expect(css).toContain('--mc-colors-brand-DEFAULT:');
+    expect(css).toContain('var(--mc-colors-definition-320)');
+    expect(css).not.toContain('mc-dev');
+  });
+
+  it('keeps Attributify lightness-reverse controls working in dev cache mode', async () => {
+    const { css } = await generateWithAttributify(
+      '<div mc="lr" c-mc-primary-80="true"></div>',
+      {
+        colors: { primary: 'rose' },
+        devCacheToken: true,
+      },
+      { trueToNonValued: true },
+      { envMode: 'dev' },
+    );
+
+    expect(css).toContain('--mc-source-colors-primary-920:');
+    expect(css).toContain('var(--mc-colors-primary-80)');
+    expect(css).not.toContain('mc-dev');
   });
 
   it('tracks Attributify true-valued non-valued attributes in strict mode', async () => {

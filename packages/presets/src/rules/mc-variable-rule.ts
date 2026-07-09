@@ -5,7 +5,7 @@ import { hasDarkVariant, resolveBodyColor } from '@unocss-preset-magicolor/utils
 import { resolveMixtureColorConfig } from '../utils/color-config';
 import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
-import { createDevCacheTokenSelectorRedirect, MC_DEV_CACHE_TOKEN_PATTERN } from '../utils/dev-cache-token';
+import { MC_DEV_CACHE_TOKEN_PATTERN } from '../utils/dev-cache-token';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
 // Keep the optional dev suffix outside the captured body so color parsing sees
@@ -50,8 +50,5 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
     // Arbitrary or literal colors are resolved directly rather than linked through variables.
     Object.assign(cssData, resolveThemeColorCss(name, mcColorObj, theme, targetDepths));
   }
-  return {
-    ...createDevCacheTokenSelectorRedirect(ctx, context.options),
-    ...cssData,
-  };
+  return cssData;
 };
