@@ -1,5 +1,5 @@
 import type { PresetMcOptions } from '../types';
-import { createGenerator, presetWind4, transformerDirectives } from 'unocss';
+import { createGenerator, presetAttributify, presetWind4, transformerDirectives } from 'unocss';
 import { presetMagicolor } from '../index';
 
 /** Creates a UnoCSS generator with Wind4 and the magicolor preset for tests. */
@@ -16,6 +16,24 @@ export async function createUno(options: PresetMcOptions = {}, extra: Record<str
 /** Generates CSS for test input with preflights enabled. */
 export async function generate(input: string | string[], options: PresetMcOptions = {}, extra: Record<string, unknown> = {}) {
   const uno = await createUno(options, extra);
+  return uno.generate(input, { preflights: true });
+}
+
+/** Generates CSS with Attributify installed after the magic color preset. */
+export async function generateWithAttributify(
+  input: string | string[],
+  options: PresetMcOptions = {},
+  attributifyOptions?: Parameters<typeof presetAttributify>[0],
+  extra: Record<string, unknown> = {},
+) {
+  const uno = await createGenerator({
+    presets: [
+      presetWind4(),
+      presetMagicolor(options),
+      presetAttributify(attributifyOptions),
+    ],
+    ...extra,
+  });
   return uno.generate(input, { preflights: true });
 }
 
