@@ -2,6 +2,7 @@ import type { RuleContext, Shortcut } from 'unocss';
 import { describe, expect, it } from 'vitest';
 import { MagicColorUsage } from '../usages';
 import { scanUsage } from '../usages/scanner';
+import { normalizeMagicColorToken } from '../utils/magic-color-token';
 import { createUno, generateWithAttributify, generateWithDirectives, getCssVar, getSelectorBlock } from './helpers';
 
 function createShortcutRuleContext(shortcuts: Shortcut[]): RuleContext {
@@ -411,6 +412,14 @@ describe('usage scanner and cache bookkeeping', () => {
 });
 
 describe('attributify usage extraction', () => {
+  it('normalizes mc="lr" Attributify selectors to the lightness-reverse token name', () => {
+    expect(normalizeMagicColorToken('[mc~="lr"]')).toBe('mc-lr');
+
+    const scan = scanUsage(new Set(['[mc~="lr"]']));
+
+    expect(scan.colors.size).toBe(0);
+  });
+
   it('normalizes raw Attributify selectors before scanning target usage', () => {
     const scan = scanUsage(new Set([
       '[bg~="mc-primary-333"]',
@@ -594,6 +603,31 @@ describe('attributify usage extraction', () => {
 
     expect(css).toContain('--mc-source-colors-primary-920:');
     expect(css).toContain('var(--mc-colors-primary-80)');
+    expect(css).not.toContain('mc-dev');
+  });
+
+  it('applies Attributify lightness-reverse controls to class magic-color usage', async () => {
+    const { css } = await generateWithAttributify('<div mc="lr" class="bg-mc-red-66" />');
+
+    expect(css).toContain('--mc-source-colors-red-934:');
+    expect(css).toContain('[mc~="lr"]{--mc-colors-red-66:var(--mc-source-colors-red-934);}');
+    expect(css).toContain('--mc-colors-red-66:var(--mc-source-colors-red-934)');
+    expect(css).toContain('var(--mc-colors-red-66)');
+  });
+
+  it('applies Attributify lightness-reverse controls to class magic-color usage in dev cache mode', async () => {
+    const { css } = await generateWithAttributify(
+      '<div mc="lr" class="bg-mc-red-66" />',
+      { devCacheToken: true },
+      undefined,
+      { envMode: 'dev' },
+    );
+
+    expect(css).toContain('--mc-source-colors-red-934:');
+    expect(css).toContain('[mc~="lr"]{--mc-colors-red-66:var(--mc-source-colors-red-934);}');
+    expect(css).not.toContain('.\[mc\~\=\"lr\"\]');
+    expect(css).toContain('--mc-colors-red-66:var(--mc-source-colors-red-934)');
+    expect(css).toContain('var(--mc-colors-red-66)');
     expect(css).not.toContain('mc-dev');
   });
 

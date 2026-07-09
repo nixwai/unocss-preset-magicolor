@@ -1,3 +1,6 @@
+import type { CSSObject, RuleContext } from 'unocss';
+import type { PresetMcOptions } from '../types';
+import { toEscapedSelector } from '@unocss/core';
 import { hasUnderline, normalizeMagicColorToken } from './magic-color-token';
 
 export const MC_DEV_CACHE_TOKEN_NAME = 'mc-dev';
@@ -38,4 +41,24 @@ export function applyDevCacheTokenToExtracted(extracted: Set<string>, version: s
 export function stripDevCacheToken(value: string) {
   // Handles both raw tokens and escaped selectors, e.g. ":mc-dev-1" and "\:mc-dev-1".
   return value.replace(DEV_CACHE_TOKEN_RE, '');
+}
+
+/** Redirects generated dev-token selectors back to the user-facing selector. */
+export function createDevCacheTokenSelectorRedirect<Theme extends object>(
+  ctx: RuleContext<Theme>,
+  options?: Pick<PresetMcOptions, 'devCacheToken'>,
+): CSSObject {
+  // Both checks are intentional: the redirect is only useful for dev reparsing,
+  // and the explicit option keeps it disabled by default because UnoCSS Vite
+  // can report `envMode: "dev"` on the shared generator during builds.
+  if (ctx.generator.config.envMode !== 'dev' || !options?.devCacheToken) {
+    return {};
+  }
+  if (!ctx.rawSelector.includes(MC_DEV_CACHE_TOKEN_PREFIX)) {
+    return {};
+  }
+
+  // The suffix is only an internal cache key; generated CSS selectors stay user-facing.
+  const selector = stripDevCacheToken(ctx.rawSelector);
+  return { [ctx.symbols.selector]: () => toEscapedSelector(selector) };
 }
