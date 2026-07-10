@@ -31,12 +31,12 @@
     "unocss": "^66.0.0"
   },
   "dependencies": {
-    "@unocss/core": "~66.7.4",
-    "@unocss/preset-wind4": "~66.7.4",
-    "@unocss/rule-utils": "~66.7.4",
+    "@unocss/core": "~66.7.5",
+    "@unocss/preset-wind4": "~66.7.5",
+    "@unocss/rule-utils": "~66.7.5",
     "magic-color": "^2.2.5"
   },
   "devDependencies": {
-    "unocss": "^66.7.4"
+    "unocss": "^66.7.5"
   }
 }

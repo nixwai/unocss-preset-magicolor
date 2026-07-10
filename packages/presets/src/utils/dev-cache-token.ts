@@ -13,27 +13,21 @@ const DEV_CACHE_TOKEN_RE = new RegExp(`\\\\?:${MC_DEV_CACHE_TOKEN_PATTERN}`, 'g'
 export function applyDevCacheTokenToExtracted(extracted: Set<string>, version: string) {
   // Mutate the shared Set in place so later UnoCSS additions, such as safelist
   // tokens, remain visible to the usage cache through the same Set reference.
-  const definitions = new Set<string>();
-
-  for (const token of extracted) {
-    let dToken = token;
+  for (const oToken of Array.from(extracted)) {
+    let nToken = oToken;
     // only scan magic-color tokens
-    if (!dToken.includes('mc')) {
+    if (!nToken.includes('mc')) {
       continue;
     }
-    dToken = stripDevCacheToken(dToken);
+    nToken = stripDevCacheToken(nToken);
     // Attributify selector tokens are parsed into a list of tokens.
-    const rawToken = normalizeMagicColorToken(dToken);
+    const rawToken = normalizeMagicColorToken(nToken);
     if (rawToken.includes('mc-lr') || hasUnderline(rawToken)) {
-      definitions.add(dToken);
       // delete old token
-      extracted.delete(token);
+      extracted.delete(oToken);
+      // add new token
+      extracted.add(`${nToken}${MC_DEV_CACHE_TOKEN_PREFIX}${version}`);
     }
-  }
-
-  // Add new tokens
-  for (const token of definitions) {
-    extracted.add(`${token}${MC_DEV_CACHE_TOKEN_PREFIX}${version}`);
   }
 }
 

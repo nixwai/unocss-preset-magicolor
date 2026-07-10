@@ -207,6 +207,20 @@ describe('attributify usage extraction', () => {
     expect(css).toContain('var(--mc-colors-red-66)');
   });
 
+  it('keeps Attributify lightness-reverse selector compatible in dev mode without dev cache tokens', async () => {
+    const { css } = await generateWithAttributify(
+      '<div mc="lr" class="bg-mc-red-66" />',
+      {},
+      undefined,
+      { envMode: 'dev' },
+    );
+
+    expect(css).toContain('--mc-source-colors-red-934:');
+    expect(css).toContain('[mc~="lr"]{--mc-colors-red-66:var(--mc-source-colors-red-934);}');
+    expect(css).not.toContain('.\[mc\~\=\"lr\"\]');
+    expect(css).not.toContain('mc-dev');
+  });
+
   it('applies Attributify lightness-reverse controls to class magic-color usage in dev cache mode', async () => {
     const { css } = await generateWithAttributify(
       '<div mc="lr" class="bg-mc-red-66" />',
