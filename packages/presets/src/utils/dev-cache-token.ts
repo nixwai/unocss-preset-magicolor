@@ -14,12 +14,11 @@ export function applyDevCacheTokenToExtracted(extracted: Set<string>, version: s
   // Mutate the shared Set in place so later UnoCSS additions, such as safelist
   // tokens, remain visible to the usage cache through the same Set reference.
   for (const oToken of Array.from(extracted)) {
-    let nToken = oToken;
     // only scan magic-color tokens
-    if (!nToken.includes('mc')) {
+    if (!oToken.includes('mc') || oToken.endsWith('=')) {
       continue;
     }
-    nToken = stripDevCacheToken(nToken);
+    const nToken = stripDevCacheToken(oToken);
     // Attributify selector tokens are parsed into a list of tokens.
     const rawToken = normalizeMagicColorToken(nToken);
     if (rawToken.includes('mc-lr') || hasUnderline(rawToken)) {

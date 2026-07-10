@@ -12,21 +12,21 @@ export interface UsageCache {
 
 /** Lazily aggregates usage scans into target and source color-depth caches. */
 export class UsageCacheStore {
-  private readonly scansById: ReadonlyMap<string, TokenScan>;
-  private readonly ruleScans: ReadonlyMap<string, TokenScan>;
-  private readonly lrScans: ReadonlyMap<string, TokenScan>;
+  private readonly inputScans: ReadonlyMap<string, TokenScan>;
+  private readonly targetRuleScans: ReadonlyMap<string, TokenScan>;
+  private readonly sourceRuleScans: ReadonlyMap<string, TokenScan>;
 
   private cacheValid = false;
   private cache: UsageCache | undefined;
 
   constructor(
-    scansById: ReadonlyMap<string, TokenScan>,
-    ruleScans: ReadonlyMap<string, TokenScan>,
-    lrScans: ReadonlyMap<string, TokenScan>,
+    inputScans: ReadonlyMap<string, TokenScan>,
+    targetRuleScans: ReadonlyMap<string, TokenScan>,
+    sourceRuleScans: ReadonlyMap<string, TokenScan>,
   ) {
-    this.scansById = scansById;
-    this.ruleScans = ruleScans;
-    this.lrScans = lrScans;
+    this.inputScans = inputScans;
+    this.targetRuleScans = targetRuleScans;
+    this.sourceRuleScans = sourceRuleScans;
   }
 
   /** Marks the aggregated usage cache stale after scans change. */
@@ -62,6 +62,7 @@ export class UsageCacheStore {
   }
 
   private ensureCacheValid() {
+    // console.log(this.targetRuleScans, this.sourceRuleScans);
     if (this.cacheValid) {
       return;
     }
@@ -71,16 +72,16 @@ export class UsageCacheStore {
   }
 
   private buildCache(): UsageCache {
-    const referencedSelectors = collectReferencedSelectors(this.scansById);
+    const referencedSelectors = collectReferencedSelectors(this.inputScans);
 
     const targetDepths: MagicColorDepthMap = new Map();
     const targetNames = new Set<string>();
 
-    for (const scan of this.scansById.values()) {
+    for (const scan of this.inputScans.values()) {
       addScanColors(targetDepths, targetNames, scan);
     }
 
-    for (const [selector, scan] of this.ruleScans) {
+    for (const [selector, scan] of this.targetRuleScans) {
       if (!referencedSelectors.has(selector)) {
         continue;
       }
@@ -90,7 +91,7 @@ export class UsageCacheStore {
     const sourceDepths: MagicColorDepthMap = new Map();
     const sourceNames = new Set<string>();
 
-    for (const [selector, scan] of this.lrScans) {
+    for (const [selector, scan] of this.sourceRuleScans) {
       if (!referencedSelectors.has(selector)) {
         continue;
       }
