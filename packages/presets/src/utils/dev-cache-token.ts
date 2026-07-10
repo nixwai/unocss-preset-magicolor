@@ -1,7 +1,7 @@
 import type { CSSObject, RuleContext } from 'unocss';
 import type { PresetMcOptions } from '../types';
 import { toEscapedSelector } from '@unocss/core';
-import { hasUnderline, normalizeMagicColorToken } from './magic-color-token';
+import { hasUnderline, normalizeMagicColorToken } from './resolve-token';
 
 export const MC_DEV_CACHE_TOKEN_NAME = 'mc-dev';
 export const MC_DEV_CACHE_TOKEN_PREFIX = `:${MC_DEV_CACHE_TOKEN_NAME}-`;

@@ -2,7 +2,7 @@ import type { MagicColorDepth } from '../utils/color-variable';
 import type { MagicColorDepthMap } from './types';
 import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { BASE_COLOR_DEPTH, isLiteralColor } from '../utils/color-variable';
-import { hasUnderline, normalizeMagicColorToken } from '../utils/magic-color-token';
+import { hasUnderline, normalizeMagicColorToken } from '../utils/resolve-token';
 
 /** Token scan result from one UnoCSS extractor input. */
 export interface TokenScan {

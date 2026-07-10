@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scanUsage } from '../usages/scanner';
-import { normalizeMagicColorToken } from '../utils/magic-color-token';
+import { normalizeMagicColorToken } from '../utils/resolve-token';
 import { generateWithAttributify } from './helpers';
 
 describe('attributify usage extraction', () => {
