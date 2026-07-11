@@ -7,14 +7,11 @@ import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
-const GLOBAL_LIGHTNESS_REVERSE_RE = /^mc-lr$/;
-const LOCAL_LIGHTNESS_REVERSE_RE = /^mc-lr-(.+)$/;
-
 /** Creates `mc-lr` rules that regenerate variables with reversed lightness depth lookup. */
 export function createLightnessReverseColor(context: MagicColorContext): Rule[] {
   return [
-    [GLOBAL_LIGHTNESS_REVERSE_RE, (_match, ctx) => resolveGlobalLightnessReverse(ctx, context)],
-    [LOCAL_LIGHTNESS_REVERSE_RE, (match, ctx) => resolveLocalLightnessReverse(match, ctx, context)],
+    [/^mc-lr$/, (_match, ctx) => resolveGlobalLightnessReverse(ctx, context)],
+    [/^mc-lr-(.+)$/, (match, ctx) => resolveLocalLightnessReverse(match, ctx, context)],
   ];
 }
 

@@ -13,7 +13,7 @@ import { variants } from './variants';
  */
 export function presetMagicolor(options: PresetMcOptions = {}): Preset {
   const normalizedOptions = normalizePresetMcOptions(options);
-  const usage = new MagicColorUsage(normalizedOptions);
+  const usage = new MagicColorUsage();
   const context: MagicColorContext = {
     options: normalizedOptions,
     usage,
@@ -24,7 +24,7 @@ export function presetMagicolor(options: PresetMcOptions = {}): Preset {
     layer: 'unocss-preset-magicolor',
     layers: { 'unocss-preset-magicolor': -100 },
     extractors: [usage.extractor],
-    variants: variants(context),
+    variants: variants(),
     rules: createRules(context),
     preflights: preflights(context),
   };

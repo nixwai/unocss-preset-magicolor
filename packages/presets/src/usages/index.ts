@@ -1,5 +1,4 @@
 import type { Extractor, RuleContext, Shortcut } from 'unocss';
-import type { MagicColorOptions } from '../types';
 import type { MagicColorDepth } from '../utils/color-variable';
 import type { MagicColorDepthMap } from './types';
 import { ScanCacheStore } from './scan-cache';
@@ -29,7 +28,7 @@ export class MagicColorUsage {
   private readonly scanCache = new ScanCacheStore(this.targetRuleScans, this.sourceRuleScans);
   private readonly tokenCache = new TokenCacheStore();
 
-  constructor(private readonly options: MagicColorOptions = {}) {}
+  constructor() {}
 
   readonly extractor: Extractor = {
     name: 'magicolor-usage',

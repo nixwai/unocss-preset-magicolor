@@ -1,5 +1,5 @@
 import type { Theme } from '@unocss/preset-wind4';
-import type { CSSObject, Rule, RuleContext } from 'unocss';
+import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import { hasDarkVariant, resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { resolveMixtureColorConfig } from '../utils/color-config';
@@ -7,12 +7,10 @@ import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
-const COLOR_VARIABLE_RE = /^mc-(?!lr(?:-|:|$))(.+)$/;
-
 /** Creates `mc-name_source` rules that define reusable magic color variables. */
 export function createColorVariable(context: MagicColorContext): Rule[] {
   return [
-    [COLOR_VARIABLE_RE, (match, ctx) => resolveMagicColor(match, ctx, context)],
+    [/^mc-(?!lr(?:-|:|$))(.+)$/, (match, ctx) => resolveMagicColor(match, ctx, context)],
   ];
 }
 
@@ -31,7 +29,6 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
   }
   context.usage.recordShortcutTargetUsages(ctx);
   const targetDepths = context.usage.getTargetDepths(name) ?? context.usage.getShortcutTargetDepths(name, ctx);
-  const cssData: CSSObject = {};
   // Link option and theme colors through variables so aliases stay reactive.
   const sourceConfig = resolveMixtureColorConfig(mcColorObj.originColor, theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
@@ -41,11 +38,10 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
       depths: targetDepths,
     });
     context.usage.recordRuleSourceUsage(ctx, depthMap);
-    Object.assign(cssData, css);
+    return css;
   }
   else {
     // Arbitrary or literal colors are resolved directly rather than linked through variables.
-    Object.assign(cssData, resolveThemeColorCss(name, mcColorObj, theme, targetDepths));
+    return resolveThemeColorCss(name, mcColorObj, theme, targetDepths);
   }
-  return cssData;
 };
