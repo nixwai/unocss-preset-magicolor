@@ -13,15 +13,15 @@
 pnpm add unocss-preset-magicolor -D
 ```
 
-Before using this preset, install and configure UnoCSS by following the official [UnoCSS integration guide](https://unocss.dev/integrations/vite). Add the base preset you need, such as `presetWind4`, and then add `presetMagicolor()`.
+Before using this preset, install and configure UnoCSS by following the official [UnoCSS integration guide](https://unocss.dev/integrations/vite). Keep any UnoCSS presets your project already uses, then add `presetMagicolor()`.
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    // ...your existing UnoCSS presets
     presetMagicolor(),
   ],
 });
@@ -39,12 +39,12 @@ export default defineConfig({
 You can use UnoCSS built-in colors, custom colors from `theme.colors`, and valid CSS color values with `mc-` utilities. Compared with native UnoCSS color utilities, the main difference is the `mc-` prefix and support for arbitrary numeric depths beyond the default 50/100/200...950 steps.
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    // ...your existing UnoCSS presets
     presetMagicolor(),
   ],
   theme: {
@@ -125,12 +125,12 @@ You can also reverse an existing color name without redefining its source. `mc-l
 For stable semantic colors, use `presetMagicolor({ colors })` to define global aliases. Aliases are emitted under `:root` as `--mc-colors-<name>-DEFAULT` for no-depth usage or `--mc-colors-<name>-<depth>` for numeric depths, but only for the depths that are actually used.
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4({ dark: 'class' }),
+    // ...your existing UnoCSS presets
     presetMagicolor({
       colors: {
         primary: { color: 'rose', lightnessReverse: true },
@@ -220,12 +220,12 @@ By default, this preset emits its utilities in the internal UnoCSS layer named `
 You can override only the order from your UnoCSS config if you want Magicolor utilities to have higher priority:
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    // ...your existing UnoCSS presets
     presetMagicolor(),
   ],
   layers: {

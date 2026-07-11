@@ -12,7 +12,7 @@ const emit = defineEmits<{
 <template>
   <header class="playground-header px-4 border-b border-neutral-200 bg-white flex h-13 items-center justify-between dark:border-neutral-800 dark:bg-neutral-950">
     <div class="flex gap-3 min-w-0 items-center">
-      <span class="bg-mc-primary-457 rounded-1 h-4 w-4" />
+      <span class="rounded-1 h-4 w-4 bg-mc-primary-457" />
       <h1 class="text-4 font-600 truncate dark:c-neutral-100">
         unocss-preset-magicolor Playground
       </h1>
