@@ -60,12 +60,12 @@ describe('compile class transformer usage extraction', () => {
     const { css, transformed } = await generateWithCompileClass('<div class=":uno: mc-primary_blue ccc bg-mc-primary-330"></div>');
     const selector = getCompiledClassSelector(css);
     const block = getSelectorBlock(css, selector);
-    const definitionBlock = getSelectorBlock(css, '.mc-primary_blue');
 
     expect(transformed).toContain('ccc');
+    expect(transformed).not.toContain('mc-primary_blue');
     expect(transformed).not.toContain('bg-mc-primary-330');
     expect(selector).toMatch(/^\.uno-/);
-    expect(getCssVar(definitionBlock, '--mc-colors-primary-330')).toBe('var(--mc-source-colors-blue-330)');
+    expect(getCssVar(block, '--mc-colors-primary-330')).toBe('var(--mc-source-colors-blue-330)');
     expect(getCssVar(css, '--mc-source-colors-blue-330')).toMatch(/^oklch\(/);
     expect(block).toContain('var(--mc-colors-primary-330)');
   });
@@ -90,5 +90,31 @@ describe('compile class transformer usage extraction', () => {
     expect(getCssVar(css, '--mc-source-colors-primary-444')).toMatch(/^oklch\(/);
     expect(css).toContain('var(--mc-colors-primary-330)');
     expect(css).toContain('var(--mc-colors-primary-444)');
+  });
+
+  it('keeps local lightness-reverse definitions in compiled classes', async () => {
+    const { css, transformed } = await generateWithCompileClass('<div class=":uno: mc-lr-primary_primary c-mc-primary-80"></div>');
+    const selector = getCompiledClassSelector(css);
+    const block = getSelectorBlock(css, selector);
+
+    expect(transformed).not.toContain('mc-lr-primary_primary');
+    expect(transformed).not.toContain('c-mc-primary-80');
+    expect(selector).toMatch(/^\.uno-/);
+    expect(getCssVar(block, '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
+    expect(getCssVar(css, '--mc-source-colors-primary-920')).toMatch(/^oklch\(/);
+    expect(block).toContain('var(--mc-colors-primary-80)');
+  });
+
+  it('keeps global lightness-reverse definitions in compiled classes', async () => {
+    const { css, transformed } = await generateWithCompileClass('<div class=":uno: mc-lr bg-mc-primary-50"></div>');
+    const selector = getCompiledClassSelector(css);
+    const block = getSelectorBlock(css, selector);
+
+    expect(transformed).not.toContain('mc-lr');
+    expect(transformed).not.toContain('bg-mc-primary-50');
+    expect(selector).toMatch(/^\.uno-/);
+    expect(getCssVar(block, '--mc-colors-primary-50')).toBe('var(--mc-source-colors-primary-950)');
+    expect(getCssVar(css, '--mc-source-colors-primary-950')).toMatch(/^oklch\(/);
+    expect(block).toContain('var(--mc-colors-primary-50)');
   });
 });

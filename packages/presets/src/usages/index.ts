@@ -1,5 +1,4 @@
 import type { Extractor, RuleContext, Shortcut } from 'unocss';
-import type { MagicColorDepth } from '../utils/color-variable';
 import type { MagicColorDepthMap } from './types';
 import { ScanCacheStore } from './scan-cache';
 import { collectShortcuts } from './shortcuts';
@@ -46,22 +45,6 @@ export class MagicColorUsage {
   /** Aggregates public target variable depths for a color name across input scans. */
   getTargetDepths(colorName: string) {
     return this.scanCache.getTargetDepths(colorName);
-  }
-
-  /** Gets target depths for one color name directly from currently referenced shortcut bodies. */
-  getShortcutTargetDepths<Theme extends object = object>(colorName: string, context: RuleContext<Theme>) {
-    const depths = new Set<MagicColorDepth>();
-    const shortcuts = context.generator.config.shortcuts as Iterable<Shortcut<Theme>>;
-    for (const shortcut of collectShortcuts(shortcuts, this.scanCache.getInputTokens(), context)) {
-      const shortcutDepths = shortcut.depths.get(colorName);
-      if (!shortcutDepths) {
-        continue;
-      }
-      for (const depth of shortcutDepths) {
-        depths.add(depth);
-      }
-    }
-    return depths.size ? depths : undefined;
   }
 
   /** Lists all color names seen in public target variable usages across scanned inputs. */

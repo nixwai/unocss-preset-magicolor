@@ -7,6 +7,8 @@ import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
+const KNOWN_LIGHTNESS_REVERSE_PLACEHOLDER = '--mc-lightness-reverse';
+
 /** Creates `mc-lr` rules that regenerate variables with reversed lightness depth lookup. */
 export function createLightnessReverseColor(context: MagicColorContext): Rule[] {
   return [
@@ -40,6 +42,10 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
   }
   context.usage.recordShortcutTargetUsages(ctx);
   const targetDepths = context.usage.getTargetDepths(name);
+  if (!targetDepths?.size) {
+    return { [KNOWN_LIGHTNESS_REVERSE_PLACEHOLDER]: 'initial' };
+  }
+
   const sourceConfig = resolveMixtureColorConfig(colorParts.originColor, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
     const sourceColorParts = resolveBodyColor(sourceConfig.color);
@@ -87,5 +93,5 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context: MagicCo
     Object.assign(css, result.css);
     context.usage.recordRuleSourceUsage(ctx, result.depthMap);
   }
-  return css;
+  return Object.keys(css).length ? css : { [KNOWN_LIGHTNESS_REVERSE_PLACEHOLDER]: 'initial' };
 }

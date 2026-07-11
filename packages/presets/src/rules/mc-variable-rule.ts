@@ -7,6 +7,8 @@ import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
+const KNOWN_DEFINITION_PLACEHOLDER = '--mc-definition';
+
 /** Creates `mc-name_source` rules that define reusable magic color variables. */
 export function createColorVariable(context: MagicColorContext): Rule[] {
   return [
@@ -28,7 +30,11 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
     return;
   }
   context.usage.recordShortcutTargetUsages(ctx);
-  const targetDepths = context.usage.getTargetDepths(name) ?? context.usage.getShortcutTargetDepths(name, ctx);
+  const targetDepths = context.usage.getTargetDepths(name);
+  if (!targetDepths?.size) {
+    return { [KNOWN_DEFINITION_PLACEHOLDER]: 'initial' };
+  }
+
   // Link option and theme colors through variables so aliases stay reactive.
   const sourceConfig = resolveMixtureColorConfig(mcColorObj.originColor, theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
