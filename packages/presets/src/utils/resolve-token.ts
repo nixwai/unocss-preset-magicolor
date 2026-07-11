@@ -7,6 +7,7 @@ function normalizeSelector(str?: string) {
   return index >= 0 ? list.slice(index).join(':') : list[list.length - 1];
 }
 
+// “presetAttributify” compatibility
 function normalizeAttributifySelector(match: RegExpMatchArray) {
   const name = normalizeSelector(match[1]);
   const content = normalizeSelector(match[2]);

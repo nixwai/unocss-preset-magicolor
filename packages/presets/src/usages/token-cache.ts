@@ -1,3 +1,5 @@
+// The style rule of "mc-*" is dynamic
+// It is necessary to clear the cache at the appropriate time to avoid the style being unable to be updated
 export class TokenCacheStore {
   private readonly generatorCaches = new Set<Map<string, unknown>>();
   private readonly dependentTokens = new Set<string>();

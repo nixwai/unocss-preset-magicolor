@@ -7,6 +7,7 @@ import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
+// As a placeholder, it avoids generating useless variable declarations and is useful for compatibility with "transformerCompileClass"
 const KNOWN_LIGHTNESS_REVERSE_PLACEHOLDER = '--mc-lightness-reverse';
 
 /** Creates `mc-lr` rules that regenerate variables with reversed lightness depth lookup. */

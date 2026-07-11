@@ -7,6 +7,7 @@ import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
+// As a placeholder, it avoids generating useless variable declarations and is useful for compatibility with "transformerCompileClass"
 const KNOWN_DEFINITION_PLACEHOLDER = '--mc-definition';
 
 /** Creates `mc-name_source` rules that define reusable magic color variables. */
