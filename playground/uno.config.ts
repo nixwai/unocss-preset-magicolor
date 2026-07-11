@@ -19,9 +19,6 @@ export default defineConfig({
       },
     }),
   ],
-  transformers: [
-
-  ],
   theme: {
     colors: {
       grape: '#679512',
