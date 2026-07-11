@@ -48,6 +48,5 @@ describe('directive and safelist usage extraction', () => {
     expect(css).toContain('--mc-colors-primary-630:');
     expect(css).toMatch(/--mc-source-colors-primary-630:\s*oklch\(/);
     expect(css).toContain('var(--mc-colors-primary-630)');
-    expect(css).not.toContain('mc-dev');
   });
 });

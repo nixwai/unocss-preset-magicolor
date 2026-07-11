@@ -35,8 +35,8 @@ describe('watch-mode usage replacement', () => {
     expect(second.css).not.toContain('--mc-source-colors-primary-920:');
   });
 
-  it('updates dev cached custom definition output when target depths change', async () => {
-    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+  it('updates custom definition output when target depths change', async () => {
+    const uno = await createUno({}, { envMode: 'dev' });
 
     const first = await uno.generate('<div class="mc-btn_red c-mc-btn-80"></div>', { preflights: true, id: 'definition.vue' });
     expect(getCssVar(getSelectorBlock(first.css, '.mc-btn_red'), '--mc-colors-btn-80')).toBe('var(--mc-source-colors-red-80)');
@@ -47,11 +47,10 @@ describe('watch-mode usage replacement', () => {
     expect(getCssVar(definitionBlock, '--mc-colors-btn-100')).toBe('var(--mc-source-colors-red-100)');
     expect(getCssVar(definitionBlock, '--mc-colors-btn-80')).toBeUndefined();
     expect(second.css).toContain('var(--mc-colors-btn-100)');
-    expect(second.css).not.toContain('mc-dev');
   });
 
-  it('keeps dev token out when target usage is removed', async () => {
-    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+  it('updates custom definition output when target usage is removed from the same input id', async () => {
+    const uno = await createUno({}, { envMode: 'dev' });
 
     const first = await uno.generate('<div class="mc-btn_red c-mc-btn-80"></div>', { preflights: true, id: 'definition-remove.vue' });
     expect(getCssVar(getSelectorBlock(first.css, '.mc-btn_red'), '--mc-colors-btn-80')).toBe('var(--mc-source-colors-red-80)');
@@ -59,11 +58,10 @@ describe('watch-mode usage replacement', () => {
     const second = await uno.generate('<div class="mc-btn_red"></div>', { preflights: true, id: 'definition-remove.vue' });
 
     expect(getSelectorBlock(second.css, '.mc-btn_red')).not.toContain('--mc-colors-btn-80');
-    expect(second.css).not.toContain('mc-dev');
   });
 
-  it('updates dev cached global lightness-reverse output when target depths change', async () => {
-    const uno = await createUno({ colors: { primary: 'rose' }, devCacheToken: true }, { envMode: 'dev' });
+  it('updates global lightness-reverse output when target depths change', async () => {
+    const uno = await createUno({ colors: { primary: 'rose' } }, { envMode: 'dev' });
 
     const first = await uno.generate('<div class="mc-lr c-mc-primary-80"></div>', { preflights: true, id: 'global-lr.vue' });
     expect(getCssVar(getSelectorBlock(first.css, '.mc-lr'), '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
@@ -74,36 +72,23 @@ describe('watch-mode usage replacement', () => {
     expect(getCssVar(lrBlock, '--mc-colors-primary-100')).toBe('var(--mc-source-colors-primary-900)');
     expect(getCssVar(lrBlock, '--mc-colors-primary-80')).toBeUndefined();
     expect(second.css).toContain('var(--mc-colors-primary-100)');
-    expect(second.css).not.toContain('mc-dev');
   });
 
-  it('keeps dev token out of variant definition selectors', async () => {
-    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+  it('keeps variant definition selectors stable in dev mode', async () => {
+    const uno = await createUno({}, { envMode: 'dev' });
 
     const { css } = await uno.generate('<div class="hover:mc-btn_red c-mc-btn-100"></div>', { preflights: true, id: 'variant-definition.vue' });
     const hoverBlock = getSelectorBlock(css, '.hover\\:mc-btn_red:hover');
 
     expect(getCssVar(hoverBlock, '--mc-colors-btn-100')).toBe('var(--mc-source-colors-red-100)');
-    expect(css).not.toContain('mc-dev');
   });
 
-  it('keeps dev token out of arbitrary color definition selectors', async () => {
-    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
+  it('keeps arbitrary color definition selectors stable in dev mode', async () => {
+    const uno = await createUno({}, { envMode: 'dev' });
 
     const { css } = await uno.generate('<div class="mc-brand_[#9c1d1e] c-mc-brand"></div>', { preflights: true, id: 'arbitrary-definition.vue' });
     const definitionBlock = getSelectorBlock(css, '.mc-brand_\\[\\#9c1d1e\\]');
 
     expect(getCssVar(definitionBlock, '--mc-colors-brand-DEFAULT')).toBe('#9c1d1e');
-    expect(css).not.toContain('mc-dev');
-  });
-
-  it('strips trailing dev cache tokens before matching variants and utilities', async () => {
-    const uno = await createUno({ devCacheToken: true }, { envMode: 'dev' });
-
-    const { css } = await uno.generate('<div class="hover:p-1:mc-dev-1"></div>', { preflights: true, id: 'utility-dev-token.vue' });
-
-    expect(css).toContain('.hover\\:p-1:hover');
-    expect(css).toContain('padding:calc(var(--spacing) * 1)');
-    expect(css).not.toContain('mc-dev');
   });
 });

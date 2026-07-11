@@ -9,7 +9,7 @@ describe('attributify usage extraction', () => {
 
     const scan = scanUsage(new Set(['[mc~="lr"]']));
 
-    expect(scan.colors.size).toBe(0);
+    expect(scan.size).toBe(0);
   });
 
   it('normalizes raw Attributify selectors before scanning target usage', () => {
@@ -28,15 +28,15 @@ describe('attributify usage extraction', () => {
       '[un-mc-definition_rose=""]',
     ]));
 
-    expect(scan.colors.get('primary')).toEqual(new Set([333]));
-    expect(scan.colors.get('secondary')).toEqual(new Set([640]));
-    expect(scan.colors.get('accent')).toEqual(new Set([200]));
-    expect(scan.colors.get('label')).toEqual(new Set([456]));
-    expect(scan.colors.get('tone')).toEqual(new Set([200]));
-    expect(scan.colors.get('self')).toEqual(new Set([210]));
-    expect(scan.colors.get('definition')).toEqual(new Set(['DEFAULT']));
-    expect(scan.colors.has('lr')).toBe(false);
-    expect(scan.colors.has('lr-primary')).toBe(false);
+    expect(scan.get('primary')).toEqual(new Set([333]));
+    expect(scan.get('secondary')).toEqual(new Set([640]));
+    expect(scan.get('accent')).toEqual(new Set([200]));
+    expect(scan.get('label')).toEqual(new Set([456]));
+    expect(scan.get('tone')).toEqual(new Set([200]));
+    expect(scan.get('self')).toEqual(new Set([210]));
+    expect(scan.get('definition')).toEqual(new Set(['DEFAULT']));
+    expect(scan.has('lr')).toBe(false);
+    expect(scan.has('lr-primary')).toBe(false);
   });
 
   it('normalizes all Attributify selector shapes emitted by presetAttributify', () => {
@@ -53,14 +53,14 @@ describe('attributify usage extraction', () => {
       '[opacity~="50"]',
     ]));
 
-    expect(scan.colors.get('primary')).toEqual(new Set([333]));
-    expect(scan.colors.get('secondary')).toEqual(new Set([640]));
-    expect(scan.colors.get('accent')).toEqual(new Set([210]));
-    expect(scan.colors.get('label')).toEqual(new Set([456]));
-    expect(scan.colors.get('tone')).toEqual(new Set([515]));
-    expect(scan.colors.get('muted')).toEqual(new Set([480]));
-    expect(scan.colors.get('definition')).toEqual(new Set(['DEFAULT']));
-    expect(scan.colors.has('brand')).toBe(false);
+    expect(scan.get('primary')).toEqual(new Set([333]));
+    expect(scan.get('secondary')).toEqual(new Set([640]));
+    expect(scan.get('accent')).toEqual(new Set([210]));
+    expect(scan.get('label')).toEqual(new Set([456]));
+    expect(scan.get('tone')).toEqual(new Set([515]));
+    expect(scan.get('muted')).toEqual(new Set([480]));
+    expect(scan.get('definition')).toEqual(new Set(['DEFAULT']));
+    expect(scan.has('brand')).toBe(false);
   });
 
   it('treats true-valued Attributify selectors as non-valued selector usage', () => {
@@ -69,10 +69,10 @@ describe('attributify usage extraction', () => {
       '[c-mc-label-456="true"]',
     ]));
 
-    expect(scan.colors.get('definition')).toEqual(new Set(['DEFAULT']));
-    expect(scan.colors.get('label')).toEqual(new Set([456]));
-    expect(scan.colors.has('definition-true')).toBe(false);
-    expect(scan.colors.has('label-456')).toBe(false);
+    expect(scan.get('definition')).toEqual(new Set(['DEFAULT']));
+    expect(scan.get('label')).toEqual(new Set([456]));
+    expect(scan.has('definition-true')).toBe(false);
+    expect(scan.has('label-456')).toBe(false);
   });
 
   it('skips Attributify lightness-reverse selectors when scanning target usage', () => {
@@ -86,7 +86,7 @@ describe('attributify usage extraction', () => {
       '[mc~="!lr-primary"]',
     ]));
 
-    expect(scan.colors.size).toBe(0);
+    expect(scan.size).toBe(0);
   });
 
   it('tracks Attributify attributes and attribute-name variants', async () => {
@@ -165,13 +165,10 @@ describe('attributify usage extraction', () => {
     expect(css).toContain('--mc-colors-definition-DEFAULT:');
   });
 
-  it('keeps dev cache tokens internal for Attributify mc-* definition attributes', async () => {
+  it('tracks Attributify mc-* definition attributes in dev mode', async () => {
     const { css } = await generateWithAttributify(
       '<div mc-definition="" un-mc-brand_rose="" c-mc-brand="true" c-mc-definition-320="true"></div>',
-      {
-        colors: { definition: 'cyan' },
-        devCacheToken: true,
-      },
+      { colors: { definition: 'cyan' } },
       { trueToNonValued: true },
       { envMode: 'dev' },
     );
@@ -179,23 +176,18 @@ describe('attributify usage extraction', () => {
     expect(css).toContain('--mc-colors-definition-320:');
     expect(css).toContain('--mc-colors-brand-DEFAULT:');
     expect(css).toContain('var(--mc-colors-definition-320)');
-    expect(css).not.toContain('mc-dev');
   });
 
-  it('keeps Attributify lightness-reverse controls working in dev cache mode', async () => {
+  it('keeps Attributify lightness-reverse controls working in dev mode', async () => {
     const { css } = await generateWithAttributify(
       '<div mc="lr" c-mc-primary-80="true"></div>',
-      {
-        colors: { primary: 'rose' },
-        devCacheToken: true,
-      },
+      { colors: { primary: 'rose' } },
       { trueToNonValued: true },
       { envMode: 'dev' },
     );
 
     expect(css).toContain('--mc-source-colors-primary-920:');
     expect(css).toContain('var(--mc-colors-primary-80)');
-    expect(css).not.toContain('mc-dev');
   });
 
   it('applies Attributify lightness-reverse controls to class magic-color usage', async () => {
@@ -218,13 +210,12 @@ describe('attributify usage extraction', () => {
     expect(css).toContain('--mc-source-colors-red-934:');
     expect(css).toContain('[mc~="lr"]{--mc-colors-red-66:var(--mc-source-colors-red-934);}');
     expect(css).not.toContain('.\[mc\~\=\"lr\"\]');
-    expect(css).not.toContain('mc-dev');
   });
 
-  it('applies Attributify lightness-reverse controls to class magic-color usage in dev cache mode', async () => {
+  it('applies Attributify lightness-reverse controls to class magic-color usage in dev mode', async () => {
     const { css } = await generateWithAttributify(
       '<div mc="lr" class="bg-mc-red-66" />',
-      { devCacheToken: true },
+      {},
       undefined,
       { envMode: 'dev' },
     );
@@ -234,7 +225,6 @@ describe('attributify usage extraction', () => {
     expect(css).not.toContain('.\[mc\~\=\"lr\"\]');
     expect(css).toContain('--mc-colors-red-66:var(--mc-source-colors-red-934)');
     expect(css).toContain('var(--mc-colors-red-66)');
-    expect(css).not.toContain('mc-dev');
   });
 
   it('tracks Attributify true-valued non-valued attributes in strict mode', async () => {

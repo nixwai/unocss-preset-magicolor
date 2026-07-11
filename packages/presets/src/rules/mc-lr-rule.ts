@@ -5,13 +5,10 @@ import { hasDarkVariant, resolveBodyColor } from '@unocss-preset-magicolor/utils
 import { resolveMixtureColorConfig } from '../utils/color-config';
 import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
-import { createDevCacheTokenSelectorRedirect, MC_DEV_CACHE_TOKEN_PATTERN } from '../utils/dev-cache-token';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
-// Keep the optional dev suffix outside captured bodies so lightness parsing
-// receives the same definition in dev and build modes.
-const GLOBAL_LIGHTNESS_REVERSE_RE = new RegExp(`^mc-lr(?::${MC_DEV_CACHE_TOKEN_PATTERN})?$`);
-const LOCAL_LIGHTNESS_REVERSE_RE = new RegExp(`^mc-lr-(.+?)(?::${MC_DEV_CACHE_TOKEN_PATTERN})?$`);
+const GLOBAL_LIGHTNESS_REVERSE_RE = /^mc-lr$/;
+const LOCAL_LIGHTNESS_REVERSE_RE = /^mc-lr-(.+)$/;
 
 /** Creates `mc-lr` rules that regenerate variables with reversed lightness depth lookup. */
 export function createLightnessReverseColor(context: MagicColorContext): Rule[] {
@@ -59,14 +56,11 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
       depths: targetDepths,
       lightnessReverse: true,
     });
-    context.usage.recordSourceUsage(ctx.rawSelector, depthMap);
-    return Object.assign(css, createDevCacheTokenSelectorRedirect(ctx, context.options));
+    context.usage.recordRuleSourceUsage(ctx, depthMap);
+    return css;
   }
   else {
-    return Object.assign(
-      resolveThemeColorCss(name, colorParts, ctx.theme, targetDepths, { lightnessReverse: true }),
-      createDevCacheTokenSelectorRedirect(ctx, context.options),
-    );
+    return resolveThemeColorCss(name, colorParts, ctx.theme, targetDepths, { lightnessReverse: true });
   }
 }
 
@@ -94,7 +88,7 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context: MagicCo
       lightnessReverse: true,
     });
     Object.assign(css, result.css);
-    context.usage.recordSourceUsage(ctx.rawSelector, result.depthMap);
+    context.usage.recordRuleSourceUsage(ctx, result.depthMap);
   }
-  return Object.assign(css, createDevCacheTokenSelectorRedirect(ctx, context.options));
+  return css;
 }

@@ -7,43 +7,105 @@ function createShortcutRuleContext(shortcuts: Shortcut[]): RuleContext {
   return { generator: { config: { shortcuts } } } as unknown as RuleContext;
 }
 
+function createRuleContext(rawSelector: string): RuleContext {
+  return {
+    rawSelector,
+    generator: { cache: new Map() },
+  } as unknown as RuleContext;
+}
+
 describe('usage scanner and cache bookkeeping', () => {
-  it('adds dev cache tokens only when explicitly enabled', () => {
-    const disabledUsage = new MagicColorUsage();
-    const disabledExtracted = new Set(['mc-btn_red']);
-
-    disabledUsage.extractor.extract?.({
-      extracted: disabledExtracted,
-      id: 'dev-cache-disabled.vue',
-      original: '',
-      code: '',
-      envMode: 'dev',
-    });
-
-    expect(disabledExtracted).toEqual(new Set(['mc-btn_red']));
-
-    const enabledUsage = new MagicColorUsage({ devCacheToken: true });
-    const enabledExtracted = new Set([
+  it('does not mutate extracted tokens while scanning usage', () => {
+    const usage = new MagicColorUsage();
+    const extracted = new Set([
       'mc-btn_red',
       '[mc-definition=""]',
       '[mc~="lr"]',
       '[un-mc-brand_rose=""]',
     ]);
 
-    enabledUsage.extractor.extract?.({
-      extracted: enabledExtracted,
-      id: 'dev-cache-enabled.vue',
+    usage.extractor.extract?.({
+      extracted,
+      id: 'usage-scan.vue',
       original: '',
       code: '',
       envMode: 'dev',
     });
 
-    expect(enabledExtracted).toEqual(new Set([
+    expect(extracted).toEqual(new Set([
+      'mc-btn_red',
+      '[mc~="lr"]',
       '[mc-definition=""]',
-      '[mc~="lr"]:mc-dev-1',
-      'mc-btn_red:mc-dev-1',
-      '[un-mc-brand_rose=""]:mc-dev-1',
+      '[un-mc-brand_rose=""]',
     ]));
+  });
+
+  it('invalidates recorded source rule cache only when rule usage changes', () => {
+    const usage = new MagicColorUsage();
+    const cache = new Map<string, unknown>([
+      ['mc-btn_red', []],
+      ['hover:mc-lr-primary_primary', []],
+      ['bg-mc-primary-333', []],
+      ['text-white', []],
+    ]);
+    const context = {
+      rawSelector: 'mc-btn_red',
+      generator: { cache },
+    } as unknown as RuleContext;
+
+    usage.recordRuleSourceUsage(context, new Map([
+      ['primary', new Set([333])],
+    ]));
+
+    expect(cache.has('mc-btn_red')).toBe(false);
+    expect(cache.has('hover:mc-lr-primary_primary')).toBe(true);
+    expect(cache.has('bg-mc-primary-333')).toBe(true);
+    expect(cache.has('text-white')).toBe(true);
+
+    cache.set('mc-btn_blue', []);
+    usage.recordRuleSourceUsage(context, new Map([
+      ['primary', new Set([333])],
+    ]));
+
+    expect(cache.has('mc-btn_blue')).toBe(true);
+  });
+
+  it('seeds direct target rule usage during extractor scans', () => {
+    const usage = new MagicColorUsage();
+    const cache = new Map<string, unknown>([
+      ['mc-btn_red', []],
+      ['bg-mc-primary-333', []],
+    ]);
+
+    usage.recordRuleSourceUsage({
+      rawSelector: 'mc-btn_red',
+      generator: { cache },
+    } as unknown as RuleContext, new Map([
+      ['primary', new Set([333])],
+    ]));
+    cache.set('mc-btn_red', []);
+
+    usage.extractor.extract?.({
+      extracted: new Set(['bg-mc-primary-333']),
+      id: 'target-seed.vue',
+      original: '',
+      code: '',
+    });
+    cache.set('mc-btn_red', []);
+
+    const context = {
+      rawSelector: 'bg-mc-primary-333',
+      generator: { cache },
+    } as unknown as RuleContext;
+
+    usage.recordRuleTargetUsage(context, new Map([
+      ['primary', new Set([333])],
+    ]));
+    usage.recordRuleTargetUsage(context, new Map([
+      ['primary', new Set([333])],
+    ]));
+
+    expect(cache.has('mc-btn_red')).toBe(true);
   });
 
   it('records all shortcut-expanded target usage when explicitly requested', () => {
@@ -95,6 +157,7 @@ describe('usage scanner and cache bookkeeping', () => {
 
   it('merges repeated lightness-reverse source usage for the same selector', () => {
     const usage = new MagicColorUsage();
+    const context = createRuleContext('mc-lr-primary_primary');
 
     usage.extractor.extract?.({
       extracted: new Set(['mc-lr-primary_primary']),
@@ -102,10 +165,10 @@ describe('usage scanner and cache bookkeeping', () => {
       original: '',
       code: '',
     });
-    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([920])],
     ]));
-    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([80])],
       ['secondary', new Set([880])],
     ]));
@@ -116,6 +179,7 @@ describe('usage scanner and cache bookkeeping', () => {
 
   it('keeps cache references stable when repeated selector updates add no new data', () => {
     const usage = new MagicColorUsage();
+    const context = createRuleContext('mc-lr-primary_primary');
 
     usage.extractor.extract?.({
       extracted: new Set(['mc-lr-primary_primary']),
@@ -123,19 +187,19 @@ describe('usage scanner and cache bookkeeping', () => {
       original: '',
       code: '',
     });
-    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([920])],
     ]));
 
     const cachedDepths = usage.getSourceDepths('primary');
 
-    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([920])],
     ]));
 
     expect(usage.getSourceDepths('primary')).toBe(cachedDepths);
 
-    usage.recordSourceUsage('mc-lr-primary_primary', new Map([
+    usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([80])],
     ]));
 
@@ -150,9 +214,19 @@ describe('usage scanner and cache bookkeeping', () => {
       'mc-primary_rose',
     ]));
 
-    expect(scan.colors.get('primary')).toEqual(new Set([333]));
-    expect(scan.colors.get('secondary')).toEqual(new Set([640]));
-    expect(scan.colors.has('primary_rose')).toBe(false);
+    expect(scan.get('primary')).toEqual(new Set([333]));
+    expect(scan.get('secondary')).toEqual(new Set([640]));
+    expect(scan.has('primary_rose')).toBe(false);
+  });
+
+  it('accepts any iterable token collection while scanning usage', () => {
+    const scan = scanUsage([
+      'bg-mc-primary-333',
+      'text-mc-secondary-640',
+    ]);
+
+    expect(scan.get('primary')).toEqual(new Set([333]));
+    expect(scan.get('secondary')).toEqual(new Set([640]));
   });
 
   it('ignores literal and function colors in usage scans', () => {
@@ -170,7 +244,7 @@ describe('usage scanner and cache bookkeeping', () => {
       'bg-mc-[calc(var(--brand-depth)_*_1%)]',
     ]));
 
-    expect(scan.colors).toEqual(new Map([
+    expect(scan).toEqual(new Map([
       ['primary', new Set([333])],
     ]));
   });

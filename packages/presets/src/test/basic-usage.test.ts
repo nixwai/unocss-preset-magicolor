@@ -100,6 +100,6 @@ describe('basic magic color usage', () => {
       'hover:mc-lr-my-btn',
     ]));
 
-    expect(scan.colors.size).toBe(1);
+    expect(scan.size).toBe(1);
   });
 });

@@ -4,20 +4,11 @@ import { resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { BASE_COLOR_DEPTH, isLiteralColor } from '../utils/color-variable';
 import { hasUnderline, normalizeMagicColorToken } from '../utils/resolve-token';
 
-/** Token scan result from one UnoCSS extractor input. */
-export interface TokenScan {
-  /** Color depths grouped by magic color name. */
-  colors: MagicColorDepthMap
-  /** Raw tokens found by UnoCSS extractors for this input id. */
-  tokens: Set<string>
-}
-
-/** Scans extracted tokens into color depths for one input id. */
-export function scanUsage(tokens = new Set<string>()): TokenScan {
-  const tokenList = Array.from(tokens);
+/** Scans extracted tokens into color depths. */
+export function scanUsage(tokens: Iterable<string> = []): MagicColorDepthMap {
   const colors: MagicColorDepthMap = new Map();
 
-  for (let token of tokenList) {
+  for (let token of tokens) {
     // only scan magic-color tokens
     if (!token.includes('mc')) {
       continue;
@@ -56,5 +47,5 @@ export function scanUsage(tokens = new Set<string>()): TokenScan {
     colors.set(originColor, depths);
   }
 
-  return { colors, tokens };
+  return colors;
 }
