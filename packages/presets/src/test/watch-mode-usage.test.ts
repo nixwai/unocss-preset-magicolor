@@ -60,6 +60,17 @@ describe('watch-mode usage replacement', () => {
     expect(getSelectorBlock(second.css, '.mc-btn_red')).not.toContain('--mc-colors-btn-80');
   });
 
+  it('updates custom definition output when target usage is added after a placeholder parse', async () => {
+    const uno = await createUno({}, { envMode: 'dev' });
+
+    const first = await uno.generate('<div class="mc-btn_red"></div>', { preflights: true, id: 'definition-add.vue' });
+    expect(getSelectorBlock(first.css, '.mc-btn_red')).not.toContain('--mc-colors-btn-80');
+
+    const second = await uno.generate('<div class="mc-btn_red c-mc-btn-80"></div>', { preflights: true, id: 'definition-add.vue' });
+
+    expect(getCssVar(getSelectorBlock(second.css, '.mc-btn_red'), '--mc-colors-btn-80')).toBe('var(--mc-source-colors-red-80)');
+  });
+
   it('updates global lightness-reverse output when target depths change', async () => {
     const uno = await createUno({ colors: { primary: 'rose' } }, { envMode: 'dev' });
 
@@ -72,6 +83,17 @@ describe('watch-mode usage replacement', () => {
     expect(getCssVar(lrBlock, '--mc-colors-primary-100')).toBe('var(--mc-source-colors-primary-900)');
     expect(getCssVar(lrBlock, '--mc-colors-primary-80')).toBeUndefined();
     expect(second.css).toContain('var(--mc-colors-primary-100)');
+  });
+
+  it('updates global lightness-reverse output when target usage is added after a placeholder parse', async () => {
+    const uno = await createUno({ colors: { primary: 'rose' } }, { envMode: 'dev' });
+
+    const first = await uno.generate('<div class="mc-lr"></div>', { preflights: true, id: 'global-lr-add.vue' });
+    expect(getSelectorBlock(first.css, '.mc-lr')).not.toContain('--mc-colors-primary-80');
+
+    const second = await uno.generate('<div class="mc-lr c-mc-primary-80"></div>', { preflights: true, id: 'global-lr-add.vue' });
+
+    expect(getCssVar(getSelectorBlock(second.css, '.mc-lr'), '--mc-colors-primary-80')).toBe('var(--mc-source-colors-primary-920)');
   });
 
   it('keeps variant definition selectors stable in dev mode', async () => {
@@ -90,5 +112,31 @@ describe('watch-mode usage replacement', () => {
     const definitionBlock = getSelectorBlock(css, '.mc-brand_\\[\\#9c1d1e\\]');
 
     expect(getCssVar(definitionBlock, '--mc-colors-brand-DEFAULT')).toBe('#9c1d1e');
+  });
+
+  it('updates arbitrary color definition output when target depths change', async () => {
+    const uno = await createUno({}, { envMode: 'dev' });
+
+    const first = await uno.generate('<div class="mc-brand_[#9c1d1e] c-mc-brand-80"></div>', { preflights: true, id: 'arbitrary-depth.vue' });
+    expect(getCssVar(getSelectorBlock(first.css, '.mc-brand_\\[\\#9c1d1e\\]'), '--mc-colors-brand-80')).toMatch(/^oklch\(/);
+
+    const second = await uno.generate('<div class="mc-brand_[#9c1d1e] c-mc-brand-100"></div>', { preflights: true, id: 'arbitrary-depth.vue' });
+    const definitionBlock = getSelectorBlock(second.css, '.mc-brand_\\[\\#9c1d1e\\]');
+
+    expect(getCssVar(definitionBlock, '--mc-colors-brand-100')).toMatch(/^oklch\(/);
+    expect(getCssVar(definitionBlock, '--mc-colors-brand-80')).toBeUndefined();
+  });
+
+  it('updates arbitrary function color definition output when target depths change', async () => {
+    const uno = await createUno({}, { envMode: 'dev' });
+
+    const first = await uno.generate('<div class="mc-brand_[rgb(12_22_33)] c-mc-brand-80"></div>', { preflights: true, id: 'arbitrary-function-depth.vue' });
+    expect(getCssVar(getSelectorBlock(first.css, '.mc-brand_\\[rgb\\(12_22_33\\)\\]'), '--mc-colors-brand-80')).toMatch(/^oklch\(/);
+
+    const second = await uno.generate('<div class="mc-brand_[rgb(12_22_33)] c-mc-brand-100"></div>', { preflights: true, id: 'arbitrary-function-depth.vue' });
+    const definitionBlock = getSelectorBlock(second.css, '.mc-brand_\\[rgb\\(12_22_33\\)\\]');
+
+    expect(getCssVar(definitionBlock, '--mc-colors-brand-100')).toMatch(/^oklch\(/);
+    expect(getCssVar(definitionBlock, '--mc-colors-brand-80')).toBeUndefined();
   });
 });

@@ -72,10 +72,14 @@ export class MagicColorUsage {
     }
   }
 
-  /** Records source variable usage from a rule and invalidates dependent generator cache on changes. */
-  recordRuleSourceUsage<Theme extends object = object>(context: RuleContext<Theme>, sourceDepths: MagicColorDepthMap) {
+  /** Records that a raw UnoCSS token must be reparsed when scanned magic-color usage changes. */
+  recordUsageDependentToken<Theme extends object = object>(context: RuleContext<Theme>) {
     this.tokenCache.registerCache(context.generator.cache);
     this.tokenCache.recordToken(context.rawSelector);
+  }
+
+  /** Records source variable usage from a rule and invalidates dependent generator cache on changes. */
+  recordRuleSourceUsage<Theme extends object = object>(context: RuleContext<Theme>, sourceDepths: MagicColorDepthMap) {
     const change = this.recordSelectorColors(this.sourceRuleScans, context.rawSelector, sourceDepths);
     if (change) {
       this.scanCache.invalidate();

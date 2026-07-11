@@ -40,7 +40,7 @@ describe('usage scanner and cache bookkeeping', () => {
     ]));
   });
 
-  it('invalidates recorded source rule cache only when rule usage changes', () => {
+  it('invalidates usage-dependent rule cache only when rule usage changes', () => {
     const usage = new MagicColorUsage();
     const cache = new Map<string, unknown>([
       ['mc-btn_red', []],
@@ -53,6 +53,7 @@ describe('usage scanner and cache bookkeeping', () => {
       generator: { cache },
     } as unknown as RuleContext;
 
+    usage.recordUsageDependentToken(context);
     usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([333])],
     ]));
@@ -68,6 +69,23 @@ describe('usage scanner and cache bookkeeping', () => {
     ]));
 
     expect(cache.has('mc-btn_blue')).toBe(true);
+  });
+
+  it('keeps source rule scan recording separate from cache token registration', () => {
+    const usage = new MagicColorUsage();
+    const cache = new Map<string, unknown>([
+      ['mc-btn_red', []],
+    ]);
+    const context = {
+      rawSelector: 'mc-btn_red',
+      generator: { cache },
+    } as unknown as RuleContext;
+
+    usage.recordRuleSourceUsage(context, new Map([
+      ['primary', new Set([333])],
+    ]));
+
+    expect(cache.has('mc-btn_red')).toBe(true);
   });
 
   it('seeds direct target rule usage during extractor scans', () => {

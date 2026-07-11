@@ -31,6 +31,7 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
     return;
   }
   context.usage.recordShortcutTargetUsages(ctx);
+  context.usage.recordUsageDependentToken(ctx);
   const targetDepths = context.usage.getTargetDepths(name);
   if (!targetDepths?.size) {
     return { [KNOWN_DEFINITION_PLACEHOLDER]: 'initial' };
