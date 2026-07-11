@@ -13,7 +13,7 @@ import { variants } from './variants';
  */
 export function presetMagicolor(options: PresetMcOptions = {}): Preset {
   const normalizedOptions = normalizePresetMcOptions(options);
-  const usage = new MagicColorUsage(normalizedOptions);
+  const usage = new MagicColorUsage();
   const context: MagicColorContext = {
     options: normalizedOptions,
     usage,

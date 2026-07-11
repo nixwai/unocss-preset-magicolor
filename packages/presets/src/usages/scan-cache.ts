@@ -1,7 +1,6 @@
 import type { MagicColorDepth } from '../utils/color-variable';
-import type { TokenScan } from './scanner';
 import type { MagicColorDepthMap } from './types';
-import { stripDevCacheToken } from '../utils/dev-cache-token';
+import { scanUsage } from './scanner';
 
 export interface UsageCache {
   targetDepths: MagicColorDepthMap
@@ -11,22 +10,36 @@ export interface UsageCache {
 }
 
 /** Lazily aggregates usage scans into target and source color-depth caches. */
-export class UsageCacheStore {
-  private readonly scansById: ReadonlyMap<string, TokenScan>;
-  private readonly ruleScans: ReadonlyMap<string, TokenScan>;
-  private readonly lrScans: ReadonlyMap<string, TokenScan>;
+export class ScanCacheStore {
+  private readonly idExtracted = new Map<string, Set<string>>();
+  private readonly targetRuleScans: Map<string, MagicColorDepthMap>;
+  private readonly sourceRuleScans: ReadonlyMap<string, MagicColorDepthMap>;
 
   private cacheValid = false;
   private cache: UsageCache | undefined;
 
   constructor(
-    scansById: ReadonlyMap<string, TokenScan>,
-    ruleScans: ReadonlyMap<string, TokenScan>,
-    lrScans: ReadonlyMap<string, TokenScan>,
+    targetRuleScans: Map<string, MagicColorDepthMap>,
+    sourceRuleScans: ReadonlyMap<string, MagicColorDepthMap>,
   ) {
-    this.scansById = scansById;
-    this.ruleScans = ruleScans;
-    this.lrScans = lrScans;
+    this.targetRuleScans = targetRuleScans;
+    this.sourceRuleScans = sourceRuleScans;
+  }
+
+  private batchRecordTargetTokens(tokens: Set<string>) {
+    for (const token of tokens) {
+      const tokenScan = scanUsage([token]);
+      if (!tokenScan.size) {
+        continue;
+      }
+      this.targetRuleScans.set(token, tokenScan);
+    }
+  }
+
+  /** Records one extractor input and mirrors direct target token scans into rule scans. */
+  recordExtracted(id: string, extracted: Set<string>) {
+    this.idExtracted.set(id, extracted);
+    this.batchRecordTargetTokens(extracted);
   }
 
   /** Marks the aggregated usage cache stale after scans change. */
@@ -61,6 +74,17 @@ export class UsageCacheStore {
     return this.cache?.sourceNames ?? [];
   }
 
+  /** Returns all tokens currently referenced by extractor inputs. */
+  getInputTokens() {
+    const tokens = new Set<string>();
+    for (const scanTokens of this.idExtracted.values()) {
+      for (const token of scanTokens) {
+        tokens.add(token);
+      }
+    }
+    return tokens;
+  }
+
   private ensureCacheValid() {
     if (this.cacheValid) {
       return;
@@ -71,16 +95,12 @@ export class UsageCacheStore {
   }
 
   private buildCache(): UsageCache {
-    const referencedSelectors = collectReferencedSelectors(this.scansById);
+    const referencedSelectors = this.getInputTokens();
 
     const targetDepths: MagicColorDepthMap = new Map();
     const targetNames = new Set<string>();
 
-    for (const scan of this.scansById.values()) {
-      addScanColors(targetDepths, targetNames, scan);
-    }
-
-    for (const [selector, scan] of this.ruleScans) {
+    for (const [selector, scan] of this.targetRuleScans) {
       if (!referencedSelectors.has(selector)) {
         continue;
       }
@@ -90,7 +110,7 @@ export class UsageCacheStore {
     const sourceDepths: MagicColorDepthMap = new Map();
     const sourceNames = new Set<string>();
 
-    for (const [selector, scan] of this.lrScans) {
+    for (const [selector, scan] of this.sourceRuleScans) {
       if (!referencedSelectors.has(selector)) {
         continue;
       }
@@ -106,30 +126,16 @@ export class UsageCacheStore {
   }
 }
 
-function collectReferencedSelectors(scansById: ReadonlyMap<string, TokenScan>) {
-  const referencedSelectors = new Set<string>();
-
-  for (const scan of scansById.values()) {
-    for (const token of scan.tokens) {
-      // Input tokens may carry a dev suffix, while rule scans are keyed by the stable selector.
-      // Normalize here so stale rule scans are ignored by reference.
-      referencedSelectors.add(stripDevCacheToken(token));
-    }
-  }
-
-  return referencedSelectors;
-}
-
 function addScanColors(
   target: MagicColorDepthMap,
   names: Set<string>,
-  scan: TokenScan,
+  scan: MagicColorDepthMap,
 ) {
   // aggregating depths from multiple scans into a shared cache
-  for (const name of scan.colors.keys()) {
+  for (const name of scan.keys()) {
     names.add(name);
   }
-  for (const [name, sourceDepths] of scan.colors.entries()) {
+  for (const [name, sourceDepths] of scan.entries()) {
     const targetDepths = target.get(name) ?? new Set<MagicColorDepth>();
     for (const depth of sourceDepths) {
       targetDepths.add(depth);

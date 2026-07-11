@@ -7,7 +7,6 @@ import PreviewPane from './playground/PreviewPane.vue';
 
 const {
   configSource,
-  customCss,
   documentSource,
   error,
   html,
@@ -34,10 +33,6 @@ const {
 
         <PanelShell title="Config">
           <CodeEditor v-model="configSource" label="Config editor" />
-        </PanelShell>
-
-        <PanelShell title="Custom CSS" default-collapsed>
-          <CodeEditor v-model="customCss" label="Custom CSS editor" />
         </PanelShell>
 
         <PanelShell title="Output CSS" default-collapsed>

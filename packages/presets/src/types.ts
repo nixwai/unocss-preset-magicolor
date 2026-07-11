@@ -26,12 +26,4 @@ export interface PresetMcOptions {
    * Alias names should not end with digits because trailing digits are parsed as compact depth syntax.
    */
   dark?: Record<string, PresetMcColorValue>
-  /**
-   * Enables the dev cache token used to force UnoCSS to reparse magic-color
-   * definition selectors after watch-mode updates. This is disabled by default
-   * and should be enabled explicitly only for dev server usage.
-   *
-   * @default false
-   */
-  devCacheToken?: boolean
 }

@@ -1,5 +1,6 @@
 import type { UserConfig } from '@unocss/core';
 import { createGenerator } from '@unocss/core';
+import { presetAttributify } from '@unocss/preset-attributify';
 import { presetWind4 } from '@unocss/preset-wind4';
 import { useStorage } from '@vueuse/core';
 import { presetMagicolor } from 'unocss-preset-magicolor';
@@ -17,14 +18,8 @@ declare global {
   }
 }
 
-const defaultCustomCss = `/* Write custom CSS here. */
-.custom {
-  font-weight: 600;
-}`;
-
 const storageKeys = {
   configSource: 'unocss-preset-magicolor:playground:config-source',
-  customCss: 'unocss-preset-magicolor:playground:custom-css',
   isDark: 'unocss-preset-magicolor:playground:is-dark',
   html: 'unocss-preset-magicolor:playground:html',
 };
@@ -38,9 +33,14 @@ const playgroundModules: Record<string, PlaygroundModule> = {
     default: presetWind4,
     presetWind4,
   },
+  '@unocss/preset-attributify': {
+    default: presetAttributify,
+    presetAttributify,
+  },
   'unocss': {
     defineConfig,
     presetWind4,
+    presetAttributify,
   },
   'unocss-preset-magicolor': {
     default: presetMagicolor,
@@ -95,25 +95,19 @@ export function usePlayground() {
 
   const html = useStorage(storageKeys.html, defaultHtml);
   const configSource = useStorage(storageKeys.configSource, defaultConfigSource);
-  const customCss = useStorage(storageKeys.customCss, defaultCustomCss);
   const isDark = useStorage(storageKeys.isDark, false);
   const generatedCss = ref('');
   const error = ref('');
   let version = 0;
 
-  const outputCss = computed(() => {
-    if (!customCss.value.trim()) {
-      return generatedCss.value;
-    }
-    return `${generatedCss.value}\n\n/* layer: custom */\n${customCss.value}`;
-  });
+  const outputCss = computed(() => generatedCss.value);
 
   const documentSource = computed(() => `<!doctype html>
 <html lang="en"${isDark.value ? ' class="dark"' : ''}>
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>${outputCss.value}</style>
+    <style>${generatedCss.value}</style>
     ${getRuntimeHelperScript()}
   </head>
   <body>${html.value}</body>
@@ -144,7 +138,6 @@ export function usePlayground() {
   async function reset() {
     html.value = '';
     configSource.value = defaultConfigSource;
-    customCss.value = defaultCustomCss;
     await nextTick();
     html.value = defaultHtml;
   }
@@ -153,7 +146,6 @@ export function usePlayground() {
 
   return {
     configSource,
-    customCss,
     documentSource,
     error,
     html,

@@ -5,19 +5,16 @@ import { hasDarkVariant, resolveBodyColor } from '@unocss-preset-magicolor/utils
 import { resolveMixtureColorConfig } from '../utils/color-config';
 import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
-import { createDevCacheTokenSelectorRedirect, MC_DEV_CACHE_TOKEN_PATTERN } from '../utils/dev-cache-token';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
-// Keep the optional dev suffix outside captured bodies so lightness parsing
-// receives the same definition in dev and build modes.
-const GLOBAL_LIGHTNESS_REVERSE_RE = new RegExp(`^mc-lr(?::${MC_DEV_CACHE_TOKEN_PATTERN})?$`);
-const LOCAL_LIGHTNESS_REVERSE_RE = new RegExp(`^mc-lr-(.+?)(?::${MC_DEV_CACHE_TOKEN_PATTERN})?$`);
+// As a placeholder, it avoids generating useless variable declarations and is useful for compatibility with "transformerCompileClass"
+const KNOWN_LIGHTNESS_REVERSE_PLACEHOLDER = '--mc-lightness-reverse';
 
 /** Creates `mc-lr` rules that regenerate variables with reversed lightness depth lookup. */
 export function createLightnessReverseColor(context: MagicColorContext): Rule[] {
   return [
-    [GLOBAL_LIGHTNESS_REVERSE_RE, (_match, ctx) => resolveGlobalLightnessReverse(ctx, context)],
-    [LOCAL_LIGHTNESS_REVERSE_RE, (match, ctx) => resolveLocalLightnessReverse(match, ctx, context)],
+    [/^mc-lr$/, (_match, ctx) => resolveGlobalLightnessReverse(ctx, context)],
+    [/^mc-lr-(.+)$/, (match, ctx) => resolveLocalLightnessReverse(match, ctx, context)],
   ];
 }
 
@@ -45,7 +42,12 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
     return;
   }
   context.usage.recordShortcutTargetUsages(ctx);
+  context.usage.recordUsageDependentToken(ctx);
   const targetDepths = context.usage.getTargetDepths(name);
+  if (!targetDepths?.size) {
+    return { [KNOWN_LIGHTNESS_REVERSE_PLACEHOLDER]: 'initial' };
+  }
+
   const sourceConfig = resolveMixtureColorConfig(colorParts.originColor, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
     const sourceColorParts = resolveBodyColor(sourceConfig.color);
@@ -59,18 +61,18 @@ function resolveLocalLightnessReverse([, body]: string[], ctx: RuleContext<Theme
       depths: targetDepths,
       lightnessReverse: true,
     });
-    context.usage.recordSourceUsage(ctx.rawSelector, depthMap);
-    return withDevCacheTokenSelectorRedirect(css, ctx, context);
+    context.usage.recordRuleSourceUsage(ctx, depthMap);
+    return css;
   }
   else {
-    const css = resolveThemeColorCss(name, colorParts, ctx.theme, targetDepths, { lightnessReverse: true });
-    return withDevCacheTokenSelectorRedirect(css, ctx, context);
+    return resolveThemeColorCss(name, colorParts, ctx.theme, targetDepths, { lightnessReverse: true });
   }
 }
 
 /** Rebuilds all currently used configured variables with reversed lightness depths. */
 function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context: MagicColorContext) {
   context.usage.recordShortcutTargetUsages(ctx);
+  context.usage.recordUsageDependentToken(ctx);
   const css: CSSObject = {};
   for (const name of context.usage.getTargetNames()) {
     const sourceConfig = resolveMixtureColorConfig(name, ctx.theme, context, hasDarkVariant(ctx.rawSelector));
@@ -92,14 +94,7 @@ function resolveGlobalLightnessReverse(ctx: RuleContext<Theme>, context: MagicCo
       lightnessReverse: true,
     });
     Object.assign(css, result.css);
-    context.usage.recordSourceUsage(ctx.rawSelector, result.depthMap);
+    context.usage.recordRuleSourceUsage(ctx, result.depthMap);
   }
-  return withDevCacheTokenSelectorRedirect(css, ctx, context);
-}
-
-function withDevCacheTokenSelectorRedirect(css: CSSObject, ctx: RuleContext<Theme>, context: MagicColorContext) {
-  return {
-    ...createDevCacheTokenSelectorRedirect(ctx, context.options),
-    ...css,
-  };
+  return Object.keys(css).length ? css : { [KNOWN_LIGHTNESS_REVERSE_PLACEHOLDER]: 'initial' };
 }

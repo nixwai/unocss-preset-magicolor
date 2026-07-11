@@ -24,9 +24,9 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.1.0",
-    "@types/node": "^26.1.0",
-    "@unocss/eslint-plugin": "^66.7.4",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@types/node": "^26.1.1",
+    "@unocss/eslint-plugin": "^66.7.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.6.0",
     "eslint-plugin-format": "^2.0.1",
     "happy-dom": "^20.10.6",
@@ -44,7 +44,7 @@
     "stylelint-order": "^8.1.1",
     "stylelint-scss": "^7.2.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   },
   "lint-staged": {
     "*.{vue,js,ts,tsx,jsx}": [

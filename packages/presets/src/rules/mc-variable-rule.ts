@@ -1,21 +1,19 @@
 import type { Theme } from '@unocss/preset-wind4';
-import type { CSSObject, Rule, RuleContext } from 'unocss';
+import type { Rule, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../typing';
 import { hasDarkVariant, resolveBodyColor } from '@unocss-preset-magicolor/utils';
 import { resolveMixtureColorConfig } from '../utils/color-config';
 import { resolveColorReferences } from '../utils/color-references';
 import { parseColorVariableDefinition } from '../utils/color-variable';
-import { createDevCacheTokenSelectorRedirect, MC_DEV_CACHE_TOKEN_PATTERN } from '../utils/dev-cache-token';
 import { resolveThemeColorCss } from '../utils/theme-colors';
 
-// Keep the optional dev suffix outside the captured body so color parsing sees
-// the same definition in dev and build modes.
-const COLOR_VARIABLE_RE = new RegExp(`^mc-(?!lr(?:-|:|$))(.+?)(?::${MC_DEV_CACHE_TOKEN_PATTERN})?$`);
+// As a placeholder, it avoids generating useless variable declarations and is useful for compatibility with "transformerCompileClass"
+const KNOWN_DEFINITION_PLACEHOLDER = '--mc-definition';
 
 /** Creates `mc-name_source` rules that define reusable magic color variables. */
 export function createColorVariable(context: MagicColorContext): Rule[] {
   return [
-    [COLOR_VARIABLE_RE, (match, ctx) => resolveMagicColor(match, ctx, context)],
+    [/^mc-(?!lr(?:-|:|$))(.+)$/, (match, ctx) => resolveMagicColor(match, ctx, context)],
   ];
 }
 
@@ -33,8 +31,12 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
     return;
   }
   context.usage.recordShortcutTargetUsages(ctx);
+  context.usage.recordUsageDependentToken(ctx);
   const targetDepths = context.usage.getTargetDepths(name);
-  const cssData: CSSObject = {};
+  if (!targetDepths?.size) {
+    return { [KNOWN_DEFINITION_PLACEHOLDER]: 'initial' };
+  }
+
   // Link option and theme colors through variables so aliases stay reactive.
   const sourceConfig = resolveMixtureColorConfig(mcColorObj.originColor, theme, context, hasDarkVariant(ctx.rawSelector));
   if (sourceConfig.color) {
@@ -43,15 +45,11 @@ function resolveMagicColor([, body]: string[], ctx: RuleContext<Theme>, context:
       colorParts: mcColorObj,
       depths: targetDepths,
     });
-    context.usage.recordSourceUsage(ctx.rawSelector, depthMap);
-    Object.assign(cssData, css);
+    context.usage.recordRuleSourceUsage(ctx, depthMap);
+    return css;
   }
   else {
     // Arbitrary or literal colors are resolved directly rather than linked through variables.
-    Object.assign(cssData, resolveThemeColorCss(name, mcColorObj, theme, targetDepths));
+    return resolveThemeColorCss(name, mcColorObj, theme, targetDepths);
   }
-  return {
-    ...createDevCacheTokenSelectorRedirect(ctx, context.options),
-    ...cssData,
-  };
 };

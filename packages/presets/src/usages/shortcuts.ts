@@ -83,7 +83,7 @@ function getShortcutTokens(value: unknown) {
 function collectStaticShortcut(matcher: string, value: unknown) {
   return {
     rawSelector: matcher,
-    depths: scanUsage(new Set(getShortcutTokens(value))).colors,
+    depths: scanUsage(new Set(getShortcutTokens(value))),
   };
 }
 
@@ -118,7 +118,7 @@ function collectDynamicShortcut<Theme extends object>(
 
     usages.push({
       rawSelector: token,
-      depths: scanUsage(new Set(getShortcutTokens(resolved))).colors,
+      depths: scanUsage(new Set(getShortcutTokens(resolved))),
     });
   }
   return usages;

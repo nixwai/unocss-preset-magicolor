@@ -13,15 +13,15 @@
 pnpm add unocss-preset-magicolor -D
 ```
 
-Before using this preset, install and configure UnoCSS by following the official [UnoCSS integration guide](https://unocss.dev/integrations/vite). Add the base preset you need, such as `presetWind4`, and then add `presetMagicolor()`.
+Before using this preset, install and configure UnoCSS by following the official [UnoCSS integration guide](https://unocss.dev/integrations/vite). Keep any UnoCSS presets your project already uses, then add `presetMagicolor()`.
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    // ...your existing UnoCSS presets
     presetMagicolor(),
   ],
 });
@@ -39,12 +39,12 @@ export default defineConfig({
 You can use UnoCSS built-in colors, custom colors from `theme.colors`, and valid CSS color values with `mc-` utilities. Compared with native UnoCSS color utilities, the main difference is the `mc-` prefix and support for arbitrary numeric depths beyond the default 50/100/200...950 steps.
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    // ...your existing UnoCSS presets
     presetMagicolor(),
   ],
   theme: {
@@ -125,12 +125,12 @@ You can also reverse an existing color name without redefining its source. `mc-l
 For stable semantic colors, use `presetMagicolor({ colors })` to define global aliases. Aliases are emitted under `:root` as `--mc-colors-<name>-DEFAULT` for no-depth usage or `--mc-colors-<name>-<depth>` for numeric depths, but only for the depths that are actually used.
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4({ dark: 'class' }),
+    // ...your existing UnoCSS presets
     presetMagicolor({
       colors: {
         primary: { color: 'rose', lightnessReverse: true },
@@ -163,12 +163,6 @@ The full preset options are:
 interface PresetMcOptions {
   colors?: Record<string, string | { color: string, lightnessReverse?: boolean }>
   dark?: Record<string, string | { color: string, lightnessReverse?: boolean }>
-  /**
-   * Dev-only cache-busting helper for `mc-*` definition selectors in watch mode.
-   *
-   * @default false
-   */
-  devCacheToken?: boolean
 }
 ```
 
@@ -186,29 +180,9 @@ The same semantic color can still be redefined by variants for local component o
 </template>
 ```
 
-### dev cache token
+### dev mode limitation
 
-`devCacheToken` is an opt-in workaround for a development-server cache edge case. In UnoCSS Vite dev mode, the extracted token set can be cumulative: newly seen tokens are added, but tokens removed from the edited file may stay in UnoCSS internals until a fuller rescan. That is especially noticeable for Magicolor definition selectors because their generated variables depend on the currently scanned target depths.
-
-When `devCacheToken: true` and the generator `envMode` is `dev`, Magicolor adds an internal suffix such as `:mc-dev-1` to `mc-*` definition/control tokens before UnoCSS caches them. The suffix changes the raw cache key so rules like `mc-btn_red` and `mc-lr-btn_rose` are reparsed after watch-mode updates. The suffix is stripped before CSS is emitted, so generated selectors stay user-facing and should not contain `mc-dev`.
-
-Use it only for dev/watch configs when you see stale variables after changing magic-color definitions or target depths:
-
-```ts
-import { defineConfig, presetWind4 } from 'unocss';
-import { presetMagicolor } from 'unocss-preset-magicolor';
-
-export default defineConfig({
-  presets: [
-    presetWind4(),
-    presetMagicolor({
-      devCacheToken: true,
-    }),
-  ],
-});
-```
-
-This option does not change color resolution, generated production CSS, runtime `updateMagicColor`, or the public class syntax. Do not write  `mc-dev-*` tokens manually; they are internal cache keys.
+In UnoCSS Vite dev global mode, the extracted token set can be cumulative: newly seen tokens are added, but tokens removed from the edited file may stay in UnoCSS internals until a fuller rescan or config reload. Magicolor refreshes its own usage-dependent rule cache when new target depths are observed, but it cannot remove stale tokens that UnoCSS still reports as extracted.
 
 ### js change color
 
@@ -246,12 +220,12 @@ By default, this preset emits its utilities in the internal UnoCSS layer named `
 You can override only the order from your UnoCSS config if you want Magicolor utilities to have higher priority:
 
 ```ts
-import { defineConfig, presetWind4 } from 'unocss';
+import { defineConfig } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
-    presetWind4(),
+    // ...your existing UnoCSS presets
     presetMagicolor(),
   ],
   layers: {
