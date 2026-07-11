@@ -180,10 +180,6 @@ The same semantic color can still be redefined by variants for local component o
 </template>
 ```
 
-### dev mode limitation
-
-In UnoCSS Vite dev global mode, the extracted token set can be cumulative: newly seen tokens are added, but tokens removed from the edited file may stay in UnoCSS internals until a fuller rescan or config reload. Magicolor refreshes its own usage-dependent rule cache when new target depths are observed, but it cannot remove stale tokens that UnoCSS still reports as extracted.
-
 ### js change color
 
 Use `updateMagicColor` to update generated magic color CSS variables at runtime. Passing `document.documentElement` usually updates the whole page theme; passing a component root element updates only that local scope.
