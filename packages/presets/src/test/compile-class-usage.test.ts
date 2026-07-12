@@ -1,25 +1,9 @@
+import type { UnocssPluginContext } from 'unocss';
+import MagicString from 'magic-string';
 import { createGenerator, presetWind4, transformerCompileClass, transformerVariantGroup } from 'unocss';
 import { describe, expect, it } from 'vitest';
 import { presetMagicolor } from '../index';
 import { getCssVar, getSelectorBlock } from './helpers';
-
-class TestMagicString {
-  original: string;
-  private value: string;
-
-  constructor(input: string) {
-    this.original = input;
-    this.value = input;
-  }
-
-  overwrite(start: number, end: number, replacement: string) {
-    this.value = `${this.value.slice(0, start)}${replacement}${this.value.slice(end)}`;
-  }
-
-  toString() {
-    return this.value;
-  }
-}
 
 async function generateWithCompileClass(input: string) {
   const compileClass = transformerCompileClass();
@@ -34,13 +18,13 @@ async function generateWithCompileClass(input: string) {
     ],
   });
 
-  const s = new TestMagicString(input);
+  const s = new MagicString(input);
   const tokens = new Set<string>();
   await compileClass.transform?.(s, 'compile-class.vue', {
     uno,
     tokens,
     invalidate: () => uno.cache.clear(),
-  });
+  } as UnocssPluginContext);
 
   const extracted = await uno.applyExtractors(s.toString(), 'compile-class.vue', tokens);
   const result = await uno.generate(extracted, { preflights: true, id: 'compile-class.vue' });
