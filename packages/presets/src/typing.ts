@@ -2,7 +2,7 @@ import type { ThemeMetas } from 'magic-color';
 import type { MagicColorOptions } from './types';
 import type { MagicColorUsage } from './usages';
 
-export type ThemeKey = keyof ThemeMetas;
+export type ThemeKey = keyof ThemeMetas | 0 | 1000;
 
 /** Shared per-preset context used by rules and preflights. */
 export interface MagicColorContext {

@@ -3,7 +3,7 @@ import type { ThemeMetas } from 'magic-color';
 import { mc } from 'magic-color';
 import { roundNum, toNum, toOklch } from './transforms';
 
-type ThemeKey = keyof ThemeMetas;
+export type ThemeKey = keyof ThemeMetas | 0 | 1000;
 
 export interface ThemeDepthOptions {
   lightnessReverse?: boolean
@@ -14,7 +14,7 @@ export interface DepthOptions<TDefault = undefined> extends ThemeDepthOptions {
   defaultValue?: TDefault
 }
 
-export const themeMetaList: ThemeKey[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+export const themeMetaList: ThemeKey[] = [0, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 1000];
 
 /**
  * Builds a partial theme-depth color map from a valid source color.
@@ -29,7 +29,11 @@ export function getMcThemeMetaColors(originColor?: string): Partial<Record<Theme
   }
 
   try {
-    const themeColor = mc.theme(originColor, { type: 'hex' });
+    const themeColor: Partial<Record<ThemeKey, string>> = {
+      0: '#ffffff',
+      ...mc.theme(originColor, { type: 'hex' }),
+      1000: '#000000',
+    };
     for (const themeMeta of themeMetaList) {
       const hex = themeColor[themeMeta];
       if (!hex) {
@@ -82,14 +86,10 @@ function resolveDepth(no: string | number, options: ThemeDepthOptions = {}) {
   if (typeof originDepth !== 'number') {
     return;
   }
-  originDepth = originDepth <= 50 ? 50 : originDepth;
-  originDepth = originDepth >= 950 ? 950 : originDepth;
-  // get before depth, can not be less than 50
-  let beforeDepth = Math.floor(originDepth / 100) * 100 as ThemeKey;
-  beforeDepth = beforeDepth <= 50 ? 50 : beforeDepth;
-  // get after depth, can not be greater than 950
-  let afterDepth = Math.floor((originDepth + 100) / 100) * 100 as ThemeKey;
-  afterDepth = afterDepth >= 950 ? 950 : afterDepth;
+  originDepth = originDepth <= 0 ? 0 : originDepth;
+  originDepth = originDepth >= 1000 ? 1000 : originDepth;
+  const beforeDepth = [...themeMetaList].reverse().find(themeMeta => themeMeta <= originDepth) ?? 0;
+  const afterDepth = themeMetaList.find(themeMeta => themeMeta >= originDepth) ?? 1000;
   return { originDepth, beforeDepth, afterDepth };
 }
 
@@ -124,8 +124,9 @@ export function getThemeDepthColor(
   if (beforeComponents.length < 3 || afterComponents.length < 3) {
     return;
   }
-  // The progressive process of depth is：50、100、200、300、400、500、600、700、800、900、950
-  const transitionRatio = (originDepth - beforeDepth) / ((originDepth < 100 || originDepth > 900) ? 50 : 100);
+  // Interpolate within the actual neighboring theme stops, including 0/50 and 950/1000.
+  const depthRange = afterDepth - beforeDepth;
+  const transitionRatio = depthRange === 0 ? 0 : (originDepth - beforeDepth) / depthRange;
   const resultColor = Array.from({ length: 3 }).map((_, i) => {
     const value = toNum(beforeComponents[i]) + (toNum(afterComponents[i]) - toNum(beforeComponents[i])) * transitionRatio;
     return roundNum(value);

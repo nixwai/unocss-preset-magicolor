@@ -1,5 +1,6 @@
 import {
   getMcThemeMetaColors,
+  getThemeDepthColor,
   resolveBodyColor,
   resolveSpecialColor,
   resolveThemeDepth,
@@ -264,6 +265,15 @@ describe('getMagicColorStyle helper', () => {
     expect(String(lower['--mc-colors-primary-75'] ?? '')).not.toBe('oklch(0 0 0)');
     expect(String(upper['--mc-colors-primary-925'] ?? '')).toMatch(/^oklch\(/);
     expect(String(upper['--mc-colors-primary-925'] ?? '')).not.toBe('oklch(0 0 0)');
+  });
+
+  it('resolves fixed white and black boundary depth colors', () => {
+    const themeMetaColors = getMcThemeMetaColors('#9c1d1e');
+
+    expect(getThemeDepthColor(themeMetaColors, 0)).toBe('oklch(1 0 0)');
+    expect(getThemeDepthColor(themeMetaColors, 1000)).toBe('oklch(0 0 0)');
+    expect(getThemeDepthColor(themeMetaColors, 25)).not.toBe(getThemeDepthColor(themeMetaColors, 75));
+    expect(getThemeDepthColor(themeMetaColors, 975)).not.toBe(getThemeDepthColor(themeMetaColors, 925));
   });
 
   it('returns an empty object for invalid base colors', () => {

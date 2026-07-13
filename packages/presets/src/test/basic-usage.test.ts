@@ -24,6 +24,14 @@ describe('basic magic color usage', () => {
     expect(css).not.toContain('--mc-btn-640-l:');
   });
 
+  it('supports the zero color depth in generated preset variables', async () => {
+    const { css } = await generate('<div class="mc-btn_red bg-mc-btn-0"></div>');
+
+    expect(css).toContain('var(--mc-colors-btn-0)');
+    expect(css).toContain('--mc-colors-btn-0:var(--mc-source-colors-red-0)');
+    expect(css).toContain('--mc-source-colors-red-0: oklch(1 0 0);');
+  });
+
   it('tracks custom color depths with opacity modifiers', async () => {
     const { css } = await generate('<div class="mc-btn_red bg-mc-btn-640/50"></div>');
 
