@@ -1,6 +1,7 @@
 import type { UserConfig } from '@unocss/core';
 import { createGenerator } from '@unocss/core';
 import { presetAttributify } from '@unocss/preset-attributify';
+import { presetTagify } from '@unocss/preset-tagify';
 import { presetWind4 } from '@unocss/preset-wind4';
 import { useStorage } from '@vueuse/core';
 import { presetMagicolor } from 'unocss-preset-magicolor';
@@ -37,10 +38,15 @@ const playgroundModules: Record<string, PlaygroundModule> = {
     default: presetAttributify,
     presetAttributify,
   },
+  '@unocss/preset-tagify': {
+    default: presetTagify,
+    presetTagify,
+  },
   'unocss': {
     defineConfig,
     presetWind4,
     presetAttributify,
+    presetTagify,
   },
   'unocss-preset-magicolor': {
     default: presetMagicolor,

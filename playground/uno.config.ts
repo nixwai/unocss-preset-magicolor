@@ -1,9 +1,10 @@
-import { defineConfig, presetAttributify, presetWind4 } from 'unocss';
+import { defineConfig, presetAttributify, presetTagify, presetWind4 } from 'unocss';
 import { presetMagicolor } from 'unocss-preset-magicolor';
 
 export default defineConfig({
   presets: [
     presetWind4({ dark: 'class' }),
+    presetTagify(),
     presetAttributify(),
     presetMagicolor({
       colors: {

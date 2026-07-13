@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue';
 import { usePlayground } from '../composables/usePlayground';
 import CodeEditor from './playground/CodeEditor.vue';
 import PanelShell from './playground/PanelShell.vue';
@@ -14,19 +15,20 @@ const {
   outputCss,
   reset,
 } = usePlayground();
+
+watch(isDark, (value) => {
+  document.documentElement.classList.toggle('dark', value);
+}, { immediate: true });
 </script>
 
 <template>
-  <main
-    class="min-h-screen"
-    :class="isDark ? 'dark bg-neutral-950 c-neutral-100' : 'bg-neutral-50 c-neutral-900'"
-  >
+  <main class="min-h-screen c-mc-neutral-900 bg-mc-neutral-50 dark:mc-lr-neutral">
     <PlaygroundHeader v-model:dark="isDark" @reset="reset" />
 
     <section class="playground-layout grid">
       <PreviewPane :source="documentSource" />
 
-      <aside class="editor-pane c-neutral-900 border-l border-neutral-200 bg-white flex flex-col min-h-0 min-w-0 overflow-hidden dark:c-neutral-100 dark:border-neutral-800 dark:bg-neutral-950">
+      <aside class="editor-pane border-l flex flex-col min-h-0 min-w-0 overflow-hidden c-mc-neutral-900 bg-mc-neutral-50 border-mc-neutral-200">
         <PanelShell title="HTML">
           <CodeEditor v-model="html" label="HTML editor" />
         </PanelShell>
