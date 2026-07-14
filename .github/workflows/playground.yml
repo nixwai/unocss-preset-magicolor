@@ -1,9 +1,6 @@
 name: Deploy Playground
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       ref:
