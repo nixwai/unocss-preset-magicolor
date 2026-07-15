@@ -2,6 +2,39 @@ import { describe, expect, it } from 'vitest';
 import { generate, generateWithoutWind4, generateWithWind4, getCssVar, getDarkBlock, getSelectorBlock } from './helpers';
 
 describe('preset options color configuration', () => {
+  it('prioritizes custom theme colors at requested non-standard depths', async () => {
+    const theme = { colors: { brand: { DEFAULT: '#409eff', 457: '#123456' } } };
+    const { css } = await generate(
+      '<div class="c-mc-primary-457"></div>',
+      { colors: { primary: 'brand' } },
+      { theme },
+    );
+
+    expect(getCssVar(css, '--mc-source-colors-primary-457')).toBe('#123456');
+  });
+
+  it('prioritizes custom theme colors for configured base colors with an inline depth', async () => {
+    const theme = { colors: { brand: { DEFAULT: '#409eff', 457: '#123456' } } };
+    const { css } = await generate(
+      '<div class="c-mc-primary"></div>',
+      { colors: { primary: 'brand-457' } },
+      { theme },
+    );
+
+    expect(getCssVar(css, '--mc-source-colors-primary-DEFAULT')).toBe('#123456');
+  });
+
+  it('prioritizes custom theme colors at reversed non-standard depths', async () => {
+    const theme = { colors: { brand: { DEFAULT: '#409eff', 543: '#123456' } } };
+    const { css } = await generate(
+      '<div class="c-mc-primary-457"></div>',
+      { colors: { primary: { color: 'brand', lightnessReverse: true } } },
+      { theme },
+    );
+
+    expect(getCssVar(css, '--mc-source-colors-primary-457')).toBe('#123456');
+  });
+
   it('trims configured color variables to scanned usage', async () => {
     const { css } = await generate('<div class="c-mc-primary-457"></div>', { colors: { primary: 'rose', secondary: 'blue' } });
 

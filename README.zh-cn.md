@@ -256,6 +256,7 @@ export default defineConfig({
 - `hover:`、`focus:`、`dark:`、variant group 等常规 UnoCSS 变体可以和 `mc-*` 工具类一起使用。
 - shortcuts、safelist、attributify 模式、`transformerDirectives` 和 `transformerCompileClass` 均由预设的 usage scanner 覆盖。
 - `transparent`、`currentColor`、`inherit` 等特殊颜色关键字会直接输出，不会生成 magic color 变量。
+- UnoCSS `theme` 中显式配置的颜色优先；未配置的颜色深度由预设生成或插值。
 
 ## 开发
 

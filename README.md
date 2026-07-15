@@ -256,6 +256,7 @@ export default defineConfig({
 - Normal UnoCSS variants such as `hover:`, `focus:`, `dark:`, and variant groups work with `mc-*` utilities.
 - Shortcuts, safelist entries, attributify mode, `transformerDirectives`, and `transformerCompileClass` are covered by the preset's usage scanner.
 - Special color keywords such as `transparent`, `currentColor`, and `inherit` are emitted directly without generating magic color variables.
+- Colors explicitly configured in the UnoCSS `theme` take priority; missing depths are generated or interpolated by the preset.
 
 ## Development
 

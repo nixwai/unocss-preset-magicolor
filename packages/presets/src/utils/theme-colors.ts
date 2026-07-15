@@ -4,7 +4,7 @@ import type { CSSColorValue } from '@unocss/preset-wind4/utils';
 import type { CSSObject } from 'unocss';
 import type { ThemeKey } from '../typing';
 import type { MagicColorDepth } from './color-variable';
-import { getMcThemeMetaColors, getThemeDepthColor, resolveSpecialColor, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
+import { getMcThemeMetaColors, getThemeDepthColor, resolveSpecialColor, resolveThemeDepth, themeMetaList, toOklch } from '@unocss-preset-magicolor/utils';
 import { parseColor } from '@unocss/preset-wind4/utils';
 import { BASE_COLOR_DEPTH, createTargetColorVariableName } from './color-variable';
 
@@ -79,6 +79,15 @@ function getBaseColor(
     return parsedColor;
   }
 
+  // theme color configuration priority
+  const resolvedDepth = resolveThemeDepth({ depth: originDepth, ...options });
+  const cssColor = typeof resolvedDepth === 'number'
+    ? parseColor(`${originColor}-${resolvedDepth}`, theme)
+    : undefined;
+  if (cssColor?.color) {
+    return cssColor.color;
+  }
+
   themeMetaColors = themeMetaColors ?? getThemeMetaColors(originColor, theme);
   if (!themeMetaColors) {
     return;
@@ -137,7 +146,12 @@ export function resolveThemeColorCss(
   }
 
   themeDepths.forEach((depth) => {
-    const color = getThemeDepthColor(themeMetaColors, depth, options);
+    // theme color configuration priority
+    const resolvedDepth = resolveThemeDepth({ depth, ...options });
+    const cssColor = typeof resolvedDepth === 'number'
+      ? parseColor(`${originColor}-${resolvedDepth}`, theme)
+      : undefined;
+    const color = cssColor?.color ?? getThemeDepthColor(themeMetaColors, depth, options);
     if (color) {
       css[createVariableName(name, depth)] = color;
     }
