@@ -1,0 +1,4 @@
+interface:
+  display_name: "UnoCSS Preset Magicolor"
+  short_description: "Write Magicolor-aware UnoCSS color utilities"
+  default_prompt: "Use $unocss-preset-magicolor to write the correct UnoCSS magic-color utilities for this component."
