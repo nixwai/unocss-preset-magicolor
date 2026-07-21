@@ -22,6 +22,14 @@ bun add -d unocss-preset-magicolor
 
 使用本预设前，请先按照官方 [UnoCSS 集成指南](https://unocss.dev/integrations/) 安装并配置 UnoCSS。保留项目中已有的 UnoCSS 预设，然后添加 `presetMagicolor()`。
 
+## 使用AI开发
+
+安装本预设的使用 skill，让 AI 编程助手能够在项目中正确使用 Magicolor：
+
+```bash
+npx skills add nixwai/unocss-preset-magicolor --skill unocss-preset-magicolor
+```
+
 ## 配置
 
 把预设加入 UnoCSS 配置：

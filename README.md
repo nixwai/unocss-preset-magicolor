@@ -22,6 +22,14 @@ bun add -d unocss-preset-magicolor
 
 Before using this preset, install and configure UnoCSS by following the official [UnoCSS integration guide](https://unocss.dev/integrations/). Keep the UnoCSS presets your project already uses, then add `presetMagicolor()`.
 
+## Work with AI
+
+Install the preset's skill so AI coding agents can use Magicolor correctly in your project:
+
+```bash
+npx skills add nixwai/unocss-preset-magicolor --skill unocss-preset-magicolor
+```
+
 ## Setup
 
 Add the preset to your UnoCSS config:
