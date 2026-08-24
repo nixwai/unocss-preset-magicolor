@@ -28,7 +28,7 @@
     "dist"
   ],
   "peerDependencies": {
-    "unocss": "^66.0.0"
+    "unocss": ">=66.0.0 <66.8.0"
   },
   "dependencies": {
     "@unocss/core": "~66.7.5",
