@@ -28,16 +28,16 @@
     "dist"
   ],
   "peerDependencies": {
-    "unocss": ">=66.0.0 <66.8.0"
+    "unocss": ">=66.8.0"
   },
   "dependencies": {
-    "@unocss/core": "~66.7.5",
-    "@unocss/preset-wind4": "~66.7.5",
-    "@unocss/rule-utils": "~66.7.5",
+    "@unocss/core": "~66.8.1",
+    "@unocss/preset-wind4": "~66.8.1",
+    "@unocss/rule-utils": "~66.8.1",
     "magic-color": "^2.2.5"
   },
   "devDependencies": {
     "magic-string": "^0.30.21",
-    "unocss": "~66.7.5"
+    "unocss": "~66.8.1"
   }
 }
