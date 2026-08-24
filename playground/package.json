@@ -10,18 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@unocss/core": "^66.7.5",
-    "@unocss/preset-attributify": "^66.7.5",
-    "@unocss/preset-tagify": "^66.7.5",
-    "@unocss/preset-wind4": "^66.7.5",
-    "@unocss/reset": "^66.7.5",
-    "@vueuse/core": "^14.3.0",
-    "vue": "^3.5.39"
+    "@unocss/core": "^66.8.1",
+    "@unocss/preset-attributify": "^66.8.1",
+    "@unocss/preset-tagify": "^66.8.1",
+    "@unocss/preset-wind4": "^66.8.1",
+    "@unocss/reset": "^66.8.1",
+    "@vueuse/core": "^14.4.0",
+    "vue": "^3.5.41"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.7",
-    "unocss": "^66.7.5",
-    "vite": "^8.1.4",
-    "vue-tsc": "^3.3.7"
+    "@vitejs/plugin-vue": "^6.0.8",
+    "unocss": "^66.8.1",
+    "vite": "^8.2.2",
+    "vue-tsc": "^3.3.11"
   }
 }
