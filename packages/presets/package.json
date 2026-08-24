@@ -37,7 +37,7 @@
     "magic-color": "^2.2.5"
   },
   "devDependencies": {
-    "magic-string": "^0.30.21",
+    "magic-string": "^1.2.2",
     "unocss": "~66.8.1"
   }
 }
