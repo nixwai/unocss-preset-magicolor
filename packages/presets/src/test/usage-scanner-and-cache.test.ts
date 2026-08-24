@@ -7,10 +7,10 @@ function createShortcutRuleContext(shortcuts: Shortcut[]): RuleContext {
   return { generator: { config: { shortcuts } } } as unknown as RuleContext;
 }
 
-function createRuleContext(rawSelector: string): RuleContext {
+function createRuleContext(rawSelector: string, invalidatedTokens: string[] = []): RuleContext {
   return {
     rawSelector,
-    generator: { cache: new Map() },
+    generator: { invalidateToken: (token: string) => invalidatedTokens.push(token) },
   } as unknown as RuleContext;
 }
 
@@ -40,68 +40,48 @@ describe('usage scanner and cache bookkeeping', () => {
     ]));
   });
 
-  it('invalidates usage-dependent rule cache only when rule usage changes', () => {
+  it('invalidates usage-dependent tokens only when rule usage changes', () => {
     const usage = new MagicColorUsage();
-    const cache = new Map<string, unknown>([
-      ['mc-btn_red', []],
-      ['hover:mc-lr-primary_primary', []],
-      ['bg-mc-primary-333', []],
-      ['text-white', []],
-    ]);
-    const context = {
-      rawSelector: 'mc-btn_red',
-      generator: { cache },
-    } as unknown as RuleContext;
+    const invalidatedTokens: string[] = [];
+    const context = createRuleContext('mc-btn_red', invalidatedTokens);
 
     usage.recordUsageDependentToken(context);
     usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([333])],
     ]));
 
-    expect(cache.has('mc-btn_red')).toBe(false);
-    expect(cache.has('hover:mc-lr-primary_primary')).toBe(true);
-    expect(cache.has('bg-mc-primary-333')).toBe(true);
-    expect(cache.has('text-white')).toBe(true);
+    expect(invalidatedTokens).toEqual(['mc-btn_red']);
+    expect(invalidatedTokens).not.toContain('hover:mc-lr-primary_primary');
+    expect(invalidatedTokens).not.toContain('bg-mc-primary-333');
+    expect(invalidatedTokens).not.toContain('text-white');
 
-    cache.set('mc-btn_blue', []);
     usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([333])],
     ]));
 
-    expect(cache.has('mc-btn_blue')).toBe(true);
+    expect(invalidatedTokens).toEqual(['mc-btn_red']);
   });
 
   it('keeps source rule scan recording separate from cache token registration', () => {
     const usage = new MagicColorUsage();
-    const cache = new Map<string, unknown>([
-      ['mc-btn_red', []],
-    ]);
-    const context = {
-      rawSelector: 'mc-btn_red',
-      generator: { cache },
-    } as unknown as RuleContext;
+    const invalidatedTokens: string[] = [];
+    const context = createRuleContext('mc-btn_red', invalidatedTokens);
 
     usage.recordRuleSourceUsage(context, new Map([
       ['primary', new Set([333])],
     ]));
 
-    expect(cache.has('mc-btn_red')).toBe(true);
+    expect(invalidatedTokens).toEqual([]);
   });
 
   it('seeds direct target rule usage during extractor scans', () => {
     const usage = new MagicColorUsage();
-    const cache = new Map<string, unknown>([
-      ['mc-btn_red', []],
-      ['bg-mc-primary-333', []],
-    ]);
+    const invalidatedTokens: string[] = [];
+    const sourceContext = createRuleContext('mc-btn_red', invalidatedTokens);
 
-    usage.recordRuleSourceUsage({
-      rawSelector: 'mc-btn_red',
-      generator: { cache },
-    } as unknown as RuleContext, new Map([
+    usage.recordRuleSourceUsage(sourceContext, new Map([
       ['primary', new Set([333])],
     ]));
-    cache.set('mc-btn_red', []);
 
     usage.extractor.extract?.({
       extracted: new Set(['bg-mc-primary-333']),
@@ -109,21 +89,16 @@ describe('usage scanner and cache bookkeeping', () => {
       original: '',
       code: '',
     });
-    cache.set('mc-btn_red', []);
 
-    const context = {
-      rawSelector: 'bg-mc-primary-333',
-      generator: { cache },
-    } as unknown as RuleContext;
-
-    usage.recordRuleTargetUsage(context, new Map([
+    const targetContext = createRuleContext('bg-mc-primary-333', invalidatedTokens);
+    usage.recordRuleTargetUsage(targetContext, new Map([
       ['primary', new Set([333])],
     ]));
-    usage.recordRuleTargetUsage(context, new Map([
+    usage.recordRuleTargetUsage(targetContext, new Map([
       ['primary', new Set([333])],
     ]));
 
-    expect(cache.has('mc-btn_red')).toBe(true);
+    expect(invalidatedTokens).toEqual([]);
   });
 
   it('records all shortcut-expanded target usage when explicitly requested', () => {

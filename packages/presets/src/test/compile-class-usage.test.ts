@@ -23,7 +23,7 @@ async function generateWithCompileClass(input: string) {
   await compileClass.transform?.(s, 'compile-class.vue', {
     uno,
     tokens,
-    invalidate: () => uno.cache.clear(),
+    invalidate: () => tokens.forEach(token => uno.invalidateToken(token)),
   } as UnocssPluginContext);
 
   const extracted = await uno.applyExtractors(s.toString(), 'compile-class.vue', tokens);
