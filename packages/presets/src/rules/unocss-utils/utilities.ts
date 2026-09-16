@@ -11,6 +11,7 @@ function createTargetDepthUsage(name: string, depth: string | undefined): MagicC
   return new Map([[name, new Set([depth === undefined ? BASE_COLOR_DEPTH : Number(depth)])]]);
 }
 
+// from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/utils/utilities.ts#L101
 /** Parses a magic color token body and records the usage needed for preflight variables. */
 export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context: MagicColorContext) {
   const colorData = parseColor(body, ctx.theme);
@@ -52,6 +53,7 @@ export function parseMagicColor(body: string, ctx: RuleContext<Theme>, context: 
   return colorData;
 }
 
+// from https://github.com/unocss/unocss/blob/main/packages-presets/preset-wind4/src/utils/utilities.ts#L297
 /** Creates a rule resolver that pipes magic-color parsing into UnoCSS color CSS output. */
 export function mcColorResolver(property: string, varName: string, context: MagicColorContext) {
   return ([, body]: string[], ctx: RuleContext<Theme>): (CSSValueInput | string)[] | undefined => {
