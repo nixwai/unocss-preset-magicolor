@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../../typing';
-import { defineProperty, detectThemeValue, generateThemeVariable, h, themeTracking } from '@unocss/preset-wind4/utils';
+import { defineProperty, detectThemeValue, generateThemeVariable, h, trackTheme } from '@unocss/preset-wind4/utils';
 import { parseMagicColor } from './utilities';
 
 const SpecialColorKey = {
@@ -45,7 +45,7 @@ export function mcBgGradientColorResolver(context: MagicColorContext) {
         }
 
         if (keys) {
-          themeTracking(`colors`, keys);
+          trackTheme(theme, `colors`, keys);
         }
         if (theme) {
           detectThemeValue(color, theme);

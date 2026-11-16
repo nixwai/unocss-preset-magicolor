@@ -1,7 +1,7 @@
 import type { Theme } from '@unocss/preset-wind4';
 import type { CSSObject, CSSValueInput, RuleContext } from 'unocss';
 import type { MagicColorContext } from '../../typing';
-import { defineProperty, h, hyphenate, numberResolver, themeTracking } from '@unocss/preset-wind4/utils';
+import { defineProperty, h, hyphenate, numberResolver, trackTheme } from '@unocss/preset-wind4/utils';
 import { mcColorResolver } from './utilities';
 
 const baseMaskImage = {
@@ -35,7 +35,7 @@ export function handleImage(context: MagicColorContext) {
         css[`--un-mask-${dir}`] = `linear-gradient(to ${dir}, var(--un-mask-${dir}-from-color) var(--un-mask-${dir}-from-position), var(--un-mask-${dir}-to-color) var(--un-mask-${dir}-to-position))`;
 
         if (numberResolver(val) != null) {
-          themeTracking('spacing');
+          trackTheme(ctx.theme, 'spacing');
           css[`--un-mask-${dir}-${direction}-position`] = `calc(var(--spacing) * ${h.bracket.cssvar.fraction.number(val, ctx.theme)})`;
         }
         else {
@@ -85,7 +85,7 @@ export function handleImage(context: MagicColorContext) {
         }
         else {
           if (numberResolver(val) != null) {
-            themeTracking('spacing');
+            trackTheme(ctx.theme, 'spacing');
             css[`--un-mask-${gradient}-${direction}-position`] = `calc(var(--spacing) * ${h.bracket.cssvar.fraction.number(val, ctx.theme)})`;
           }
           else {

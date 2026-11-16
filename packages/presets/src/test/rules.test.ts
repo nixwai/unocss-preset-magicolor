@@ -26,11 +26,23 @@ describe('color style rules', () => {
     expect(css).toMatch(/--mc-source-colors-rose-445:\s*oklch\(/);
     expect(css).toMatch(/--mc-source-colors-red-600:\s*oklch\(/);
     expect(css).toMatch(/--mc-source-colors-blue-200:\s*oklch\(/);
-    expect(css).toContain('color:color-mix(in oklab, var(--mc-colors-primary-333)');
-    expect(css).toContain('background-color:color-mix(in oklab, var(--mc-colors-brand-700)');
-    expect(css).toContain('border-color:color-mix(in oklab, var(--mc-colors-rose-445)');
+    expect(css).toContain('color:var(--mc-colors-primary-333);');
+    expect(css).toContain('background-color:var(--mc-colors-brand-700);');
+    expect(css).toContain('border-color:var(--mc-colors-rose-445);');
     expect(css).toContain('outline-color:color-mix(in srgb, var(--mc-colors-red-600)');
     expect(css).toContain('--un-ring-color:color-mix(in srgb, var(--mc-colors-blue-200)');
+  });
+
+  it('supports colon opacity and interpolation modifiers for magic color utilities', async () => {
+    const { css } = await generate(
+      '<div class="bg-mc-primary-333:44 c-mc-primary-333/55 border-mc-primary-333:srgb ring-mc-primary-333/66:oklab"></div>',
+      { colors: { primary: 'rose' } },
+    );
+
+    expect(css).toContain('background-color:color-mix(in oklab, var(--mc-colors-primary-333) 44%, transparent);');
+    expect(css).toContain('color:color-mix(in oklab, var(--mc-colors-primary-333) 55%, transparent);');
+    expect(css).toContain('border-color:color-mix(in srgb, var(--mc-colors-primary-333) var(--un-border-opacity), transparent);');
+    expect(css).toContain('--un-ring-color:color-mix(in oklab, var(--mc-colors-primary-333) 66%, transparent);');
   });
 
   it('resolves form, outline and decoration colors', async () => {

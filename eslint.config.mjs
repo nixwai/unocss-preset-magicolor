@@ -31,6 +31,7 @@ export default antfu(
       'object-curly-newline': ['error', { multiline: true }], // 花括号内换行规则
       'curly': ['error', 'all'], // 循环/判断语句后必须使用花括号
       'style/max-statements-per-line': ['error', { max: 2 }],
+      'antfu/reasonable-newline': 'off',
     },
   },
 );

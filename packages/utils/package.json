@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@unocss/preset-wind4": "~66.11.0",
+    "@unocss/preset-wind4": "~66.13.0",
     "magic-color": "^2.3.0"
   }
 }
